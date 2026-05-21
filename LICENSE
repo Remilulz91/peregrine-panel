@@ -1,0 +1,66 @@
+Peregrine Source-Available License
+Version 1.0
+
+Copyright (c) 2026 Remi Rousselot ("the Licensor").
+"Peregrine" and the Peregrine name, logo, and branding are the property of the
+Licensor.
+
+The Peregrine software and its source code (the "Software") are made publicly
+available for transparency, evaluation, and contribution. THIS IS NOT AN
+OPEN-SOURCE LICENSE. By downloading, copying, installing, or using the Software,
+you (the "Licensee") agree to the terms below.
+
+1. PERMITTED USE
+   Subject to the restrictions in Section 2, the Licensor grants the Licensee a
+   non-exclusive, worldwide, royalty-free, revocable license to:
+   a) Download, install, run, and use the Software for any purpose, including
+      commercial purposes (such as hosting game servers, whether for the
+      Licensee or for other people).
+   b) Modify the source code for the Licensee's own use, including for the
+      purpose of evaluating the Software, debugging it, and developing fixes or
+      improvements intended to be submitted back to the official project.
+
+2. RESTRICTIONS
+   The Licensee may NOT:
+   a) Distribute, publish, sublicense, sell, rent, lease, or otherwise share or
+      make available the Software, or any modified or derivative version of it,
+      in source or compiled form, to any third party.
+   b) Make the Software (modified or not) available for download or
+      redistribution outside of the official Peregrine repository.
+   c) Remove, alter, hide, or obscure any copyright notice, license, attribution,
+      name, logo, or branding of Peregrine, or present the Software or any
+      derivative of it as the Licensee's own product.
+   d) Use the Peregrine name, logo, or branding to endorse or promote a
+      different product, or in any way that suggests endorsement by or
+      affiliation with the Licensor without the Licensor's prior written
+      permission.
+
+3. CONTRIBUTIONS
+   If the Licensee submits a contribution (for example a bug fix or an
+   improvement) to the official Peregrine repository, the Licensee grants the
+   Licensor a perpetual, worldwide, royalty-free, irrevocable license to use,
+   reproduce, modify, and incorporate that contribution into the Software under
+   the terms of this license.
+
+4. NO WARRANTY
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT.
+
+5. LIMITATION OF LIABILITY
+   IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING
+   FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+   IN THE SOFTWARE.
+
+6. TERMINATION
+   This license terminates automatically if the Licensee breaches any of its
+   terms. Upon termination, the Licensee must stop using the Software and
+   destroy all copies in their possession.
+
+7. RESERVATION OF RIGHTS
+   All rights not expressly granted in this license are reserved by the
+   Licensor.
+
+For permissions beyond the scope of this license (for example, redistribution
+rights), please contact the Licensor.

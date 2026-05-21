@@ -1,0 +1,23 @@
+# Peregrine - lancer le panel avec :  docker compose up -d
+# Avant le premier lancement : cp .env.example .env  (puis editez .env)
+
+services:
+  peregrine:
+    build: .
+    container_name: peregrine
+    restart: unless-stopped
+    ports:
+      - "${HOST_PORT:-3000}:3000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+    volumes:
+      # Donnees persistantes (base SQLite, etc.) - utilise a partir de la Phase 1.
+      - peregrine-data:/data
+      # Permet a Peregrine de gerer les conteneurs de serveurs de jeu.
+      # A DECOMMENTER seulement a partir de la Phase 2 :
+      # - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  peregrine-data:

@@ -1,0 +1,73 @@
+// Peregrine - schema de la base de donnees
+//
+// Ce fichier decrit la structure de la base de donnees. Il sera reellement
+// utilise a partir de la Phase 1. Pour generer le client Prisma et creer
+// la base :  npx prisma migrate dev
+//
+// Remarque : le provider SQLite ne supporte pas les "enum". Les champs
+// concernes (role, status) sont donc des chaines de caracteres dont les
+// valeurs autorisees sont indiquees en commentaire.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// Un compte utilisateur du panel.
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  username     String
+  passwordHash String // mot de passe hache avec Argon2 (jamais en clair)
+  role         String   @default("USER") // "ADMIN" ou "USER"
+  createdAt    DateTime @default(now())
+
+  servers Server[]
+}
+
+/// Un modele de jeu : decrit comment faire tourner un jeu donne.
+model GameTemplate {
+  id             String @id @default(cuid())
+  name           String // ex. "Minecraft Java"
+  dockerImage    String // ex. "itzg/minecraft-server"
+  startupCommand String
+  stopCommand    String // commande d'arret propre (ex. "stop")
+  variables      String @default("[]") // JSON : options reglables par l'utilisateur
+
+  servers Server[]
+}
+
+/// Un serveur de jeu cree par un utilisateur (= un conteneur Docker).
+model Server {
+  id            String   @id @default(cuid())
+  name          String
+  status        String   @default("INSTALLING") // INSTALLING | OFFLINE | STARTING | RUNNING | STOPPING
+  containerId   String? // identifiant du conteneur Docker
+  dockerImage   String
+  memoryLimitMb Int      @default(2048)
+  cpuLimit      Float    @default(1)
+  diskLimitMb   Int      @default(10240)
+  volumeName    String // volume Docker contenant les fichiers du jeu
+  environment   String   @default("{}") // JSON : variables choisies (version, etc.)
+  createdAt     DateTime @default(now())
+
+  ownerId    String
+  owner      User         @relation(fields: [ownerId], references: [id])
+  templateId String
+  template   GameTemplate @relation(fields: [templateId], references: [id])
+  allocation Allocation?
+}
+
+/// Un port reseau reservable pour un serveur.
+model Allocation {
+  id   String @id @default(cuid())
+  ip   String @default("0.0.0.0")
+  port Int    @unique
+
+  serverId String? @unique
+  server   Server? @relation(fields: [serverId], references: [id])
+}

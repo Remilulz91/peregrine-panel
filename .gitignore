@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Environment / secrets
+.env
+*.local
+
+# Database (SQLite) and persistent data
+*.db
+*.db-journal
+*.sqlite
+data/
+
+# Logs
+*.log
+logs/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Prisma generated client
+backend/prisma/generated/
