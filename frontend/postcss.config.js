@@ -1,5 +1,5 @@
-// Configuration de PostCSS : active Tailwind CSS et l'ajout automatique
-// des prefixes navigateurs (autoprefixer).
+// PostCSS configuration: enables Tailwind CSS and automatic vendor
+// prefixing (autoprefixer).
 export default {
   plugins: {
     tailwindcss: {},

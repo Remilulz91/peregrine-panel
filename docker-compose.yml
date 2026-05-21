@@ -1,5 +1,5 @@
-# Peregrine - lancer le panel avec :  docker compose up -d
-# Avant le premier lancement : cp .env.example .env  (puis editez .env)
+# Peregrine - run the panel with:  docker compose up -d
+# Before the first launch: cp .env.example .env  (then edit .env)
 
 services:
   peregrine:
@@ -13,10 +13,10 @@ services:
     environment:
       - NODE_ENV=production
     volumes:
-      # Donnees persistantes (base SQLite, etc.) - utilise a partir de la Phase 1.
+      # Persistent data (SQLite database, etc.) - used from Phase 1 onwards.
       - peregrine-data:/data
-      # Permet a Peregrine de gerer les conteneurs de serveurs de jeu.
-      # A DECOMMENTER seulement a partir de la Phase 2 :
+      # Lets Peregrine manage the game-server containers.
+      # UNCOMMENT only from Phase 2 onwards:
       # - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:

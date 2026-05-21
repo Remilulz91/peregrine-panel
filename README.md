@@ -1,100 +1,100 @@
 # Peregrine
 
-**Panel d'hébergement de serveurs de jeu, auto-hébergeable.**
+**A self-hostable game server panel.**
 
-Peregrine permet d'installer un panneau de contrôle sur sa propre machine Linux,
-puis de créer et gérer des serveurs de jeu (Minecraft pour commencer) qui tournent
-chacun dans un conteneur Docker isolé. Le projet s'inscrit dans l'esprit de
-Pterodactyl et Pelican.
+Peregrine lets you install a control panel on your own Linux machine, then
+create and manage game servers (starting with Minecraft) that each run in an
+isolated Docker container. The project follows the spirit of Pterodactyl and
+Pelican.
 
-> **Projet en cours de développement.** Version actuelle : `0.1.0` — Phase 0
-> (mise en place). Voir la feuille de route plus bas.
+> **Work in progress.** Current version: `0.1.0` — Phase 0 (project setup).
+> See the roadmap below.
 
-## Fonctionnalités prévues
+## Planned features
 
-- Comptes utilisateurs, avec un compte administrateur créé au premier lancement
-- Création de serveurs Minecraft (Java et Bedrock) en quelques clics
-- Démarrage, arrêt et redémarrage des serveurs
-- Console en direct
-- Gestionnaire de fichiers
-- Limites de ressources (CPU, RAM, disque) par serveur
+- User accounts, with an administrator account created on first launch
+- Create Minecraft servers (Java and Bedrock) in a few clicks
+- Start, stop and restart servers
+- Live console
+- File manager
+- Per-server resource limits (CPU, RAM, disk)
 
-## Stack technique
+## Tech stack
 
-- **Backend** : Node.js + Fastify (TypeScript)
-- **Frontend** : React + Vite + Tailwind CSS
-- **Base de données** : SQLite (via Prisma) — à partir de la Phase 1
-- **Conteneurs** : Docker, piloté avec dockerode — à partir de la Phase 2
-- **Déploiement** : Docker Compose
+- **Backend**: Node.js + Fastify (TypeScript)
+- **Frontend**: React + Vite + Tailwind CSS (bilingual UI: English / French)
+- **Database**: SQLite (via Prisma) — from Phase 1 onwards
+- **Containers**: Docker, controlled with dockerode — from Phase 2 onwards
+- **Deployment**: Docker Compose
 
-## Installation rapide (avec Docker)
+## Quick start (with Docker)
 
-Prérequis : une machine Linux avec Docker et Docker Compose installés.
+Requirements: a Linux machine with Docker and Docker Compose installed.
 
 ```bash
-git clone <url-du-depot> peregrine-panel
+git clone <repository-url> peregrine-panel
 cd peregrine-panel
 cp .env.example .env
-# Éditez .env (au minimum, changez JWT_SECRET)
+# Edit .env (at minimum, change JWT_SECRET)
 docker compose up -d
 ```
 
-Le panel est ensuite accessible sur `http://localhost:3000`. Au premier accès,
-un assistant vous guidera pour créer le compte administrateur.
+The panel is then available at `http://localhost:3000`. On first access, a
+wizard guides you through creating the administrator account.
 
-## Développement (sans Docker)
+## Development (without Docker)
 
-Prérequis : Node.js 22 ou plus récent.
+Requirements: Node.js 22 or newer.
 
 ```bash
-# Installer les dépendances du backend et du frontend
+# Install backend and frontend dependencies
 npm run install:all
 
-# Démarrer le backend (port 3000)
+# Start the backend (port 3000)
 npm run dev:backend
 
-# Dans un autre terminal, démarrer le frontend (port 5173)
+# In another terminal, start the frontend (port 5173)
 npm run dev:frontend
 ```
 
-Le frontend de développement est sur `http://localhost:5173` ; il transmet
-automatiquement les appels `/api` au backend.
+The development frontend runs at `http://localhost:5173`; it automatically
+forwards `/api` calls to the backend.
 
-## Structure du projet
+## Project structure
 
 ```
 peregrine-panel/
-├── backend/            API Fastify (TypeScript)
-├── frontend/           Interface React (Vite + Tailwind)
+├── backend/            Fastify API (TypeScript)
+├── frontend/           React interface (Vite + Tailwind)
 ├── docs/               Documentation (architecture, etc.)
-├── docker-compose.yml  Lancement en une commande
-└── Dockerfile          Image de production
+├── docker-compose.yml  One-command startup
+└── Dockerfile          Production image
 ```
 
-## Feuille de route
+## Roadmap
 
-- [x] **Phase 0** — Mise en place du projet
-- [ ] **Phase 1** — Comptes & connexion (création automatique de l'admin)
-- [ ] **Phase 2** — Création de serveurs (intégration de Docker)
-- [ ] **Phase 3** — Contrôle des serveurs (démarrer / arrêter / redémarrer)
-- [ ] **Phase 4** — Console en direct
-- [ ] **Phase 5** — Gestionnaire de fichiers
-- [ ] **Phase 6** — Limites de ressources & templates de jeu
-- [ ] **Phase 7** — Finition & première version publiée
+- [x] **Phase 0** — Project setup
+- [ ] **Phase 1** — Accounts & login (automatic admin creation)
+- [ ] **Phase 2** — Server creation (Docker integration)
+- [ ] **Phase 3** — Server control (start / stop / restart)
+- [ ] **Phase 4** — Live console
+- [ ] **Phase 5** — File manager
+- [ ] **Phase 6** — Resource limits & game templates
+- [ ] **Phase 7** — Polish & first public release
 
-Détails complets dans [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+Full details in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
-## Licence
+## License
 
-Peregrine est distribué sous une licence **source-available** (source-disponible) :
-le code est public, mais sa redistribution est interdite. Vous pouvez utiliser
-Peregrine librement — y compris pour un usage commercial — et modifier le code
-pour votre propre usage ou pour contribuer. Vous ne pouvez pas le revendre, le
-redistribuer, ou le présenter comme votre propre produit.
+Peregrine is distributed under a **source-available** license: the code is
+public, but redistribution is not allowed. You may use Peregrine freely —
+including for commercial purposes — and modify the code for your own use or to
+contribute. You may not resell it, redistribute it, or present it as your own
+product.
 
-Voir le fichier [`LICENSE`](LICENSE) pour les termes complets.
+See the [`LICENSE`](LICENSE) file for the full terms.
 
-## Contribuer & signaler un bug
+## Contributing & reporting bugs
 
-Les rapports de bugs sont les bienvenus — voir [`CONTRIBUTING.md`](CONTRIBUTING.md).
-Pour signaler une faille de sécurité, voir [`SECURITY.md`](SECURITY.md).
+Bug reports are welcome — see [`CONTRIBUTING.md`](CONTRIBUTING.md). To report a
+security vulnerability, see [`SECURITY.md`](SECURITY.md).

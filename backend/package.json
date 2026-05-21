@@ -2,7 +2,7 @@
   "name": "peregrine-backend",
   "version": "0.1.0",
   "private": true,
-  "description": "Peregrine - API du panel (Fastify, TypeScript)",
+  "description": "Peregrine - panel API (Fastify, TypeScript)",
   "license": "SEE LICENSE IN ../LICENSE",
   "main": "dist/index.js",
   "scripts": {

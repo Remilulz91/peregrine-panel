@@ -1,12 +1,12 @@
-// Peregrine - schema de la base de donnees
+// Peregrine - database schema
 //
-// Ce fichier decrit la structure de la base de donnees. Il sera reellement
-// utilise a partir de la Phase 1. Pour generer le client Prisma et creer
-// la base :  npx prisma migrate dev
+// This file describes the database structure. It will actually be used
+// from Phase 1 onwards. To generate the Prisma client and create the
+// database:  npx prisma migrate dev
 //
-// Remarque : le provider SQLite ne supporte pas les "enum". Les champs
-// concernes (role, status) sont donc des chaines de caracteres dont les
-// valeurs autorisees sont indiquees en commentaire.
+// Note: the SQLite provider does not support "enum". The affected fields
+// (role, status) are therefore strings whose allowed values are listed
+// in a comment.
 
 generator client {
   provider = "prisma-client-js"
@@ -17,42 +17,42 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/// Un compte utilisateur du panel.
+/// A panel user account.
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
   username     String
-  passwordHash String // mot de passe hache avec Argon2 (jamais en clair)
-  role         String   @default("USER") // "ADMIN" ou "USER"
+  passwordHash String // password hashed with Argon2 (never in plain text)
+  role         String   @default("USER") // "ADMIN" or "USER"
   createdAt    DateTime @default(now())
 
   servers Server[]
 }
 
-/// Un modele de jeu : decrit comment faire tourner un jeu donne.
+/// A game template: describes how to run a given game.
 model GameTemplate {
   id             String @id @default(cuid())
-  name           String // ex. "Minecraft Java"
-  dockerImage    String // ex. "itzg/minecraft-server"
+  name           String // e.g. "Minecraft Java"
+  dockerImage    String // e.g. "itzg/minecraft-server"
   startupCommand String
-  stopCommand    String // commande d'arret propre (ex. "stop")
-  variables      String @default("[]") // JSON : options reglables par l'utilisateur
+  stopCommand    String // command for a clean shutdown (e.g. "stop")
+  variables      String @default("[]") // JSON: options configurable by the user
 
   servers Server[]
 }
 
-/// Un serveur de jeu cree par un utilisateur (= un conteneur Docker).
+/// A game server created by a user (= one Docker container).
 model Server {
   id            String   @id @default(cuid())
   name          String
   status        String   @default("INSTALLING") // INSTALLING | OFFLINE | STARTING | RUNNING | STOPPING
-  containerId   String? // identifiant du conteneur Docker
+  containerId   String? // Docker container identifier
   dockerImage   String
   memoryLimitMb Int      @default(2048)
   cpuLimit      Float    @default(1)
   diskLimitMb   Int      @default(10240)
-  volumeName    String // volume Docker contenant les fichiers du jeu
-  environment   String   @default("{}") // JSON : variables choisies (version, etc.)
+  volumeName    String // Docker volume holding the game files
+  environment   String   @default("{}") // JSON: chosen variables (version, etc.)
   createdAt     DateTime @default(now())
 
   ownerId    String
@@ -62,7 +62,7 @@ model Server {
   allocation Allocation?
 }
 
-/// Un port reseau reservable pour un serveur.
+/// A network port that can be reserved for a server.
 model Allocation {
   id   String @id @default(cuid())
   ip   String @default("0.0.0.0")

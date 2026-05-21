@@ -1,12 +1,12 @@
 interface FalconMarkProps {
-  /** Classes CSS (taille et couleur via `text-...`). */
+  /** CSS classes (size and color via `text-...`). */
   className?: string;
 }
 
 /**
- * Logo de Peregrine : un faucon stylise en vol.
- * La couleur est heritee du texte (`currentColor`), ce qui permet de la
- * regler avec une classe Tailwind comme `text-falcon`.
+ * Peregrine logo: a stylized falcon in flight.
+ * The color is inherited from the text (`currentColor`), so it can be set
+ * with a Tailwind class such as `text-falcon`.
  */
 export default function FalconMark({ className }: FalconMarkProps) {
   return (

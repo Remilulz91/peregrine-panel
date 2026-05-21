@@ -2,7 +2,7 @@
   "name": "peregrine-frontend",
   "version": "0.1.0",
   "private": true,
-  "description": "Peregrine - interface web du panel (React, Vite)",
+  "description": "Peregrine - panel web interface (React, Vite)",
   "license": "SEE LICENSE IN ../LICENSE",
   "type": "module",
   "scripts": {

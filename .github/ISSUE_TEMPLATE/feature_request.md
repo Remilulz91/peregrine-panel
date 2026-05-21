@@ -1,15 +1,15 @@
 ---
-name: Suggestion
-about: Proposer une amélioration ou une nouvelle fonctionnalité
-title: "[Suggestion] "
+name: Feature request
+about: Suggest an improvement or a new feature
+title: "[Feature] "
 labels: enhancement
 ---
 
-**Votre idée**
-<!-- Décrivez la fonctionnalité ou l'amélioration souhaitée. -->
+**Your idea**
+<!-- Describe the desired feature or improvement. -->
 
-**Problème résolu**
-<!-- Quel besoin cela couvre-t-il ? -->
+**Problem it solves**
+<!-- What need does it address? -->
 
-**Alternatives envisagées**
-<!-- Optionnel : autres solutions auxquelles vous avez pensé. -->
+**Alternatives considered**
+<!-- Optional: other solutions you have thought about. -->

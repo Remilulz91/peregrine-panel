@@ -4,8 +4,8 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Theme Peregrine - inspire du faucon pelerin :
-        // plumage gris ardoise, "casque" sombre, anneau oculaire ambre.
+        // Peregrine theme - inspired by the peregrine falcon:
+        // slate-grey plumage, dark "helmet", amber eye-ring.
         peregrine: {
           950: '#0b0f17',
           900: '#111722',
@@ -16,7 +16,7 @@ export default {
           200: '#c3cad6',
         },
         falcon: {
-          // accent ambre chaud (anneau oculaire et serres du faucon)
+          // warm amber accent (the falcon's eye-ring and talons)
           DEFAULT: '#f0a23a',
           bright: '#ffb74d',
           dark: '#c97f1e',

@@ -1,12 +1,12 @@
 import type { FastifyInstance } from 'fastify';
 
 /**
- * Route de verification de sante.
+ * Health-check route.
  *
- * Permet de verifier rapidement que le backend repond. Elle est utilisee
- * par le "healthcheck" de Docker et peut servir a la surveillance.
+ * Lets you quickly verify that the backend is responding. It is used by
+ * the Docker health check and can also be used for monitoring.
  *
- * Accessible sur : GET /api/health
+ * Available at: GET /api/health
  */
 export async function healthRoutes(app: FastifyInstance): Promise<void> {
   app.get('/health', async () => {

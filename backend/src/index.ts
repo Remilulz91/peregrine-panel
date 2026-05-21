@@ -6,30 +6,30 @@ import { config } from './config';
 import { healthRoutes } from './routes/health';
 
 /**
- * Construit et configure le serveur HTTP de Peregrine.
+ * Builds and configures the Peregrine HTTP server.
  *
- * Phase 0 : le serveur expose une route de verification de sante et sert
- * l'interface React compilee. La base de donnees, l'authentification et le
- * pilotage de Docker seront ajoutes dans les phases suivantes.
+ * Phase 0: the server exposes a health-check route and serves the compiled
+ * React interface. The database, authentication and Docker control are
+ * added in later phases.
  */
 export async function buildServer() {
   const app = Fastify({
     logger: { level: config.isProduction ? 'info' : 'debug' },
   });
 
-  // --- Routes de l'API (tout est prefixe par /api) ---
+  // --- API routes (everything is prefixed with /api) ---
   await app.register(healthRoutes, { prefix: '/api' });
 
-  // --- Interface web (fichiers statiques) ---
-  // En production, l'interface React compilee se trouve a cote du backend.
+  // --- Web interface (static files) ---
+  // In production, the compiled React interface sits next to the backend.
   const frontendDir = path.resolve(__dirname, '../../frontend/dist');
   const indexHtml = path.join(frontendDir, 'index.html');
 
   if (fs.existsSync(indexHtml)) {
     await app.register(fastifyStatic, { root: frontendDir });
 
-    // Repli "single-page app" : toute route non-API renvoie index.html
-    // afin que le routage cote React puisse la prendre en charge.
+    // Single-page-app fallback: any non-API route returns index.html
+    // so that React's routing can handle it.
     app.setNotFoundHandler((request, reply) => {
       if (request.url.startsWith('/api')) {
         reply.code(404).send({ error: 'Not Found' });
@@ -38,25 +38,25 @@ export async function buildServer() {
       return reply.sendFile('index.html');
     });
   } else {
-    // L'interface n'a pas encore ete compilee (typiquement en developpement,
-    // ou le frontend tourne sur son propre serveur via "npm run dev:frontend").
+    // The interface has not been built yet (typically in development,
+    // where the frontend runs on its own server via "npm run dev:frontend").
     app.get('/', async () => ({
       name: 'Peregrine',
       message:
-        "Backend en cours d'execution. L'interface n'est pas compilee : " +
-        'lancez le frontend avec "npm run dev:frontend".',
+        'Backend is running. The interface is not built: ' +
+        'start the frontend with "npm run dev:frontend".',
     }));
   }
 
   return app;
 }
 
-/** Point d'entree : demarre le serveur HTTP. */
+/** Entry point: starts the HTTP server. */
 async function start(): Promise<void> {
   const app = await buildServer();
   try {
     await app.listen({ port: config.port, host: config.host });
-    app.log.info(`Peregrine demarre - ${config.appUrl}`);
+    app.log.info(`Peregrine started - ${config.appUrl}`);
   } catch (err) {
     app.log.error(err);
     process.exit(1);

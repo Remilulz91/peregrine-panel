@@ -1,27 +1,26 @@
-# Politique de sécurité
+# Security Policy
 
-## Signaler une faille
+## Reporting a vulnerability
 
-La sécurité de Peregrine est une priorité. Si vous découvrez une faille,
-**merci de ne pas la divulguer publiquement** : pas d'Issue publique, pas de
-message sur les réseaux sociaux.
+Security is a priority for Peregrine. If you discover a vulnerability, **please
+do not disclose it publicly**: no public Issue, no social media post.
 
-Contactez plutôt le mainteneur en privé :
+Instead, contact the maintainer privately:
 
-- **Email** : remi.rousselot91@gmail.com
+- **Email**: remi.rousselot91@gmail.com
 
-Merci d'inclure dans votre message :
+Please include in your message:
 
-- une description de la faille,
-- les étapes pour la reproduire,
-- son impact potentiel,
-- si possible, une suggestion de correction.
+- a description of the vulnerability,
+- the steps to reproduce it,
+- its potential impact,
+- if possible, a suggested fix.
 
-Vous recevrez un accusé de réception, puis vous serez tenu informé de
-l'avancement de la correction. Merci de laisser un délai raisonnable pour
-corriger la faille avant toute divulgation publique.
+You will receive an acknowledgement, and you will be kept informed of the
+progress of the fix. Please allow a reasonable amount of time for the
+vulnerability to be fixed before any public disclosure.
 
-## Versions concernées
+## Supported versions
 
-Peregrine est en développement actif. Seule la dernière version publiée est
-maintenue et reçoit les correctifs de sécurité.
+Peregrine is under active development. Only the latest released version is
+maintained and receives security fixes.

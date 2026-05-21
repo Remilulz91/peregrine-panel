@@ -1,14 +1,14 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// Configuration de Vite (outil de developpement et de build du frontend).
-// Documentation : https://vite.dev/config/
+// Vite configuration (the frontend's development and build tool).
+// Documentation: https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    // En developpement, les appels "/api" sont transmis au backend.
-    // Cela evite tout probleme de CORS : le navigateur ne parle qu'a Vite.
+    // In development, "/api" calls are forwarded to the backend.
+    // This avoids any CORS issue: the browser only talks to Vite.
     proxy: {
       '/api': 'http://localhost:3000',
     },

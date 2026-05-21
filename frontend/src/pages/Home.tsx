@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react';
 import FalconMark from '../components/FalconMark';
+import LanguageToggle from '../components/LanguageToggle';
+import { useTranslation, type TranslationKey } from '../lib/i18n';
 
 type HealthState = 'checking' | 'online' | 'offline';
 
-const STATUS_LABEL: Record<HealthState, string> = {
-  checking: 'Verification du backend...',
-  online: 'Backend connecte',
-  offline: 'Backend injoignable',
+// Maps each backend state to its translation key.
+const STATUS_KEY: Record<HealthState, TranslationKey> = {
+  checking: 'home.status.checking',
+  online: 'home.status.online',
+  offline: 'home.status.offline',
 };
 
+// Maps each backend state to the color of its status dot.
 const STATUS_DOT: Record<HealthState, string> = {
   checking: 'bg-peregrine-400',
   online: 'bg-emerald-400',
@@ -16,12 +20,13 @@ const STATUS_DOT: Record<HealthState, string> = {
 };
 
 /**
- * Page d'accueil de Peregrine (Phase 0).
+ * Peregrine home page (Phase 0).
  *
- * Affiche l'identite du panel et un indicateur en direct de l'etat du
- * backend (obtenu via la route GET /api/health).
+ * Shows the panel identity and a live indicator of the backend status
+ * (obtained from the GET /api/health route).
  */
 export default function Home() {
+  const { t } = useTranslation();
   const [health, setHealth] = useState<HealthState>('checking');
 
   useEffect(() => {
@@ -40,37 +45,39 @@ export default function Home() {
 
   return (
     <div className="relative flex min-h-full flex-col overflow-hidden bg-peregrine-950 text-peregrine-200">
-      {/* Lueur d'ambiance ambre en haut de page */}
+      {/* Amber ambient glow at the top of the page */}
       <div
         aria-hidden
         className="pointer-events-none absolute left-1/2 top-0 h-[480px] w-[680px] -translate-x-1/2 -translate-y-1/3 rounded-full bg-falcon/20 blur-[120px]"
       />
 
-      <main className="relative flex flex-1 flex-col items-center justify-center px-6 py-20 text-center">
+      {/* Language selector, top right */}
+      <div className="relative flex justify-end p-5">
+        <LanguageToggle />
+      </div>
+
+      <main className="relative flex flex-1 flex-col items-center justify-center px-6 pb-20 text-center">
         <div className="flex max-w-xl flex-col items-center">
           {/* Logo */}
           <div className="mb-8 flex h-24 w-24 items-center justify-center rounded-2xl border border-peregrine-700 bg-peregrine-900 shadow-2xl">
             <FalconMark className="h-14 w-14 text-falcon drop-shadow-[0_0_12px_rgba(240,162,58,0.45)]" />
           </div>
 
-          {/* Nom du produit */}
+          {/* Product name */}
           <h1 className="text-5xl font-bold tracking-[0.2em] text-white sm:text-6xl">
             PEREGRINE
           </h1>
 
-          {/* Filet decoratif */}
+          {/* Decorative divider */}
           <div className="mt-4 h-px w-24 bg-gradient-to-r from-transparent via-falcon to-transparent" />
 
-          {/* Slogan */}
-          <p className="mt-6 text-lg text-peregrine-200">
-            Hebergez vos serveurs de jeu, simplement.
-          </p>
+          {/* Tagline */}
+          <p className="mt-6 text-lg text-peregrine-200">{t('home.tagline')}</p>
           <p className="mt-2 max-w-md text-sm leading-relaxed text-peregrine-400">
-            Panel d'hebergement auto-hebergeable. Creez et gerez vos serveurs
-            Minecraft, chacun isole dans son propre conteneur Docker.
+            {t('home.description')}
           </p>
 
-          {/* Etat du backend */}
+          {/* Backend status */}
           <div className="mt-10 inline-flex items-center gap-2.5 rounded-full border border-peregrine-700 bg-peregrine-900 px-4 py-2 text-sm">
             <span className="relative flex h-2.5 w-2.5">
               {health === 'online' && (
@@ -80,23 +87,23 @@ export default function Home() {
                 className={`relative inline-flex h-2.5 w-2.5 rounded-full ${STATUS_DOT[health]}`}
               />
             </span>
-            <span className="text-peregrine-200">{STATUS_LABEL[health]}</span>
+            <span className="text-peregrine-200">{t(STATUS_KEY[health])}</span>
           </div>
 
-          {/* Badge de version */}
+          {/* Version badge */}
           <div className="mt-6 flex items-center gap-2 text-xs text-peregrine-400">
             <span className="rounded border border-peregrine-700 bg-peregrine-900 px-2 py-1 font-mono">
               v0.1.0
             </span>
             <span aria-hidden>&middot;</span>
-            <span>En developpement &mdash; Phase 0</span>
+            <span>{t('home.version.phase')}</span>
           </div>
         </div>
       </main>
 
-      {/* Pied de page */}
+      {/* Footer */}
       <footer className="relative pb-8 text-center text-xs text-peregrine-600">
-        &copy; 2026 Peregrine &mdash; Tous droits reserves.
+        {t('home.footer')}
       </footer>
     </div>
   );

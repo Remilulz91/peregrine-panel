@@ -1,28 +1,28 @@
 ---
-name: Rapport de bug
-about: Signaler un problème dans Peregrine
+name: Bug report
+about: Report a problem in Peregrine
 title: "[Bug] "
 labels: bug
 ---
 
-**Description du problème**
-<!-- Décrivez clairement le bug. -->
+**Problem description**
+<!-- Clearly describe the bug. -->
 
-**Étapes pour reproduire**
+**Steps to reproduce**
 1.
 2.
 3.
 
-**Comportement attendu**
-<!-- Ce qui aurait dû se passer. -->
+**Expected behavior**
+<!-- What should have happened. -->
 
-**Comportement observé**
-<!-- Ce qui s'est réellement passé. -->
+**Actual behavior**
+<!-- What actually happened. -->
 
-**Environnement**
-- Système d'exploitation :
-- Version de Docker :
-- Version de Peregrine :
+**Environment**
+- Operating system:
+- Docker version:
+- Peregrine version:
 
-**Captures d'écran / journaux (logs)**
-<!-- Ajoutez-les si c'est pertinent. -->
+**Screenshots / logs**
+<!-- Add them if relevant. -->
