@@ -10,12 +10,13 @@ import { healthRoutes } from './routes/health';
 import { authRoutes } from './routes/auth';
 import { serverRoutes } from './routes/servers';
 import { AUTH_COOKIE } from './plugins/auth';
+import { setupConsole } from './realtime/console';
 
 /**
  * Builds and configures the Peregrine HTTP server.
  *
- * Phase 2: on top of authentication, the server can create and manage
- * game-server Docker containers.
+ * Phase 4: on top of authentication and Docker server management, the
+ * server streams each game server's live console over Socket.IO.
  */
 export async function buildServer() {
   const app = Fastify({
@@ -36,6 +37,9 @@ export async function buildServer() {
   await app.register(healthRoutes, { prefix: '/api' });
   await app.register(authRoutes, { prefix: '/api/auth' });
   await app.register(serverRoutes, { prefix: '/api' });
+
+  // --- Real-time console (Socket.IO, shares the HTTP server) ---
+  setupConsole(app, app.server);
 
   // --- Web interface (static files) ---
   // In production, the compiled React interface sits next to the backend.

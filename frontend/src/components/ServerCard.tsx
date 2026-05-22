@@ -22,13 +22,14 @@ const STATUS_STYLE: Record<string, string> = {
   STOPPING: 'bg-falcon/15 text-falcon',
 };
 
-const ACTION_BUTTON =
+const OUTLINE_BUTTON =
   'rounded-lg border border-peregrine-700 px-3 py-1.5 text-xs font-medium text-peregrine-200 transition-colors hover:bg-peregrine-800 disabled:cursor-not-allowed disabled:opacity-50';
 
 interface ServerCardProps {
   server: ApiServer;
   templateName: string;
   onAction: (server: ApiServer, action: ServerAction) => Promise<void>;
+  onConsole: (server: ApiServer) => void;
   onDelete: (server: ApiServer) => void;
 }
 
@@ -37,6 +38,7 @@ export default function ServerCard({
   server,
   templateName,
   onAction,
+  onConsole,
   onDelete,
 }: ServerCardProps) {
   const { t } = useTranslation();
@@ -45,6 +47,8 @@ export default function ServerCard({
   const statusKey = STATUS_KEY[server.status] ?? 'status.UNKNOWN';
   const statusStyle =
     STATUS_STYLE[server.status] ?? 'bg-peregrine-700 text-peregrine-200';
+  const isProvisioned =
+    server.status === 'OFFLINE' || server.status === 'RUNNING';
 
   async function runAction(action: ServerAction): Promise<void> {
     setBusy(true);
@@ -86,8 +90,8 @@ export default function ServerCard({
         </div>
       </dl>
 
-      <div className="mt-4 flex items-center justify-between gap-2">
-        <div className="flex gap-2">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-2">
           {server.status === 'OFFLINE' && (
             <button
               type="button"
@@ -104,7 +108,7 @@ export default function ServerCard({
                 type="button"
                 disabled={busy}
                 onClick={() => void runAction('stop')}
-                className={ACTION_BUTTON}
+                className={OUTLINE_BUTTON}
               >
                 {t('server.stop')}
               </button>
@@ -112,11 +116,20 @@ export default function ServerCard({
                 type="button"
                 disabled={busy}
                 onClick={() => void runAction('restart')}
-                className={ACTION_BUTTON}
+                className={OUTLINE_BUTTON}
               >
                 {t('server.restart')}
               </button>
             </>
+          )}
+          {isProvisioned && (
+            <button
+              type="button"
+              onClick={() => onConsole(server)}
+              className={OUTLINE_BUTTON}
+            >
+              {t('server.console')}
+            </button>
           )}
         </div>
         <button

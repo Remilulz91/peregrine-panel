@@ -1,3 +1,4 @@
+import { PassThrough, type Readable } from 'node:stream';
 import Docker from 'dockerode';
 import { config } from '../config';
 
@@ -110,4 +111,64 @@ export async function getContainerState(
   } catch {
     return 'missing';
   }
+}
+
+/**
+ * Streams a container's console output (the recent history, then live).
+ *
+ * `onData` is called with each chunk of decoded text. The returned function
+ * stops the stream and must be called when the listener goes away.
+ */
+export async function attachConsole(
+  containerId: string,
+  onData: (text: string) => void,
+): Promise<() => void> {
+  const container = docker.getContainer(containerId);
+  const logStream = (await container.logs({
+    follow: true,
+    stdout: true,
+    stderr: true,
+    tail: 200,
+  })) as unknown as Readable;
+
+  // Docker multiplexes stdout and stderr into one stream; demux them back.
+  const stdout = new PassThrough();
+  const stderr = new PassThrough();
+  container.modem.demuxStream(logStream, stdout, stderr);
+
+  const forward = (chunk: Buffer): void => onData(chunk.toString('utf8'));
+  stdout.on('data', forward);
+  stderr.on('data', forward);
+
+  return () => {
+    logStream.destroy();
+    stdout.destroy();
+    stderr.destroy();
+  };
+}
+
+/**
+ * Sends a console command to a running game server, via the RCON client
+ * bundled in the itzg/minecraft-server image, and returns its output.
+ */
+export async function sendConsoleCommand(
+  containerId: string,
+  command: string,
+): Promise<string> {
+  const container = docker.getContainer(containerId);
+  const exec = await container.exec({
+    Cmd: ['rcon-cli', command],
+    AttachStdout: true,
+    AttachStderr: true,
+    Tty: true,
+  });
+
+  const stream = (await exec.start({})) as unknown as Readable;
+  const chunks: Buffer[] = [];
+  await new Promise<void>((resolve, reject) => {
+    stream.on('data', (chunk: Buffer) => chunks.push(chunk));
+    stream.on('end', resolve);
+    stream.on('error', reject);
+  });
+  return Buffer.concat(chunks).toString('utf8');
 }

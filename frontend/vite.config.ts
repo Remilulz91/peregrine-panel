@@ -7,10 +7,11 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    // In development, "/api" calls are forwarded to the backend.
+    // In development, API and websocket calls are forwarded to the backend.
     // This avoids any CORS issue: the browser only talks to Vite.
     proxy: {
       '/api': 'http://localhost:3000',
+      '/socket.io': { target: 'http://localhost:3000', ws: true },
     },
   },
   build: {

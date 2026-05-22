@@ -44,7 +44,7 @@ one thing to learn.
 | Database | **SQLite**, via Node's built-in driver | SQLite is a single file — **zero installation**, no database server to run. Peregrine uses Node.js's built-in SQLite (`node:sqlite`), so there is no extra dependency to install or download. |
 | Authentication | **JWT + Argon2** | JSON Web Tokens keep the user logged in (stored in a secure httpOnly cookie); Argon2 hashes passwords so they are never stored in plain text. |
 | Docker access | **dockerode** | A mature Node.js library to control Docker (create/start/stop containers) from code. |
-| Real time | **Socket.IO** | For the live server console and real-time status. (From Phase 4.) |
+| Real time | **Socket.IO** | Streams each server's live console to the browser and carries the commands typed back. |
 | UI languages | **English / French** | The panel interface is bilingual, with a language selector. |
 | Deployment | **Docker Compose** | Installation for the end user is two commands: `git clone` then `docker compose up`. |
 
@@ -138,8 +138,8 @@ without touching the rest of the code.
    the container. *(Phase 2.)*
 2. **Start / stop / restart**: the API tells Docker to start, stop or restart
    the container; the interface shows the live status. *(Phase 3.)*
-3. **Live console**: the API forwards the container's output to the browser
-   through Socket.IO. *(Phase 4.)*
+3. **Live console**: the server's output is streamed to the browser over
+   Socket.IO, and the user can type commands (sent via RCON). *(Phase 4.)*
 4. **File management**: the user can browse and edit the server's files.
    *(Phase 5.)*
 5. **Deletion**: the container and the data folder are removed. *(Phase 2.)*
@@ -190,6 +190,7 @@ peregrine-panel/
 │       ├── index.ts          # Server entry point
 │       ├── config.ts         # Configuration read from the environment
 │       ├── routes/           # API endpoints (health, auth, servers)
+│       ├── realtime/         # Real-time console (Socket.IO)
 │       ├── plugins/          # Cross-cutting concerns (authentication)
 │       ├── lib/              # Database, Docker, password hashing, helpers
 │       └── services/         # Business logic (server provisioning)
@@ -228,7 +229,7 @@ Routes implemented so far, and the planned ones (mounted under `/api`).
 | `POST` | `/api/servers/:id/start` | Start a server | Done |
 | `POST` | `/api/servers/:id/stop` | Stop a server | Done |
 | `POST` | `/api/servers/:id/restart` | Restart a server | Done |
-| *(WebSocket)* | `/ws/servers/:id/console` | Live console | Phase 4 |
+| *(Socket.IO)* | `console:subscribe` / `console:command` | Live console (output & commands) | Done |
 
 ---
 
@@ -248,10 +249,10 @@ protected dashboard.
 Java template, and the ability to create, list and delete game servers.
 
 **Phase 3 — Server control**: start, stop and restart servers, with the live
-status read directly from Docker and shown in the interface.
+status read directly from Docker.
 
-**Phase 4 — Live console**: Socket.IO, displaying the server output, sending
-commands.
+**Phase 4 — Live console**: Socket.IO streams the server output to the browser
+in real time, and the user can type commands (sent via RCON).
 
 **Phase 5 — File manager**: browse, edit, upload server files.
 
@@ -283,8 +284,9 @@ people. To keep in mind from the start, even if not everything is for the MVP:
 - **File manager**: rigorously validate paths to prevent a user from escaping
   their server's folder (a "path traversal" attack).
 - **Passwords** hashed with Argon2, never stored in plain text.
-- **Authentication tokens** kept in httpOnly cookies, so page scripts cannot
-  read them.
+- **Authentication tokens** kept in httpOnly cookies; the websocket console is
+  authenticated with the same cookie, and a user can only reach their own
+  servers.
 - **Permission checks** on every request: a user must only be able to manage
   their own servers; only an `ADMIN` can access the administration area.
 - **HTTPS** in production via a reverse proxy (see `docs/DEPLOYMENT.md`).
@@ -347,7 +349,7 @@ required.
 | Database | SQLite, via Node's built-in `node:sqlite` driver |
 | Authentication | JSON Web Tokens (httpOnly cookie) + Argon2 |
 | Docker | dockerode |
-| Real time | Socket.IO (from Phase 4) |
+| Real time | Socket.IO |
 | Deployment | Docker Compose |
 | Games at launch | Minecraft Java + Minecraft Bedrock |
 | License | Custom source-available — "free use, reselling forbidden" |
@@ -360,11 +362,11 @@ required.
 
 ## 12. Current status & next steps
 
-**Phase 3 is complete.** The panel can now fully manage the lifecycle of a
-game server: create it, start it, stop it, restart it and delete it. The
-status shown in the interface (installing, offline, running) is read live
-from Docker, so it always reflects the real state of the container, and the
-server list refreshes on its own.
+**Phase 4 is complete.** Each game server now has a live console: its output
+is streamed to the browser in real time over Socket.IO, and the user can type
+commands that are sent to the server via RCON. The websocket is authenticated
+with the same login cookie as the rest of the panel, and a user can only open
+the console of their own servers.
 
-Next up is **Phase 4** — the live console: streaming a running server's
-output to the browser in real time, and letting the user type commands.
+Next up is **Phase 5** — the file manager: browsing and editing a server's
+files (configuration, plugins, worlds) directly from the interface.

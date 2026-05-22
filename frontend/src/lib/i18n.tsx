@@ -35,6 +35,7 @@ const translations = {
     fr: "Une erreur s'est produite. Veuillez réessayer.",
   },
   'common.cancel': { en: 'Cancel', fr: 'Annuler' },
+  'common.close': { en: 'Close', fr: 'Fermer' },
   'language.label': { en: 'Language', fr: 'Langue' },
 
   'setup.title': {
@@ -98,6 +99,7 @@ const translations = {
   'server.start': { en: 'Start', fr: 'Démarrer' },
   'server.stop': { en: 'Stop', fr: 'Arrêter' },
   'server.restart': { en: 'Restart', fr: 'Redémarrer' },
+  'server.console': { en: 'Console', fr: 'Console' },
   'server.delete': { en: 'Delete', fr: 'Supprimer' },
   'server.deleteConfirm': {
     en: 'Delete this server? Its container and files will be permanently removed.',
@@ -129,6 +131,19 @@ const translations = {
     en: 'The server could not be created.',
     fr: "Le serveur n'a pas pu être créé.",
   },
+
+  'console.connecting': { en: 'Connecting...', fr: 'Connexion...' },
+  'console.connected': { en: 'Connected', fr: 'Connecté' },
+  'console.waiting': {
+    en: 'Waiting for the server output...',
+    fr: 'En attente de la sortie du serveur...',
+  },
+  'console.placeholder': {
+    en: 'Type a command and press Enter...',
+    fr: 'Tapez une commande et appuyez sur Entrée...',
+  },
+  'console.send': { en: 'Send', fr: 'Envoyer' },
+  'console.error': { en: 'console error', fr: 'erreur de console' },
 } as const;
 
 /** A valid translation key (any key declared in `translations`). */

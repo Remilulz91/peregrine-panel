@@ -3,6 +3,7 @@ import FalconMark from '../components/FalconMark';
 import LanguageToggle from '../components/LanguageToggle';
 import ServerCard from '../components/ServerCard';
 import CreateServerDialog from '../components/CreateServerDialog';
+import ConsoleDialog from '../components/ConsoleDialog';
 import {
   api,
   ApiError,
@@ -15,7 +16,8 @@ import { useTranslation } from '../lib/i18n';
 
 /**
  * The protected screen shown once a user is signed in: the list of their
- * game servers, with controls to create, start, stop and delete them.
+ * game servers, with controls to create, start, stop, delete them and
+ * open their live console.
  */
 export default function Dashboard() {
   const { t } = useTranslation();
@@ -24,6 +26,7 @@ export default function Dashboard() {
   const [templates, setTemplates] = useState<ApiTemplate[]>([]);
   const [loadError, setLoadError] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [consoleServer, setConsoleServer] = useState<ApiServer | null>(null);
 
   const loadServers = useCallback(async () => {
     try {
@@ -50,7 +53,8 @@ export default function Dashboard() {
 
   // Reports an error to the user instead of letting it fail silently.
   function reportError(err: unknown): void {
-    const message = err instanceof ApiError ? err.message : t('common.errorGeneric');
+    const message =
+      err instanceof ApiError ? err.message : t('common.errorGeneric');
     window.alert(message);
   }
 
@@ -140,6 +144,7 @@ export default function Dashboard() {
                 server={server}
                 templateName={templateName(server.templateId)}
                 onAction={handleAction}
+                onConsole={setConsoleServer}
                 onDelete={handleDelete}
               />
             ))}
@@ -155,6 +160,13 @@ export default function Dashboard() {
             setDialogOpen(false);
             void loadServers();
           }}
+        />
+      )}
+
+      {consoleServer && (
+        <ConsoleDialog
+          server={consoleServer}
+          onClose={() => setConsoleServer(null)}
         />
       )}
     </div>
