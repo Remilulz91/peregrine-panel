@@ -31,6 +31,9 @@ export interface ApiServer {
   createdAt: string;
 }
 
+/** A power action that can be applied to a server. */
+export type ServerAction = 'start' | 'stop' | 'restart';
+
 /** An error that carries the HTTP status code returned by the API. */
 export class ApiError extends Error {
   readonly status: number;
@@ -105,4 +108,10 @@ export const api = {
 
   deleteServer: (id: string) =>
     request<{ ok: boolean }>(`/api/servers/${id}`, { method: 'DELETE' }),
+
+  /** Starts, stops or restarts a server. */
+  serverAction: (id: string, action: ServerAction) =>
+    request<{ ok: boolean }>(`/api/servers/${id}/${action}`, {
+      method: 'POST',
+    }),
 };

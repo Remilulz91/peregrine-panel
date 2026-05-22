@@ -95,6 +95,9 @@ const translations = {
   'server.versionLabel': { en: 'Version', fr: 'Version' },
   'server.memoryLabel': { en: 'Memory', fr: 'Mémoire' },
   'server.portLabel': { en: 'Port', fr: 'Port' },
+  'server.start': { en: 'Start', fr: 'Démarrer' },
+  'server.stop': { en: 'Stop', fr: 'Arrêter' },
+  'server.restart': { en: 'Restart', fr: 'Redémarrer' },
   'server.delete': { en: 'Delete', fr: 'Supprimer' },
   'server.deleteConfirm': {
     en: 'Delete this server? Its container and files will be permanently removed.',

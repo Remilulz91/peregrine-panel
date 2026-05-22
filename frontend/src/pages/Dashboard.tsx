@@ -3,13 +3,18 @@ import FalconMark from '../components/FalconMark';
 import LanguageToggle from '../components/LanguageToggle';
 import ServerCard from '../components/ServerCard';
 import CreateServerDialog from '../components/CreateServerDialog';
-import { api, type ApiServer, type ApiTemplate } from '../lib/api';
+import {
+  api,
+  type ApiServer,
+  type ApiTemplate,
+  type ServerAction,
+} from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useTranslation } from '../lib/i18n';
 
 /**
  * The protected screen shown once a user is signed in: the list of their
- * game servers, with controls to create and delete them.
+ * game servers, with controls to create, start, stop and delete them.
  */
 export default function Dashboard() {
   const { t } = useTranslation();
@@ -30,7 +35,7 @@ export default function Dashboard() {
   }, []);
 
   // Load the servers and templates, then poll the servers so that status
-  // changes (INSTALLING -> OFFLINE) appear without a manual refresh.
+  // changes (installing, running, ...) appear without a manual refresh.
   useEffect(() => {
     void loadServers();
     api
@@ -41,6 +46,14 @@ export default function Dashboard() {
     const interval = setInterval(() => void loadServers(), 4000);
     return () => clearInterval(interval);
   }, [loadServers]);
+
+  async function handleAction(
+    server: ApiServer,
+    action: ServerAction,
+  ): Promise<void> {
+    await api.serverAction(server.id, action).catch(() => undefined);
+    await loadServers();
+  }
 
   async function handleDelete(server: ApiServer): Promise<void> {
     if (!window.confirm(t('server.deleteConfirm'))) {
@@ -111,6 +124,7 @@ export default function Dashboard() {
                 key={server.id}
                 server={server}
                 templateName={templateName(server.templateId)}
+                onAction={handleAction}
                 onDelete={handleDelete}
               />
             ))}

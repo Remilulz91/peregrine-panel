@@ -7,7 +7,7 @@ create and manage game servers (starting with Minecraft) that each run in an
 isolated Docker container. The project follows the spirit of Pterodactyl and
 Pelican.
 
-> **Work in progress.** Current version: `0.1.0` — Phase 2 (game servers).
+> **Work in progress.** Current version: `0.1.0` — Phase 3 (server control).
 > See the roadmap below.
 
 ## Planned features
@@ -96,7 +96,7 @@ peregrine-panel/
 - [x] **Phase 0** — Project setup
 - [x] **Phase 1** — Accounts & login (automatic admin creation)
 - [x] **Phase 2** — Server creation (Docker integration)
-- [ ] **Phase 3** — Server control (start / stop / restart)
+- [x] **Phase 3** — Server control (start / stop / restart)
 - [ ] **Phase 4** — Live console
 - [ ] **Phase 5** — File manager
 - [ ] **Phase 6** — Resource limits & game templates

@@ -100,9 +100,8 @@ as possible: no separate agent (Pterodactyl's "Wings"); the panel server talks
   ("create a server", "start it"), checks permissions, and gives orders to
   Docker.
 - **The database (SQLite)**: the memory. It stores user accounts and the
-  description of each server (name, owner, RAM limits, etc.). **Note: the
-  database does NOT store the game files** — those live on disk, in a folder
-  bind-mounted into each game container.
+  description of each server. **Note: the database does NOT store the game
+  files** — those live on disk, in a folder bind-mounted into each container.
 - **Docker**: the engine that actually runs the game servers, each isolated in
   its own container.
 - **The game containers**: one container = one game server. You can create as
@@ -125,9 +124,8 @@ startup.
 
 For the MVP, two templates are planned:
 
-- **Minecraft Java** — Docker image `itzg/minecraft-server`. This is the
-  reference image for Minecraft: it handles EULA acceptance, version selection,
-  and variants (Vanilla, Paper, Forge, etc.). *(Implemented in Phase 2.)*
+- **Minecraft Java** — Docker image `itzg/minecraft-server`. *(Implemented in
+  Phase 2.)*
 - **Minecraft Bedrock** — image `itzg/minecraft-bedrock-server`. *(Phase 6.)*
 
 The system is designed so that **adding a new game later = adding a template**,
@@ -135,18 +133,16 @@ without touching the rest of the code.
 
 ### The lifecycle of a server
 
-1. **Creation**: the user picks a template ("Minecraft Java"), a name, a
-   version and an amount of RAM. The API creates a database record (status
-   `INSTALLING`), reserves a free **port**, then — in the background — pulls
-   the Docker image, creates a data folder, and creates the container. The
-   status becomes `OFFLINE` once ready.
-2. **Start**: the API asks Docker to start the container. *(Phase 3.)*
+1. **Creation**: the user picks a template, a name, a version and an amount of
+   RAM. The API reserves a free port, downloads the Docker image and creates
+   the container. *(Phase 2.)*
+2. **Start / stop / restart**: the API tells Docker to start, stop or restart
+   the container; the interface shows the live status. *(Phase 3.)*
 3. **Live console**: the API forwards the container's output to the browser
    through Socket.IO. *(Phase 4.)*
 4. **File management**: the user can browse and edit the server's files.
    *(Phase 5.)*
-5. **Stop / restart**: orders sent to Docker. *(Phase 3.)*
-6. **Deletion**: the container and the data folder are removed.
+5. **Deletion**: the container and the data folder are removed. *(Phase 2.)*
 
 ---
 
@@ -163,9 +159,7 @@ The schema grows phase by phase. The actual SQL lives in
 
 **`game_templates` — the game templates** *(Phase 2)*
 - `id`, `name` (unique)
-- `docker_image` — e.g. `itzg/minecraft-server`
-- `default_version`
-- `created_at`
+- `docker_image`, `default_version`, `created_at`
 
 **`servers` — the created game servers** *(Phase 2)*
 - `id`, `owner_id`, `template_id`
@@ -174,6 +168,9 @@ The schema grows phase by phase. The actual SQL lives in
 - `minecraft_version`, `memory_mb`
 - `port` — the unique host port reserved for this server
 - `created_at`
+
+The running state shown to the user (running / offline) is read live from
+Docker, not stored in the database, so it always reflects reality.
 
 ---
 
@@ -225,11 +222,12 @@ Routes implemented so far, and the planned ones (mounted under `/api`).
 | `POST` | `/api/auth/logout` | Log out | Done |
 | `GET` | `/api/auth/me` | The currently logged-in user | Done |
 | `GET` | `/api/templates` | List the available game templates | Done |
-| `GET` | `/api/servers` | List the user's servers | Done |
+| `GET` | `/api/servers` | List the user's servers (with live status) | Done |
 | `POST` | `/api/servers` | Create a server | Done |
 | `DELETE` | `/api/servers/:id` | Delete a server (container + files) | Done |
-| `POST` | `/api/servers/:id/start` | Start a server | Phase 3 |
-| `POST` | `/api/servers/:id/stop` | Stop a server | Phase 3 |
+| `POST` | `/api/servers/:id/start` | Start a server | Done |
+| `POST` | `/api/servers/:id/stop` | Stop a server | Done |
+| `POST` | `/api/servers/:id/restart` | Restart a server | Done |
 | *(WebSocket)* | `/ws/servers/:id/console` | Live console | Phase 4 |
 
 ---
@@ -247,10 +245,10 @@ wizard that creates the administrator, login, JSON Web Token sessions, and a
 protected dashboard.
 
 **Phase 2 — Server creation**: Docker integration (dockerode), the Minecraft
-Java template, and the ability to create, list and delete game servers. Each
-server is created as a Docker container.
+Java template, and the ability to create, list and delete game servers.
 
-**Phase 3 — Server control**: start, stop, restart, real-time status display.
+**Phase 3 — Server control**: start, stop and restart servers, with the live
+status read directly from Docker and shown in the interface.
 
 **Phase 4 — Live console**: Socket.IO, displaying the server output, sending
 commands.
@@ -362,16 +360,11 @@ required.
 
 ## 12. Current status & next steps
 
-**Phase 2 is complete.** On top of accounts and login, the panel can now:
+**Phase 3 is complete.** The panel can now fully manage the lifecycle of a
+game server: create it, start it, stop it, restart it and delete it. The
+status shown in the interface (installing, offline, running) is read live
+from Docker, so it always reflects the real state of the container, and the
+server list refreshes on its own.
 
-- talk to Docker (via dockerode) to manage game-server containers;
-- create a Minecraft Java server — it reserves a port, downloads the Docker
-  image in the background, and creates the container;
-- list the user's servers, with their live status (installing, offline, ...);
-- delete a server, removing its container and its files.
-
-Each game server runs as its own Docker container, and its files are stored on
-disk in a per-server folder.
-
-Next up is **Phase 3** — server control: starting, stopping and restarting
-servers, with the real-time status shown in the interface.
+Next up is **Phase 4** — the live console: streaming a running server's
+output to the browser in real time, and letting the user type commands.

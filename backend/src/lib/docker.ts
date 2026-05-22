@@ -6,6 +6,19 @@ import { config } from '../config';
 // so it must never be exposed outside the machine.
 const docker = new Docker({ socketPath: config.dockerSocket });
 
+/** The runtime state of a container, as seen by Docker. */
+export type ContainerState = 'running' | 'stopped' | 'missing';
+
+/** Returns true for a Docker error meaning "already in that state". */
+function isAlreadyInState(err: unknown): boolean {
+  return (
+    typeof err === 'object' &&
+    err !== null &&
+    'statusCode' in err &&
+    (err as { statusCode: number }).statusCode === 304
+  );
+}
+
 /** Pulls a Docker image and waits until the download is complete. */
 export async function pullImage(image: string): Promise<void> {
   const stream = await docker.pull(image);
@@ -58,4 +71,43 @@ export async function createServerContainer(
 /** Removes a container, stopping it first if it is still running. */
 export async function removeContainer(containerId: string): Promise<void> {
   await docker.getContainer(containerId).remove({ force: true });
+}
+
+/** Starts a container. Does nothing if it is already running. */
+export async function startContainer(containerId: string): Promise<void> {
+  try {
+    await docker.getContainer(containerId).start();
+  } catch (err) {
+    if (!isAlreadyInState(err)) {
+      throw err;
+    }
+  }
+}
+
+/** Stops a container. Does nothing if it is already stopped. */
+export async function stopContainer(containerId: string): Promise<void> {
+  try {
+    await docker.getContainer(containerId).stop();
+  } catch (err) {
+    if (!isAlreadyInState(err)) {
+      throw err;
+    }
+  }
+}
+
+/** Restarts a container. */
+export async function restartContainer(containerId: string): Promise<void> {
+  await docker.getContainer(containerId).restart();
+}
+
+/** Inspects a container and reports whether it is running, stopped or gone. */
+export async function getContainerState(
+  containerId: string,
+): Promise<ContainerState> {
+  try {
+    const info = await docker.getContainer(containerId).inspect();
+    return info.State.Running ? 'running' : 'stopped';
+  } catch {
+    return 'missing';
+  }
 }

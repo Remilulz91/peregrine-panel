@@ -1,4 +1,5 @@
-import type { ApiServer } from '../lib/api';
+import { useState } from 'react';
+import type { ApiServer, ServerAction } from '../lib/api';
 import { useTranslation, type TranslationKey } from '../lib/i18n';
 
 // Maps a server status to its translation key.
@@ -21,9 +22,13 @@ const STATUS_STYLE: Record<string, string> = {
   STOPPING: 'bg-falcon/15 text-falcon',
 };
 
+const ACTION_BUTTON =
+  'rounded-lg border border-peregrine-700 px-3 py-1.5 text-xs font-medium text-peregrine-200 transition-colors hover:bg-peregrine-800 disabled:cursor-not-allowed disabled:opacity-50';
+
 interface ServerCardProps {
   server: ApiServer;
   templateName: string;
+  onAction: (server: ApiServer, action: ServerAction) => Promise<void>;
   onDelete: (server: ApiServer) => void;
 }
 
@@ -31,12 +36,24 @@ interface ServerCardProps {
 export default function ServerCard({
   server,
   templateName,
+  onAction,
   onDelete,
 }: ServerCardProps) {
   const { t } = useTranslation();
+  const [busy, setBusy] = useState(false);
+
   const statusKey = STATUS_KEY[server.status] ?? 'status.UNKNOWN';
   const statusStyle =
     STATUS_STYLE[server.status] ?? 'bg-peregrine-700 text-peregrine-200';
+
+  async function runAction(action: ServerAction): Promise<void> {
+    setBusy(true);
+    try {
+      await onAction(server, action);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <div className="rounded-2xl border border-peregrine-700 bg-peregrine-900 p-5">
@@ -69,7 +86,39 @@ export default function ServerCard({
         </div>
       </dl>
 
-      <div className="mt-4 flex justify-end">
+      <div className="mt-4 flex items-center justify-between gap-2">
+        <div className="flex gap-2">
+          {server.status === 'OFFLINE' && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void runAction('start')}
+              className="rounded-lg bg-falcon px-3 py-1.5 text-xs font-semibold text-peregrine-950 transition-colors hover:bg-falcon-bright disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {t('server.start')}
+            </button>
+          )}
+          {server.status === 'RUNNING' && (
+            <>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void runAction('stop')}
+                className={ACTION_BUTTON}
+              >
+                {t('server.stop')}
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void runAction('restart')}
+                className={ACTION_BUTTON}
+              >
+                {t('server.restart')}
+              </button>
+            </>
+          )}
+        </div>
         <button
           type="button"
           onClick={() => onDelete(server)}
