@@ -30,6 +30,7 @@ interface ServerCardProps {
   templateName: string;
   onAction: (server: ApiServer, action: ServerAction) => Promise<void>;
   onConsole: (server: ApiServer) => void;
+  onFiles: (server: ApiServer) => void;
   onDelete: (server: ApiServer) => void;
 }
 
@@ -39,6 +40,7 @@ export default function ServerCard({
   templateName,
   onAction,
   onConsole,
+  onFiles,
   onDelete,
 }: ServerCardProps) {
   const { t } = useTranslation();
@@ -123,13 +125,22 @@ export default function ServerCard({
             </>
           )}
           {isProvisioned && (
-            <button
-              type="button"
-              onClick={() => onConsole(server)}
-              className={OUTLINE_BUTTON}
-            >
-              {t('server.console')}
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => onConsole(server)}
+                className={OUTLINE_BUTTON}
+              >
+                {t('server.console')}
+              </button>
+              <button
+                type="button"
+                onClick={() => onFiles(server)}
+                className={OUTLINE_BUTTON}
+              >
+                {t('server.files')}
+              </button>
+            </>
           )}
         </div>
         <button

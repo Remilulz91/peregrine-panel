@@ -100,6 +100,7 @@ const translations = {
   'server.stop': { en: 'Stop', fr: 'Arrêter' },
   'server.restart': { en: 'Restart', fr: 'Redémarrer' },
   'server.console': { en: 'Console', fr: 'Console' },
+  'server.files': { en: 'Files', fr: 'Fichiers' },
   'server.delete': { en: 'Delete', fr: 'Supprimer' },
   'server.deleteConfirm': {
     en: 'Delete this server? Its container and files will be permanently removed.',
@@ -144,6 +145,21 @@ const translations = {
   },
   'console.send': { en: 'Send', fr: 'Envoyer' },
   'console.error': { en: 'console error', fr: 'erreur de console' },
+
+  'files.loadError': {
+    en: 'Cannot load the files.',
+    fr: 'Impossible de charger les fichiers.',
+  },
+  'files.empty': { en: 'This folder is empty.', fr: 'Ce dossier est vide.' },
+  'files.parent': { en: 'Parent folder', fr: 'Dossier parent' },
+  'files.upload': { en: 'Upload a file', fr: 'Téléverser un fichier' },
+  'files.uploading': { en: 'Uploading...', fr: 'Téléversement...' },
+  'files.save': { en: 'Save', fr: 'Enregistrer' },
+  'files.back': { en: 'Back', fr: 'Retour' },
+  'files.deleteConfirm': {
+    en: 'Delete this item permanently?',
+    fr: 'Supprimer cet élément définitivement ?',
+  },
 } as const;
 
 /** A valid translation key (any key declared in `translations`). */

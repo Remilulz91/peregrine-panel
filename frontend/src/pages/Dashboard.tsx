@@ -4,6 +4,7 @@ import LanguageToggle from '../components/LanguageToggle';
 import ServerCard from '../components/ServerCard';
 import CreateServerDialog from '../components/CreateServerDialog';
 import ConsoleDialog from '../components/ConsoleDialog';
+import FilesDialog from '../components/FilesDialog';
 import {
   api,
   ApiError,
@@ -16,8 +17,8 @@ import { useTranslation } from '../lib/i18n';
 
 /**
  * The protected screen shown once a user is signed in: the list of their
- * game servers, with controls to create, start, stop, delete them and
- * open their live console.
+ * game servers, with controls to create, start, stop and delete them, open
+ * their live console, and manage their files.
  */
 export default function Dashboard() {
   const { t } = useTranslation();
@@ -27,6 +28,7 @@ export default function Dashboard() {
   const [loadError, setLoadError] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [consoleServer, setConsoleServer] = useState<ApiServer | null>(null);
+  const [filesServer, setFilesServer] = useState<ApiServer | null>(null);
 
   const loadServers = useCallback(async () => {
     try {
@@ -145,6 +147,7 @@ export default function Dashboard() {
                 templateName={templateName(server.templateId)}
                 onAction={handleAction}
                 onConsole={setConsoleServer}
+                onFiles={setFilesServer}
                 onDelete={handleDelete}
               />
             ))}
@@ -167,6 +170,13 @@ export default function Dashboard() {
         <ConsoleDialog
           server={consoleServer}
           onClose={() => setConsoleServer(null)}
+        />
+      )}
+
+      {filesServer && (
+        <FilesDialog
+          server={filesServer}
+          onClose={() => setFilesServer(null)}
         />
       )}
     </div>

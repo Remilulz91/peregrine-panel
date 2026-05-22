@@ -140,8 +140,8 @@ without touching the rest of the code.
    the container; the interface shows the live status. *(Phase 3.)*
 3. **Live console**: the server's output is streamed to the browser over
    Socket.IO, and the user can type commands (sent via RCON). *(Phase 4.)*
-4. **File management**: the user can browse and edit the server's files.
-   *(Phase 5.)*
+4. **File management**: the user can browse, edit, upload and delete the
+   server's files from the browser. *(Phase 5.)*
 5. **Deletion**: the container and the data folder are removed. *(Phase 2.)*
 
 ---
@@ -170,7 +170,9 @@ The schema grows phase by phase. The actual SQL lives in
 - `created_at`
 
 The running state shown to the user (running / offline) is read live from
-Docker, not stored in the database, so it always reflects reality.
+Docker, not stored in the database, so it always reflects reality. The game
+server's files are stored on disk under a per-server folder, not in the
+database.
 
 ---
 
@@ -189,10 +191,10 @@ peregrine-panel/
 │   └── src/
 │       ├── index.ts          # Server entry point
 │       ├── config.ts         # Configuration read from the environment
-│       ├── routes/           # API endpoints (health, auth, servers)
+│       ├── routes/           # API endpoints (health, auth, servers, files)
 │       ├── realtime/         # Real-time console (Socket.IO)
 │       ├── plugins/          # Cross-cutting concerns (authentication)
-│       ├── lib/              # Database, Docker, password hashing, helpers
+│       ├── lib/              # Database, Docker, files, password hashing
 │       └── services/         # Business logic (server provisioning)
 │
 ├── frontend/
@@ -226,10 +228,12 @@ Routes implemented so far, and the planned ones (mounted under `/api`).
 | `GET` | `/api/servers` | List the user's servers (with live status) | Done |
 | `POST` | `/api/servers` | Create a server | Done |
 | `DELETE` | `/api/servers/:id` | Delete a server (container + files) | Done |
-| `POST` | `/api/servers/:id/start` | Start a server | Done |
-| `POST` | `/api/servers/:id/stop` | Stop a server | Done |
-| `POST` | `/api/servers/:id/restart` | Restart a server | Done |
-| *(Socket.IO)* | `console:subscribe` / `console:command` | Live console (output & commands) | Done |
+| `POST` | `/api/servers/:id/start` `/stop` `/restart` | Server power controls | Done |
+| `GET` | `/api/servers/:id/files` | List a directory | Done |
+| `GET/PUT` | `/api/servers/:id/file` | Read / write a text file | Done |
+| `DELETE` | `/api/servers/:id/file` | Delete a file or directory | Done |
+| `POST` | `/api/servers/:id/files` | Upload a file | Done |
+| *(Socket.IO)* | `console:subscribe` / `console:command` | Live console | Done |
 
 ---
 
@@ -254,7 +258,8 @@ status read directly from Docker.
 **Phase 4 — Live console**: Socket.IO streams the server output to the browser
 in real time, and the user can type commands (sent via RCON).
 
-**Phase 5 — File manager**: browse, edit, upload server files.
+**Phase 5 — File manager**: browse, edit, upload and delete a server's files
+from the browser.
 
 **Phase 6 — Limits & templates**: apply CPU/RAM/disk limits, add the Minecraft
 Bedrock template, an administration page.
@@ -281,8 +286,8 @@ people. To keep in mind from the start, even if not everything is for the MVP:
 - **Game containers without privileges**: never `--privileged`, drop unneeded
   Linux capabilities, avoid running as `root` inside the container when
   possible.
-- **File manager**: rigorously validate paths to prevent a user from escaping
-  their server's folder (a "path traversal" attack).
+- **File manager**: every path is resolved and checked to stay inside the
+  server's own folder, which blocks "path traversal" attacks.
 - **Passwords** hashed with Argon2, never stored in plain text.
 - **Authentication tokens** kept in httpOnly cookies; the websocket console is
   authenticated with the same cookie, and a user can only reach their own
@@ -362,11 +367,10 @@ required.
 
 ## 12. Current status & next steps
 
-**Phase 4 is complete.** Each game server now has a live console: its output
-is streamed to the browser in real time over Socket.IO, and the user can type
-commands that are sent to the server via RCON. The websocket is authenticated
-with the same login cookie as the rest of the panel, and a user can only open
-the console of their own servers.
+**Phase 5 is complete.** Each game server now has a file manager: the user can
+browse its folders, open and edit text files (such as `server.properties`),
+upload files, and delete files or folders — all from the browser. Every path
+is checked to stay inside the server's own directory.
 
-Next up is **Phase 5** — the file manager: browsing and editing a server's
-files (configuration, plugins, worlds) directly from the interface.
+Next up is **Phase 6** — resource limits and more games: enforcing CPU, RAM
+and disk limits on each container, and adding the Minecraft Bedrock template.

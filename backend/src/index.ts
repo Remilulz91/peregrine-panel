@@ -4,19 +4,21 @@ import Fastify from 'fastify';
 import fastifyStatic from '@fastify/static';
 import fastifyCookie from '@fastify/cookie';
 import fastifyJwt from '@fastify/jwt';
+import fastifyMultipart from '@fastify/multipart';
 import { config } from './config';
 import { seedTemplates } from './lib/templates';
 import { healthRoutes } from './routes/health';
 import { authRoutes } from './routes/auth';
 import { serverRoutes } from './routes/servers';
+import { fileRoutes } from './routes/files';
 import { AUTH_COOKIE } from './plugins/auth';
 import { setupConsole } from './realtime/console';
 
 /**
  * Builds and configures the Peregrine HTTP server.
  *
- * Phase 4: on top of authentication and Docker server management, the
- * server streams each game server's live console over Socket.IO.
+ * Phase 5: on top of authentication, Docker server management and the live
+ * console, the server exposes a file manager for each game server.
  */
 export async function buildServer() {
   const app = Fastify({
@@ -33,10 +35,16 @@ export async function buildServer() {
     cookie: { cookieName: AUTH_COOKIE, signed: false },
   });
 
+  // --- File uploads (used by the file manager) ---
+  await app.register(fastifyMultipart, {
+    limits: { fileSize: 50 * 1024 * 1024, files: 1 },
+  });
+
   // --- API routes (everything is prefixed with /api) ---
   await app.register(healthRoutes, { prefix: '/api' });
   await app.register(authRoutes, { prefix: '/api/auth' });
   await app.register(serverRoutes, { prefix: '/api' });
+  await app.register(fileRoutes, { prefix: '/api' });
 
   // --- Real-time console (Socket.IO, shares the HTTP server) ---
   setupConsole(app, app.server);

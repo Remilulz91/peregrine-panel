@@ -31,6 +31,13 @@ export interface ApiServer {
   createdAt: string;
 }
 
+/** One entry in a server's file list. */
+export interface ApiFileEntry {
+  name: string;
+  type: 'file' | 'directory';
+  size: number;
+}
+
 /** A power action that can be applied to a server. */
 export type ServerAction = 'start' | 'stop' | 'restart';
 
@@ -47,10 +54,10 @@ export class ApiError extends Error {
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers = new Headers(options.headers);
-  // Only declare a JSON body when there actually is one. A bodyless
-  // POST/DELETE request must NOT send "Content-Type: application/json",
-  // otherwise the server rejects it as an empty JSON body (HTTP 400).
-  if (options.body !== undefined && !headers.has('Content-Type')) {
+  // Declare a JSON body only for string (JSON) bodies. A bodyless request
+  // must not send "Content-Type: application/json"; a FormData upload must
+  // let the browser set its own multipart content type.
+  if (typeof options.body === 'string' && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
 
@@ -122,4 +129,37 @@ export const api = {
     request<{ ok: boolean }>(`/api/servers/${id}/${action}`, {
       method: 'POST',
     }),
+
+  // --- File manager ---
+
+  listFiles: (serverId: string, dirPath: string) =>
+    request<{ path: string; entries: ApiFileEntry[] }>(
+      `/api/servers/${serverId}/files?path=${encodeURIComponent(dirPath)}`,
+    ),
+
+  readFile: (serverId: string, filePath: string) =>
+    request<{ path: string; content: string }>(
+      `/api/servers/${serverId}/file?path=${encodeURIComponent(filePath)}`,
+    ),
+
+  writeFile: (serverId: string, filePath: string, content: string) =>
+    request<{ ok: boolean }>(`/api/servers/${serverId}/file`, {
+      method: 'PUT',
+      body: JSON.stringify({ path: filePath, content }),
+    }),
+
+  deleteFile: (serverId: string, filePath: string) =>
+    request<{ ok: boolean }>(
+      `/api/servers/${serverId}/file?path=${encodeURIComponent(filePath)}`,
+      { method: 'DELETE' },
+    ),
+
+  uploadFile: (serverId: string, dirPath: string, file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return request<{ ok: boolean }>(
+      `/api/servers/${serverId}/files?path=${encodeURIComponent(dirPath)}`,
+      { method: 'POST', body: form },
+    );
+  },
 };
