@@ -42,6 +42,25 @@ docker compose up -d
 The panel is then available at `http://localhost:3000`. On first access, a
 wizard guides you through creating the administrator account.
 
+## Production deployment
+
+To deploy Peregrine on a server with your own domain name, automatic HTTPS, a
+firewall (UFW), intrusion protection (fail2ban) and an optional dedicated disk
+for game server data, follow the full guide:
+[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+
+## Updating Peregrine
+
+To update an existing installation to the latest version:
+
+```bash
+cd peregrine-panel
+git pull
+docker compose up -d --build
+```
+
+Your data (the `peregrine-data` volume) is preserved across updates.
+
 ## Development (without Docker)
 
 Requirements: Node.js 22 or newer.
@@ -66,7 +85,7 @@ forwards `/api` calls to the backend.
 peregrine-panel/
 ├── backend/            Fastify API (TypeScript)
 ├── frontend/           React interface (Vite + Tailwind)
-├── docs/               Documentation (architecture, etc.)
+├── docs/               Documentation (architecture, deployment)
 ├── docker-compose.yml  One-command startup
 └── Dockerfile          Production image
 ```
