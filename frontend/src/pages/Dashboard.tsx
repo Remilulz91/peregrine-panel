@@ -1,17 +1,58 @@
+import { useCallback, useEffect, useState } from 'react';
 import FalconMark from '../components/FalconMark';
 import LanguageToggle from '../components/LanguageToggle';
+import ServerCard from '../components/ServerCard';
+import CreateServerDialog from '../components/CreateServerDialog';
+import { api, type ApiServer, type ApiTemplate } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useTranslation } from '../lib/i18n';
 
 /**
- * The protected screen shown once a user is signed in.
- *
- * Phase 1: a welcome page with the account details. Game server management
- * will fill this dashboard from Phase 2 onwards.
+ * The protected screen shown once a user is signed in: the list of their
+ * game servers, with controls to create and delete them.
  */
 export default function Dashboard() {
   const { t } = useTranslation();
   const { user, signOut } = useAuth();
+  const [servers, setServers] = useState<ApiServer[]>([]);
+  const [templates, setTemplates] = useState<ApiTemplate[]>([]);
+  const [loadError, setLoadError] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const loadServers = useCallback(async () => {
+    try {
+      const result = await api.listServers();
+      setServers(result.servers);
+      setLoadError(false);
+    } catch {
+      setLoadError(true);
+    }
+  }, []);
+
+  // Load the servers and templates, then poll the servers so that status
+  // changes (INSTALLING -> OFFLINE) appear without a manual refresh.
+  useEffect(() => {
+    void loadServers();
+    api
+      .listTemplates()
+      .then((result) => setTemplates(result.templates))
+      .catch(() => undefined);
+
+    const interval = setInterval(() => void loadServers(), 4000);
+    return () => clearInterval(interval);
+  }, [loadServers]);
+
+  async function handleDelete(server: ApiServer): Promise<void> {
+    if (!window.confirm(t('server.deleteConfirm'))) {
+      return;
+    }
+    await api.deleteServer(server.id).catch(() => undefined);
+    void loadServers();
+  }
+
+  function templateName(id: string): string {
+    return templates.find((template) => template.id === id)?.name ?? 'Minecraft';
+  }
 
   return (
     <div className="min-h-full bg-peregrine-950 text-peregrine-200">
@@ -36,45 +77,57 @@ export default function Dashboard() {
         </button>
       </header>
 
-      <main className="mx-auto max-w-3xl px-6 py-10">
-        <h1 className="text-2xl font-semibold text-white">
-          {t('dashboard.greeting')} {user?.username}
-        </h1>
-        <p className="mt-1 text-sm text-peregrine-400">
-          {t('dashboard.subtitle')}
-        </p>
+      <main className="mx-auto max-w-4xl px-6 py-10">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold text-white">
+              {t('servers.title')}
+            </h1>
+            <p className="mt-1 max-w-lg text-sm text-peregrine-400">
+              {t('servers.subtitle')}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setDialogOpen(true)}
+            className="shrink-0 rounded-lg bg-falcon px-4 py-2 text-sm font-semibold text-peregrine-950 transition-colors hover:bg-falcon-bright"
+          >
+            {t('servers.create')}
+          </button>
+        </div>
 
-        <section className="mt-8 rounded-2xl border border-peregrine-700 bg-peregrine-900 p-5">
-          <h2 className="text-sm font-semibold text-white">
-            {t('dashboard.accountTitle')}
-          </h2>
-          <dl className="mt-3 space-y-2 text-sm">
-            <div className="flex items-center justify-between">
-              <dt className="text-peregrine-400">
-                {t('dashboard.emailLabel')}
-              </dt>
-              <dd className="text-peregrine-200">{user?.email}</dd>
-            </div>
-            <div className="flex items-center justify-between">
-              <dt className="text-peregrine-400">{t('dashboard.roleLabel')}</dt>
-              <dd>
-                <span className="rounded bg-falcon/15 px-2 py-0.5 text-xs font-medium text-falcon">
-                  {user?.role}
-                </span>
-              </dd>
-            </div>
-          </dl>
-        </section>
+        {loadError && (
+          <p className="mt-6 text-sm text-rose-400">{t('servers.loadError')}</p>
+        )}
 
-        <section className="mt-5 rounded-2xl border border-dashed border-peregrine-700 bg-peregrine-900/50 p-5">
-          <h2 className="text-sm font-semibold text-white">
-            {t('dashboard.nextTitle')}
-          </h2>
-          <p className="mt-1.5 text-sm leading-relaxed text-peregrine-400">
-            {t('dashboard.nextText')}
-          </p>
-        </section>
+        {servers.length === 0 && !loadError ? (
+          <div className="mt-8 rounded-2xl border border-dashed border-peregrine-700 p-10 text-center text-sm text-peregrine-400">
+            {t('servers.empty')}
+          </div>
+        ) : (
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            {servers.map((server) => (
+              <ServerCard
+                key={server.id}
+                server={server}
+                templateName={templateName(server.templateId)}
+                onDelete={handleDelete}
+              />
+            ))}
+          </div>
+        )}
       </main>
+
+      {dialogOpen && (
+        <CreateServerDialog
+          templates={templates}
+          onClose={() => setDialogOpen(false)}
+          onCreated={() => {
+            setDialogOpen(false);
+            void loadServers();
+          }}
+        />
+      )}
     </div>
   );
 }

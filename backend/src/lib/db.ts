@@ -20,6 +20,27 @@ const MIGRATIONS: string[] = [
      role          TEXT NOT NULL DEFAULT 'USER',
      created_at    TEXT NOT NULL DEFAULT (datetime('now'))
    );`,
+
+  // Migration 2 - game templates and game servers
+  `CREATE TABLE game_templates (
+     id              TEXT PRIMARY KEY,
+     name            TEXT NOT NULL UNIQUE,
+     docker_image    TEXT NOT NULL,
+     default_version TEXT NOT NULL DEFAULT 'LATEST',
+     created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+   );
+   CREATE TABLE servers (
+     id                TEXT PRIMARY KEY,
+     owner_id          TEXT NOT NULL REFERENCES users(id),
+     template_id       TEXT NOT NULL REFERENCES game_templates(id),
+     name              TEXT NOT NULL,
+     status            TEXT NOT NULL DEFAULT 'INSTALLING',
+     container_id      TEXT,
+     minecraft_version TEXT NOT NULL DEFAULT 'LATEST',
+     memory_mb         INTEGER NOT NULL DEFAULT 2048,
+     port              INTEGER NOT NULL UNIQUE,
+     created_at        TEXT NOT NULL DEFAULT (datetime('now'))
+   );`,
 ];
 
 /** Applies any migrations that have not been run on this database yet. */

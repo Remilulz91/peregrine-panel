@@ -28,22 +28,15 @@ const translations = {
     en: '© 2026 Peregrine — All rights reserved.',
     fr: '© 2026 Peregrine — Tous droits réservés.',
   },
-  'common.loading': {
-    en: 'Loading...',
-    fr: 'Chargement...',
-  },
-  'common.pleaseWait': {
-    en: 'Please wait...',
-    fr: 'Veuillez patienter...',
-  },
+  'common.loading': { en: 'Loading...', fr: 'Chargement...' },
+  'common.pleaseWait': { en: 'Please wait...', fr: 'Veuillez patienter...' },
   'common.errorGeneric': {
     en: 'Something went wrong. Please try again.',
     fr: "Une erreur s'est produite. Veuillez réessayer.",
   },
-  'language.label': {
-    en: 'Language',
-    fr: 'Langue',
-  },
+  'common.cancel': { en: 'Cancel', fr: 'Annuler' },
+  'language.label': { en: 'Language', fr: 'Langue' },
+
   'setup.title': {
     en: 'Create your administrator account',
     fr: 'Créez votre compte administrateur',
@@ -52,26 +45,14 @@ const translations = {
     en: 'Welcome to Peregrine. This is the first launch — set up the main account to get started.',
     fr: "Bienvenue sur Peregrine. C'est le premier lancement — configurez le compte principal pour commencer.",
   },
-  'setup.usernameLabel': {
-    en: 'Username',
-    fr: "Nom d'utilisateur",
-  },
-  'setup.emailLabel': {
-    en: 'Email address',
-    fr: 'Adresse email',
-  },
-  'setup.passwordLabel': {
-    en: 'Password',
-    fr: 'Mot de passe',
-  },
+  'setup.usernameLabel': { en: 'Username', fr: "Nom d'utilisateur" },
+  'setup.emailLabel': { en: 'Email address', fr: 'Adresse email' },
+  'setup.passwordLabel': { en: 'Password', fr: 'Mot de passe' },
   'setup.confirmLabel': {
     en: 'Confirm password',
     fr: 'Confirmer le mot de passe',
   },
-  'setup.submit': {
-    en: 'Create account',
-    fr: 'Créer le compte',
-  },
+  'setup.submit': { en: 'Create account', fr: 'Créer le compte' },
   'setup.errorShort': {
     en: 'The password must be at least 8 characters long.',
     fr: 'Le mot de passe doit contenir au moins 8 caractères.',
@@ -80,61 +61,70 @@ const translations = {
     en: 'The two passwords do not match.',
     fr: 'Les deux mots de passe ne correspondent pas.',
   },
-  'login.title': {
-    en: 'Sign in',
-    fr: 'Connexion',
-  },
+
+  'login.title': { en: 'Sign in', fr: 'Connexion' },
   'login.subtitle': {
     en: 'Sign in to your Peregrine panel.',
     fr: 'Connectez-vous à votre panel Peregrine.',
   },
-  'login.emailLabel': {
-    en: 'Email address',
-    fr: 'Adresse email',
-  },
-  'login.passwordLabel': {
-    en: 'Password',
-    fr: 'Mot de passe',
-  },
-  'login.submit': {
-    en: 'Sign in',
-    fr: 'Se connecter',
-  },
+  'login.emailLabel': { en: 'Email address', fr: 'Adresse email' },
+  'login.passwordLabel': { en: 'Password', fr: 'Mot de passe' },
+  'login.submit': { en: 'Sign in', fr: 'Se connecter' },
   'login.errorInvalid': {
     en: 'Invalid email or password.',
     fr: 'Email ou mot de passe incorrect.',
   },
-  'dashboard.greeting': {
-    en: 'Welcome back,',
-    fr: 'Bon retour,',
+
+  'dashboard.logout': { en: 'Log out', fr: 'Déconnexion' },
+
+  'servers.title': { en: 'Your game servers', fr: 'Vos serveurs de jeu' },
+  'servers.subtitle': {
+    en: 'Create and manage your servers. Each one runs in its own Docker container.',
+    fr: 'Créez et gérez vos serveurs. Chacun tourne dans son propre conteneur Docker.',
   },
-  'dashboard.subtitle': {
-    en: 'Your Peregrine panel is ready.',
-    fr: 'Votre panel Peregrine est prêt.',
+  'servers.create': { en: 'Create a server', fr: 'Créer un serveur' },
+  'servers.empty': {
+    en: 'No servers yet. Create your first one to get started.',
+    fr: 'Aucun serveur pour le moment. Créez le premier pour commencer.',
   },
-  'dashboard.accountTitle': {
-    en: 'Your account',
-    fr: 'Votre compte',
+  'servers.loadError': {
+    en: 'Unable to load the servers.',
+    fr: 'Impossible de charger les serveurs.',
   },
-  'dashboard.emailLabel': {
-    en: 'Email',
-    fr: 'Email',
+
+  'server.versionLabel': { en: 'Version', fr: 'Version' },
+  'server.memoryLabel': { en: 'Memory', fr: 'Mémoire' },
+  'server.portLabel': { en: 'Port', fr: 'Port' },
+  'server.delete': { en: 'Delete', fr: 'Supprimer' },
+  'server.deleteConfirm': {
+    en: 'Delete this server? Its container and files will be permanently removed.',
+    fr: 'Supprimer ce serveur ? Son conteneur et ses fichiers seront définitivement effacés.',
   },
-  'dashboard.roleLabel': {
-    en: 'Role',
-    fr: 'Rôle',
+
+  'status.INSTALLING': { en: 'Installing', fr: 'Installation' },
+  'status.OFFLINE': { en: 'Offline', fr: 'Hors ligne' },
+  'status.INSTALL_FAILED': {
+    en: 'Installation failed',
+    fr: "Échec de l'installation",
   },
-  'dashboard.logout': {
-    en: 'Log out',
-    fr: 'Déconnexion',
+  'status.STARTING': { en: 'Starting', fr: 'Démarrage' },
+  'status.RUNNING': { en: 'Running', fr: 'En ligne' },
+  'status.STOPPING': { en: 'Stopping', fr: 'Arrêt' },
+  'status.UNKNOWN': { en: 'Unknown', fr: 'Inconnu' },
+
+  'create.title': { en: 'New game server', fr: 'Nouveau serveur de jeu' },
+  'create.nameLabel': { en: 'Server name', fr: 'Nom du serveur' },
+  'create.templateLabel': { en: 'Game', fr: 'Jeu' },
+  'create.versionLabel': { en: 'Version', fr: 'Version' },
+  'create.versionHint': {
+    en: 'Use LATEST for the newest version, or a number like 1.21.',
+    fr: 'Utilisez LATEST pour la dernière version, ou un numéro comme 1.21.',
   },
-  'dashboard.nextTitle': {
-    en: 'Coming next',
-    fr: 'Prochainement',
-  },
-  'dashboard.nextText': {
-    en: 'Game server creation and management arrives in Phase 2. You will be able to create Minecraft servers, each in its own Docker container, right from here.',
-    fr: 'La création et la gestion de serveurs de jeu arrivent en Phase 2. Vous pourrez créer des serveurs Minecraft, chacun dans son propre conteneur Docker, directement depuis ici.',
+  'create.memoryLabel': { en: 'Memory', fr: 'Mémoire' },
+  'create.submit': { en: 'Create', fr: 'Créer' },
+  'create.error': {
+    en: 'The server could not be created.',
+    fr: "Le serveur n'a pas pu être créé.",
   },
 } as const;
 
@@ -153,11 +143,8 @@ function detectInitialLanguage(): Language {
 }
 
 interface LanguageContextValue {
-  /** The currently selected language. */
   language: Language;
-  /** Changes the language and remembers the choice. */
   setLanguage: (language: Language) => void;
-  /** Translates a key into the current language. */
   t: (key: TranslationKey) => string;
 }
 

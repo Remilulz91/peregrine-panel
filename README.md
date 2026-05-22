@@ -7,7 +7,7 @@ create and manage game servers (starting with Minecraft) that each run in an
 isolated Docker container. The project follows the spirit of Pterodactyl and
 Pelican.
 
-> **Work in progress.** Current version: `0.1.0` — Phase 1 (accounts & login).
+> **Work in progress.** Current version: `0.1.0` — Phase 2 (game servers).
 > See the roadmap below.
 
 ## Planned features
@@ -25,7 +25,7 @@ Pelican.
 - **Frontend**: React + Vite + Tailwind CSS (bilingual UI: English / French)
 - **Database**: SQLite, via Node's built-in driver (`node:sqlite`)
 - **Authentication**: JSON Web Tokens + Argon2 password hashing
-- **Containers**: Docker, controlled with dockerode — from Phase 2 onwards
+- **Containers**: Docker, controlled with dockerode
 - **Deployment**: Docker Compose
 
 ## Quick start (with Docker)
@@ -95,7 +95,7 @@ peregrine-panel/
 
 - [x] **Phase 0** — Project setup
 - [x] **Phase 1** — Accounts & login (automatic admin creation)
-- [ ] **Phase 2** — Server creation (Docker integration)
+- [x] **Phase 2** — Server creation (Docker integration)
 - [ ] **Phase 3** — Server control (start / stop / restart)
 - [ ] **Phase 4** — Live console
 - [ ] **Phase 5** — File manager

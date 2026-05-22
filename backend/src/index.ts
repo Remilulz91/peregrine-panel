@@ -5,21 +5,25 @@ import fastifyStatic from '@fastify/static';
 import fastifyCookie from '@fastify/cookie';
 import fastifyJwt from '@fastify/jwt';
 import { config } from './config';
+import { seedTemplates } from './lib/templates';
 import { healthRoutes } from './routes/health';
 import { authRoutes } from './routes/auth';
+import { serverRoutes } from './routes/servers';
 import { AUTH_COOKIE } from './plugins/auth';
 
 /**
  * Builds and configures the Peregrine HTTP server.
  *
- * Phase 1: the server provides authentication (accounts, login) on top of
- * the health-check route and the static React interface. Docker control
- * is added in later phases.
+ * Phase 2: on top of authentication, the server can create and manage
+ * game-server Docker containers.
  */
 export async function buildServer() {
   const app = Fastify({
     logger: { level: config.isProduction ? 'info' : 'debug' },
   });
+
+  // Make sure the built-in game templates exist in the database.
+  seedTemplates();
 
   // --- Authentication building blocks: cookies + JSON Web Tokens ---
   await app.register(fastifyCookie);
@@ -31,6 +35,7 @@ export async function buildServer() {
   // --- API routes (everything is prefixed with /api) ---
   await app.register(healthRoutes, { prefix: '/api' });
   await app.register(authRoutes, { prefix: '/api/auth' });
+  await app.register(serverRoutes, { prefix: '/api' });
 
   // --- Web interface (static files) ---
   // In production, the compiled React interface sits next to the backend.

@@ -7,21 +7,21 @@ services:
     container_name: peregrine
     restart: unless-stopped
     ports:
-      # The panel is published on PEREGRINE_BIND (see .env).
-      # Default 127.0.0.1 = reachable only from this machine; put a reverse
-      # proxy (Caddy, Nginx) in front for HTTPS. Set PEREGRINE_BIND=0.0.0.0
-      # in .env to expose it directly, without a proxy.
       - "${PEREGRINE_BIND:-127.0.0.1}:${HOST_PORT:-3000}:3000"
     env_file:
       - .env
     environment:
       - NODE_ENV=production
     volumes:
-      # Persistent data (SQLite database, etc.) - used from Phase 1 onwards.
+      # Persistent panel data (the SQLite database).
       - peregrine-data:/data
-      # Lets Peregrine manage the game-server containers.
-      # UNCOMMENT only from Phase 2 onwards:
-      # - /var/run/docker.sock:/var/run/docker.sock
+      # Lets Peregrine create and manage the game-server containers.
+      # This grants the panel full control of Docker on this host.
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Game-server files. The path MUST be identical inside and outside
+      # the container, so that bind mounts for the game containers resolve
+      # correctly on the Docker host.
+      - "${SERVERS_PATH:-/srv/peregrine/servers}:${SERVERS_PATH:-/srv/peregrine/servers}"
 
 volumes:
   peregrine-data:

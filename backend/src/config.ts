@@ -35,6 +35,18 @@ export const config = {
     process.env.DATABASE_PATH ??
     path.resolve(__dirname, '../../data/peregrine.db'),
 
+  /** Docker daemon socket used to manage game-server containers. */
+  dockerSocket: process.env.DOCKER_SOCKET ?? '/var/run/docker.sock',
+
+  /**
+   * Host directory that holds every game server's files. Each server gets
+   * its own sub-folder, which is bind-mounted into its container.
+   * IMPORTANT: this path is interpreted on the Docker host, so it must be
+   * identical inside and outside the Peregrine container.
+   */
+  serversPath:
+    process.env.SERVERS_PATH ?? path.resolve(__dirname, '../../data/servers'),
+
   /** True when running the production build. */
   get isProduction(): boolean {
     return this.nodeEnv === 'production';

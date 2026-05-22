@@ -43,8 +43,8 @@ one thing to learn.
 | Interface (frontend) | **React + Vite + Tailwind CSS** | React is the most widely used UI library. Vite makes development fast. Tailwind handles styling without separate CSS files. |
 | Database | **SQLite**, via Node's built-in driver | SQLite is a single file — **zero installation**, no database server to run. Peregrine uses Node.js's built-in SQLite (`node:sqlite`), so there is no extra dependency to install or download. |
 | Authentication | **JWT + Argon2** | JSON Web Tokens keep the user logged in (stored in a secure httpOnly cookie); Argon2 hashes passwords so they are never stored in plain text. |
-| Real time | **Socket.IO** | For the live server console and real-time status. Socket.IO handles reconnections automatically. (From Phase 4.) |
-| Docker access | **dockerode** | A mature Node.js library to control Docker (create/start/stop containers) from code. (From Phase 2.) |
+| Docker access | **dockerode** | A mature Node.js library to control Docker (create/start/stop containers) from code. |
+| Real time | **Socket.IO** | For the live server console and real-time status. (From Phase 4.) |
 | UI languages | **English / French** | The panel interface is bilingual, with a language selector. |
 | Deployment | **Docker Compose** | Installation for the end user is two commands: `git clone` then `docker compose up`. |
 
@@ -101,7 +101,8 @@ as possible: no separate agent (Pterodactyl's "Wings"); the panel server talks
   Docker.
 - **The database (SQLite)**: the memory. It stores user accounts and the
   description of each server (name, owner, RAM limits, etc.). **Note: the
-  database does NOT store the game files** — those live in Docker volumes.
+  database does NOT store the game files** — those live on disk, in a folder
+  bind-mounted into each game container.
 - **Docker**: the engine that actually runs the game servers, each isolated in
   its own container.
 - **The game containers**: one container = one game server. You can create as
@@ -118,73 +119,61 @@ containers. This is powerful but requires care — see the Security section.
 ### Game "templates"
 
 Pterodactyl calls these "Eggs". In Peregrine they are called **templates**. A
-template describes **how to run a game**: which Docker image to use, which
-startup command, and which options the user can configure (version, RAM, server
-type, etc.).
+template describes **how to run a game**: which Docker image to use and the
+default version. The built-in templates are seeded into the database on
+startup.
 
 For the MVP, two templates are planned:
 
 - **Minecraft Java** — Docker image `itzg/minecraft-server`. This is the
   reference image for Minecraft: it handles EULA acceptance, version selection,
-  and variants (Vanilla, Paper, Forge, etc.) through simple variables.
-- **Minecraft Bedrock** — image `itzg/minecraft-bedrock-server`, for the
-  console/mobile version.
+  and variants (Vanilla, Paper, Forge, etc.). *(Implemented in Phase 2.)*
+- **Minecraft Bedrock** — image `itzg/minecraft-bedrock-server`. *(Phase 6.)*
 
 The system is designed so that **adding a new game later = adding a template**,
 without touching the rest of the code.
 
 ### The lifecycle of a server
 
-1. **Creation**: the user picks a template ("Minecraft Java"), a name and an
-   amount of RAM. The API creates a database record, creates a **Docker volume**
-   (persistent storage that survives restarts — this is where the world files
-   live), reserves a free **port**, and creates the container (without starting
-   it).
-2. **Start**: the API asks Docker to start the container, with the resource
-   limits (CPU/RAM) applied.
-3. **Live console**: the API "listens" to the container's output and forwards it
-   to the browser through Socket.IO. The user can also type commands, which are
-   sent to the container's input.
-4. **File management**: the user can browse, edit and upload files (configs,
-   plugins, worlds) in the server's volume.
-5. **Stop / restart**: orders sent to Docker.
-6. **Deletion**: the container and (optionally) the volume are removed.
+1. **Creation**: the user picks a template ("Minecraft Java"), a name, a
+   version and an amount of RAM. The API creates a database record (status
+   `INSTALLING`), reserves a free **port**, then — in the background — pulls
+   the Docker image, creates a data folder, and creates the container. The
+   status becomes `OFFLINE` once ready.
+2. **Start**: the API asks Docker to start the container. *(Phase 3.)*
+3. **Live console**: the API forwards the container's output to the browser
+   through Socket.IO. *(Phase 4.)*
+4. **File management**: the user can browse and edit the server's files.
+   *(Phase 5.)*
+5. **Stop / restart**: orders sent to Docker. *(Phase 3.)*
+6. **Deletion**: the container and the data folder are removed.
 
 ---
 
 ## 5. Data model (database schema)
 
 The schema grows phase by phase. The actual SQL lives in
-`backend/src/lib/db.ts`, applied automatically on startup. As of Phase 1, only
-the `users` table exists; the tables below describe the full planned model.
+`backend/src/lib/db.ts` and is applied automatically on startup.
 
-**`users` — the accounts** *(implemented in Phase 1)*
-- `id` — unique identifier
-- `email` — unique
-- `username`
+**`users` — the accounts** *(Phase 1)*
+- `id`, `email` (unique), `username`
 - `password_hash` — the password hashed with Argon2 (never in plain text)
 - `role` — `ADMIN` or `USER`
 - `created_at`
 
 **`game_templates` — the game templates** *(Phase 2)*
-- `id`
-- `name` — e.g. "Minecraft Java"
+- `id`, `name` (unique)
 - `docker_image` — e.g. `itzg/minecraft-server`
-- `startup_command`
-- `stop_command` — the command for a clean shutdown (e.g. `stop`)
-- `variables` — the configurable options (version, RAM, etc.), as JSON
+- `default_version`
+- `created_at`
 
 **`servers` — the created game servers** *(Phase 2)*
 - `id`, `owner_id`, `template_id`
-- `name`, `container_id`, `docker_image`, `status`
-- `memory_limit_mb`, `cpu_limit`, `disk_limit_mb`
-- `volume_name` — the Docker volume that holds the game files
-- `environment` — the variables chosen by the user, as JSON
+- `name`, `status` (`INSTALLING`, `OFFLINE`, `INSTALL_FAILED`, ...)
+- `container_id` — the Docker container id (empty until provisioned)
+- `minecraft_version`, `memory_mb`
+- `port` — the unique host port reserved for this server
 - `created_at`
-
-**`allocations` — the network ports** *(Phase 2)*
-- `id`, `ip`, `port`
-- `server_id` — which server uses the port (empty if free)
 
 ---
 
@@ -203,16 +192,16 @@ peregrine-panel/
 │   └── src/
 │       ├── index.ts          # Server entry point
 │       ├── config.ts         # Configuration read from the environment
-│       ├── routes/           # API endpoints (health, auth, ...)
+│       ├── routes/           # API endpoints (health, auth, servers)
 │       ├── plugins/          # Cross-cutting concerns (authentication)
-│       ├── lib/              # Database access, password hashing, helpers
-│       └── services/         # Business logic (Docker, servers — Phase 2)
+│       ├── lib/              # Database, Docker, password hashing, helpers
+│       └── services/         # Business logic (server provisioning)
 │
 ├── frontend/
 │   └── src/
 │       ├── main.tsx          # Interface entry point
 │       ├── App.tsx           # Chooses which screen to show
-│       ├── pages/            # Screens (Setup, Login, Dashboard, ...)
+│       ├── pages/            # Screens (Setup, Login, Dashboard)
 │       ├── components/       # Reusable interface building blocks
 │       └── lib/              # API client, auth state, translations
 │
@@ -235,8 +224,10 @@ Routes implemented so far, and the planned ones (mounted under `/api`).
 | `POST` | `/api/auth/login` | Log in (sets an httpOnly cookie) | Done |
 | `POST` | `/api/auth/logout` | Log out | Done |
 | `GET` | `/api/auth/me` | The currently logged-in user | Done |
-| `GET` | `/api/servers` | List the user's servers | Phase 2 |
-| `POST` | `/api/servers` | Create a server | Phase 2 |
+| `GET` | `/api/templates` | List the available game templates | Done |
+| `GET` | `/api/servers` | List the user's servers | Done |
+| `POST` | `/api/servers` | Create a server | Done |
+| `DELETE` | `/api/servers/:id` | Delete a server (container + files) | Done |
 | `POST` | `/api/servers/:id/start` | Start a server | Phase 3 |
 | `POST` | `/api/servers/:id/stop` | Stop a server | Phase 3 |
 | *(WebSocket)* | `/ws/servers/:id/console` | Live console | Phase 4 |
@@ -248,33 +239,29 @@ Routes implemented so far, and the planned ones (mounted under `/api`).
 The idea: move forward in small steps, each producing something that **works and
 can be tested**. A phase is only left once the previous one is solid.
 
-**Phase 0 — Setup**: create the repository, the folder structure, the `LICENSE`,
-the `README`, the `docker-compose.yml`, and the basic backend and frontend
-configuration. At the end: `docker compose up` launches an empty home page.
+**Phase 0 — Setup**: the repository, the folder structure, the base files, and
+the basic backend and frontend configuration.
 
-**Phase 1 — Accounts & login**: the database, registration of the first
-administrator via a browser-based first-run wizard, login, JSON Web Token
-sessions, and a protected dashboard. At the end: you can create the admin
-account and log in.
+**Phase 1 — Accounts & login**: the database, the browser-based first-run
+wizard that creates the administrator, login, JSON Web Token sessions, and a
+protected dashboard.
 
 **Phase 2 — Server creation**: Docker integration (dockerode), the Minecraft
-Java template, create/list/delete a server. At the end: a Minecraft server
-appears as a Docker container.
+Java template, and the ability to create, list and delete game servers. Each
+server is created as a Docker container.
 
 **Phase 3 — Server control**: start, stop, restart, real-time status display.
-At the end: you can power a server on/off from the interface.
 
 **Phase 4 — Live console**: Socket.IO, displaying the server output, sending
-commands. At the end: you can see the Minecraft console and type into it.
+commands.
 
-**Phase 5 — File manager**: browse, edit, upload server files. At the end: you
-can edit `server.properties` from the browser.
+**Phase 5 — File manager**: browse, edit, upload server files.
 
 **Phase 6 — Limits & templates**: apply CPU/RAM/disk limits, add the Minecraft
-Bedrock template, an administration page. At the end: a complete, usable MVP.
+Bedrock template, an administration page.
 
 **Phase 7 — Polish & release**: a polished installation guide, an installation
-script, the repository landing page, the first published version (`v0.1.0`).
+script, the first published version (`v0.1.0`).
 
 **After the MVP**: multi-machine support (a separate "daemon" agent per
 machine), automatic backups, sub-users and fine-grained permissions, a task
@@ -291,7 +278,7 @@ people. To keep in mind from the start, even if not everything is for the MVP:
   talk to Docker means being able to do anything on the machine. Only the panel
   accesses it, locally.
 - **Mandatory resource limits** on every game container (CPU, RAM, disk), so
-  that one server cannot starve the others.
+  that one server cannot starve the others. *(Phase 6.)*
 - **Game containers without privileges**: never `--privileged`, drop unneeded
   Linux capabilities, avoid running as `root` inside the container when
   possible.
@@ -320,7 +307,7 @@ proprietary license** — the "Peregrine Source-Available License" — with thes
 principles:
 
 - **Allowed**: download, install, run and use Peregrine for any purpose,
-  including commercial purposes (for example, hosting servers for players).
+  including commercial purposes.
 - **Allowed**: modify the code for your own use, to evaluate the software,
   debug it, or propose fixes to the project.
 - **Not allowed**: distribute, sell, rent, or share Peregrine or a modified
@@ -343,13 +330,9 @@ required.
 
 ### The repository
 
-- **Repository name**: `peregrine-panel` (lowercase with a hyphen — spaces
-  cause trouble on the command line). The displayed product name remains
-  "Peregrine".
-- **Base files**: `README.md` (overview + installation), `LICENSE`,
-  `CONTRIBUTING.md` (how to report bugs and vulnerabilities).
-- **Vulnerability reporting**: the `SECURITY.md` file explains how to report a
-  security issue responsibly (privately, not in a public issue).
+- **Repository name**: `peregrine-panel` (lowercase with a hyphen). The
+  displayed product name remains "Peregrine".
+- **Base files**: `README.md`, `LICENSE`, `CONTRIBUTING.md`, `SECURITY.md`.
 - **GitHub Issues** are used for bug reports; issue templates guide reporters.
 
 ---
@@ -365,7 +348,7 @@ required.
 | Frontend | React + Vite + Tailwind CSS |
 | Database | SQLite, via Node's built-in `node:sqlite` driver |
 | Authentication | JSON Web Tokens (httpOnly cookie) + Argon2 |
-| Docker | dockerode (from Phase 2) |
+| Docker | dockerode |
 | Real time | Socket.IO (from Phase 4) |
 | Deployment | Docker Compose |
 | Games at launch | Minecraft Java + Minecraft Bedrock |
@@ -379,14 +362,16 @@ required.
 
 ## 12. Current status & next steps
 
-**Phase 1 is complete.** On top of the Phase 0 setup, the panel now has:
+**Phase 2 is complete.** On top of accounts and login, the panel can now:
 
-- a SQLite database (Node's built-in driver), with migrations applied
-  automatically on startup;
-- a browser-based first-run wizard that creates the administrator account;
-- login and logout, with sessions carried in a secure httpOnly cookie and
-  passwords hashed with Argon2;
-- a protected dashboard, shown only to signed-in users.
+- talk to Docker (via dockerode) to manage game-server containers;
+- create a Minecraft Java server — it reserves a port, downloads the Docker
+  image in the background, and creates the container;
+- list the user's servers, with their live status (installing, offline, ...);
+- delete a server, removing its container and its files.
 
-Next up is **Phase 2** — server creation: integrating Docker so the panel can
-create and manage Minecraft game servers as containers.
+Each game server runs as its own Docker container, and its files are stored on
+disk in a per-server folder.
+
+Next up is **Phase 3** — server control: starting, stopping and restarting
+servers, with the real-time status shown in the interface.

@@ -11,6 +11,26 @@ export interface ApiUser {
   createdAt: string;
 }
 
+/** A game template, as returned by the API. */
+export interface ApiTemplate {
+  id: string;
+  name: string;
+  dockerImage: string;
+  defaultVersion: string;
+}
+
+/** A game server, as returned by the API. */
+export interface ApiServer {
+  id: string;
+  name: string;
+  status: string;
+  templateId: string;
+  minecraftVersion: string;
+  memoryMb: number;
+  port: number;
+  createdAt: string;
+}
+
 /** An error that carries the HTTP status code returned by the API. */
 export class ApiError extends Error {
   readonly status: number;
@@ -44,6 +64,13 @@ interface Credentials {
   password: string;
 }
 
+interface CreateServerInput {
+  name: string;
+  templateId: string;
+  minecraftVersion?: string;
+  memoryMb: number;
+}
+
 /** The set of API calls used by the interface. */
 export const api = {
   setupRequired: () =>
@@ -64,4 +91,18 @@ export const api = {
     }),
 
   logout: () => request<{ ok: boolean }>('/api/auth/logout', { method: 'POST' }),
+
+  listTemplates: () =>
+    request<{ templates: ApiTemplate[] }>('/api/templates'),
+
+  listServers: () => request<{ servers: ApiServer[] }>('/api/servers'),
+
+  createServer: (body: CreateServerInput) =>
+    request<{ server: ApiServer }>('/api/servers', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  deleteServer: (id: string) =>
+    request<{ ok: boolean }>(`/api/servers/${id}`, { method: 'DELETE' }),
 };
