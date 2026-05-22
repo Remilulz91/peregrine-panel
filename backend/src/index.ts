@@ -2,23 +2,35 @@ import path from 'node:path';
 import fs from 'node:fs';
 import Fastify from 'fastify';
 import fastifyStatic from '@fastify/static';
+import fastifyCookie from '@fastify/cookie';
+import fastifyJwt from '@fastify/jwt';
 import { config } from './config';
 import { healthRoutes } from './routes/health';
+import { authRoutes } from './routes/auth';
+import { AUTH_COOKIE } from './plugins/auth';
 
 /**
  * Builds and configures the Peregrine HTTP server.
  *
- * Phase 0: the server exposes a health-check route and serves the compiled
- * React interface. The database, authentication and Docker control are
- * added in later phases.
+ * Phase 1: the server provides authentication (accounts, login) on top of
+ * the health-check route and the static React interface. Docker control
+ * is added in later phases.
  */
 export async function buildServer() {
   const app = Fastify({
     logger: { level: config.isProduction ? 'info' : 'debug' },
   });
 
+  // --- Authentication building blocks: cookies + JSON Web Tokens ---
+  await app.register(fastifyCookie);
+  await app.register(fastifyJwt, {
+    secret: config.jwtSecret,
+    cookie: { cookieName: AUTH_COOKIE, signed: false },
+  });
+
   // --- API routes (everything is prefixed with /api) ---
   await app.register(healthRoutes, { prefix: '/api' });
+  await app.register(authRoutes, { prefix: '/api/auth' });
 
   // --- Web interface (static files) ---
   // In production, the compiled React interface sits next to the backend.

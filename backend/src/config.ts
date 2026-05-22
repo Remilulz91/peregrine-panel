@@ -27,6 +27,14 @@ export const config = {
   /** Public URL where the panel is reachable. */
   appUrl: process.env.APP_URL ?? 'http://localhost:3000',
 
+  /** Secret key used to sign authentication tokens (JWT). */
+  jwtSecret: process.env.JWT_SECRET ?? 'peregrine-development-secret-change-me',
+
+  /** Path to the SQLite database file. */
+  databasePath:
+    process.env.DATABASE_PATH ??
+    path.resolve(__dirname, '../../data/peregrine.db'),
+
   /** True when running the production build. */
   get isProduction(): boolean {
     return this.nodeEnv === 'production';

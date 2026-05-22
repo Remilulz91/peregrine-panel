@@ -41,10 +41,10 @@ one thing to learn.
 | Language | **TypeScript** | One language for both the server AND the interface. TypeScript is JavaScript with guardrails that catch many errors before runtime. |
 | Server (backend) | **Node.js + Fastify** | Node.js runs the TypeScript on the server side. Fastify is a modern, fast, well-documented web framework. |
 | Interface (frontend) | **React + Vite + Tailwind CSS** | React is the most widely used UI library. Vite makes development fast. Tailwind handles styling without separate CSS files. |
-| Database | **SQLite**, via **Prisma** | SQLite is a single file — **zero installation**, perfect for easy self-hosting. Prisma makes it easy to move to PostgreSQL later without rewriting code. |
-| Docker access | **dockerode** | A mature, stable Node.js library to control Docker (create/start/stop containers) from code. |
-| Real time | **Socket.IO** | For the live server console and real-time status. Socket.IO handles reconnections automatically. |
-| Authentication | **JWT + Argon2** | JWT keeps the user logged in; Argon2 securely hashes passwords (never stored in plain text). |
+| Database | **SQLite**, via Node's built-in driver | SQLite is a single file — **zero installation**, no database server to run. Peregrine uses Node.js's built-in SQLite (`node:sqlite`), so there is no extra dependency to install or download. |
+| Authentication | **JWT + Argon2** | JSON Web Tokens keep the user logged in (stored in a secure httpOnly cookie); Argon2 hashes passwords so they are never stored in plain text. |
+| Real time | **Socket.IO** | For the live server console and real-time status. Socket.IO handles reconnections automatically. (From Phase 4.) |
+| Docker access | **dockerode** | A mature Node.js library to control Docker (create/start/stop containers) from code. (From Phase 2.) |
 | UI languages | **English / French** | The panel interface is bilingual, with a language selector. |
 | Deployment | **Docker Compose** | Installation for the end user is two commands: `git clone` then `docker compose up`. |
 
@@ -154,49 +154,37 @@ without touching the rest of the code.
 
 ## 5. Data model (database schema)
 
-Four tables are enough for the MVP. (Simplified notation; exact types are
-defined in `backend/prisma/schema.prisma`.)
+The schema grows phase by phase. The actual SQL lives in
+`backend/src/lib/db.ts`, applied automatically on startup. As of Phase 1, only
+the `users` table exists; the tables below describe the full planned model.
 
-**`User` — the accounts**
+**`users` — the accounts** *(implemented in Phase 1)*
 - `id` — unique identifier
 - `email` — unique
 - `username`
-- `passwordHash` — the password hashed with Argon2 (never in plain text)
+- `password_hash` — the password hashed with Argon2 (never in plain text)
 - `role` — `ADMIN` or `USER`
-- `createdAt`
+- `created_at`
 
-**`GameTemplate` — the game templates**
+**`game_templates` — the game templates** *(Phase 2)*
 - `id`
 - `name` — e.g. "Minecraft Java"
-- `dockerImage` — e.g. `itzg/minecraft-server`
-- `startupCommand` — the startup command
-- `variables` — the list of configurable options (version, server type, default
-  RAM, etc.), as JSON
-- `stopCommand` — the command for a clean shutdown (e.g. `stop` for Minecraft)
+- `docker_image` — e.g. `itzg/minecraft-server`
+- `startup_command`
+- `stop_command` — the command for a clean shutdown (e.g. `stop`)
+- `variables` — the configurable options (version, RAM, etc.), as JSON
 
-**`Server` — the created game servers**
-- `id`
-- `ownerId` — reference to `User`
-- `templateId` — reference to `GameTemplate`
-- `name` — the name given by the user
-- `containerId` — the Docker container identifier
-- `dockerImage` — the image used
-- `status` — `INSTALLING`, `OFFLINE`, `STARTING`, `RUNNING`, `STOPPING`
-- `memoryLimitMb` — RAM limit
-- `cpuLimit` — CPU limit (e.g. 1.5 cores)
-- `diskLimitMb` — disk space limit
-- `volumeName` — the Docker volume that holds the game files
-- `environment` — the variables chosen by the user (version, etc.), as JSON
-- `createdAt`
+**`servers` — the created game servers** *(Phase 2)*
+- `id`, `owner_id`, `template_id`
+- `name`, `container_id`, `docker_image`, `status`
+- `memory_limit_mb`, `cpu_limit`, `disk_limit_mb`
+- `volume_name` — the Docker volume that holds the game files
+- `environment` — the variables chosen by the user, as JSON
+- `created_at`
 
-**`Allocation` — the network ports**
-- `id`
-- `ip` — usually `0.0.0.0` for the MVP
-- `port` — the exposed port (e.g. 25565 for the first Minecraft server)
-- `serverId` — reference to `Server` (empty if the port is free)
-
-An `AuditLog` table (action log) and an `ApiKey` table can be added after the
-MVP.
+**`allocations` — the network ports** *(Phase 2)*
+- `id`, `ip`, `port`
+- `server_id` — which server uses the port (empty if free)
 
 ---
 
@@ -207,59 +195,51 @@ A simple layout with two main folders: `backend` and `frontend`.
 ```
 peregrine-panel/
 ├── README.md                 # Overview + installation guide
-├── LICENSE                   # The license (see section 10)
-├── CONTRIBUTING.md           # How to report a bug / contribute
+├── LICENSE                   # The license
 ├── docker-compose.yml        # Runs all of Peregrine in one command
 ├── .env.example              # Configuration template
 │
 ├── backend/
-│   ├── src/
-│   │   ├── index.ts          # Server entry point
-│   │   ├── routes/           # API URLs (auth, servers, files, etc.)
-│   │   ├── services/         # Business logic
-│   │   │   ├── docker.ts     # Everything that controls Docker (dockerode)
-│   │   │   ├── auth.ts       # Login, registration, JWT tokens
-│   │   │   └── server.ts     # Creating/managing game servers
-│   │   ├── realtime/         # Real-time console (Socket.IO)
-│   │   ├── lib/              # Shared helpers
-│   │   └── templates/        # Game templates (Minecraft, etc.)
-│   ├── prisma/
-│   │   └── schema.prisma     # The database schema
-│   └── package.json
+│   └── src/
+│       ├── index.ts          # Server entry point
+│       ├── config.ts         # Configuration read from the environment
+│       ├── routes/           # API endpoints (health, auth, ...)
+│       ├── plugins/          # Cross-cutting concerns (authentication)
+│       ├── lib/              # Database access, password hashing, helpers
+│       └── services/         # Business logic (Docker, servers — Phase 2)
 │
 ├── frontend/
-│   ├── src/
-│   │   ├── main.tsx          # Interface entry point
-│   │   ├── pages/            # Screens (Login, List, Console, etc.)
-│   │   ├── components/       # Reusable interface building blocks
-│   │   ├── lib/              # Helpers, including the i18n system
-│   │   └── api/              # The code that talks to the backend API
-│   └── package.json
+│   └── src/
+│       ├── main.tsx          # Interface entry point
+│       ├── App.tsx           # Chooses which screen to show
+│       ├── pages/            # Screens (Setup, Login, Dashboard, ...)
+│       ├── components/       # Reusable interface building blocks
+│       └── lib/              # API client, auth state, translations
 │
 └── docs/
-    └── ARCHITECTURE.md       # This document, versioned with the project
+    ├── ARCHITECTURE.md       # This document
+    └── DEPLOYMENT.md         # Production deployment guide
 ```
 
 ---
 
 ## 7. Main API routes
 
-Overview of the MVP endpoints (the list will be refined during development):
+Routes implemented so far, and the planned ones (mounted under `/api`).
 
-| Method | URL | Purpose |
-|---|---|---|
-| `POST` | `/api/auth/register` | Create an account |
-| `POST` | `/api/auth/login` | Log in (returns a JWT token) |
-| `GET` | `/api/servers` | List the user's servers |
-| `POST` | `/api/servers` | Create a server |
-| `GET` | `/api/servers/:id` | Server details |
-| `POST` | `/api/servers/:id/start` | Start a server |
-| `POST` | `/api/servers/:id/stop` | Stop a server |
-| `POST` | `/api/servers/:id/restart` | Restart a server |
-| `DELETE` | `/api/servers/:id` | Delete a server |
-| `GET` | `/api/servers/:id/files` | List files |
-| `GET/PUT` | `/api/servers/:id/files/content` | Read / write a file |
-| *(WebSocket)* | `/ws/servers/:id/console` | Live console + sending commands |
+| Method | URL | Purpose | Status |
+|---|---|---|---|
+| `GET` | `/api/health` | Service health check | Done |
+| `GET` | `/api/auth/setup-required` | Is the first-run setup still needed? | Done |
+| `POST` | `/api/auth/setup` | Create the first account (the administrator) | Done |
+| `POST` | `/api/auth/login` | Log in (sets an httpOnly cookie) | Done |
+| `POST` | `/api/auth/logout` | Log out | Done |
+| `GET` | `/api/auth/me` | The currently logged-in user | Done |
+| `GET` | `/api/servers` | List the user's servers | Phase 2 |
+| `POST` | `/api/servers` | Create a server | Phase 2 |
+| `POST` | `/api/servers/:id/start` | Start a server | Phase 3 |
+| `POST` | `/api/servers/:id/stop` | Stop a server | Phase 3 |
+| *(WebSocket)* | `/ws/servers/:id/console` | Live console | Phase 4 |
 
 ---
 
@@ -272,8 +252,10 @@ can be tested**. A phase is only left once the previous one is solid.
 the `README`, the `docker-compose.yml`, and the basic backend and frontend
 configuration. At the end: `docker compose up` launches an empty home page.
 
-**Phase 1 — Accounts & login**: registration, login, JWT tokens, a first
-protected page. At the end: you can create an account and log in.
+**Phase 1 — Accounts & login**: the database, registration of the first
+administrator via a browser-based first-run wizard, login, JSON Web Token
+sessions, and a protected dashboard. At the end: you can create the admin
+account and log in.
 
 **Phase 2 — Server creation**: Docker integration (dockerode), the Minecraft
 Java template, create/list/delete a server. At the end: a Minecraft server
@@ -316,11 +298,11 @@ people. To keep in mind from the start, even if not everything is for the MVP:
 - **File manager**: rigorously validate paths to prevent a user from escaping
   their server's folder (a "path traversal" attack).
 - **Passwords** hashed with Argon2, never stored in plain text.
-- **Rate limiting** on the login page (anti brute-force).
+- **Authentication tokens** kept in httpOnly cookies, so page scripts cannot
+  read them.
 - **Permission checks** on every request: a user must only be able to manage
   their own servers; only an `ADMIN` can access the administration area.
-- **HTTPS** recommended in production (via a reverse proxy such as Caddy or
-  Nginx).
+- **HTTPS** in production via a reverse proxy (see `docs/DEPLOYMENT.md`).
 
 ---
 
@@ -381,9 +363,10 @@ required.
 | Language | TypeScript everywhere |
 | Backend | Node.js + Fastify |
 | Frontend | React + Vite + Tailwind CSS |
-| Database | SQLite via Prisma (PostgreSQL later) |
-| Docker | dockerode |
-| Real time | Socket.IO |
+| Database | SQLite, via Node's built-in `node:sqlite` driver |
+| Authentication | JSON Web Tokens (httpOnly cookie) + Argon2 |
+| Docker | dockerode (from Phase 2) |
+| Real time | Socket.IO (from Phase 4) |
 | Deployment | Docker Compose |
 | Games at launch | Minecraft Java + Minecraft Bedrock |
 | License | Custom source-available — "free use, reselling forbidden" |
@@ -396,9 +379,14 @@ required.
 
 ## 12. Current status & next steps
 
-**Phase 0 is complete**: the repository structure, the base files, the Fastify
-backend (health-check route, static file serving) and the React frontend (home
-page, bilingual) are in place and build successfully.
+**Phase 1 is complete.** On top of the Phase 0 setup, the panel now has:
 
-Next up is **Phase 1** — user accounts and login, including the browser-based
-wizard that creates the administrator account on first launch.
+- a SQLite database (Node's built-in driver), with migrations applied
+  automatically on startup;
+- a browser-based first-run wizard that creates the administrator account;
+- login and logout, with sessions carried in a secure httpOnly cookie and
+  passwords hashed with Argon2;
+- a protected dashboard, shown only to signed-in users.
+
+Next up is **Phase 2** — server creation: integrating Docker so the panel can
+create and manage Minecraft game servers as containers.

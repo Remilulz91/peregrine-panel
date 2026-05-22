@@ -24,37 +24,117 @@ export const LANGUAGES: { code: Language; label: string }[] = [
  * it in a component with `t('your.key')`.
  */
 const translations = {
-  'home.tagline': {
-    en: 'Host your game servers, simply.',
-    fr: 'Hébergez vos serveurs de jeu, simplement.',
-  },
-  'home.description': {
-    en: 'A self-hostable hosting panel. Create and manage your Minecraft servers, each isolated in its own Docker container.',
-    fr: "Panel d'hébergement auto-hébergeable. Créez et gérez vos serveurs Minecraft, chacun isolé dans son propre conteneur Docker.",
-  },
-  'home.status.checking': {
-    en: 'Checking backend...',
-    fr: 'Vérification du backend...',
-  },
-  'home.status.online': {
-    en: 'Backend connected',
-    fr: 'Backend connecté',
-  },
-  'home.status.offline': {
-    en: 'Backend unreachable',
-    fr: 'Backend injoignable',
-  },
-  'home.version.phase': {
-    en: 'In development — Phase 0',
-    fr: 'En développement — Phase 0',
-  },
-  'home.footer': {
+  'app.footer': {
     en: '© 2026 Peregrine — All rights reserved.',
     fr: '© 2026 Peregrine — Tous droits réservés.',
+  },
+  'common.loading': {
+    en: 'Loading...',
+    fr: 'Chargement...',
+  },
+  'common.pleaseWait': {
+    en: 'Please wait...',
+    fr: 'Veuillez patienter...',
+  },
+  'common.errorGeneric': {
+    en: 'Something went wrong. Please try again.',
+    fr: "Une erreur s'est produite. Veuillez réessayer.",
   },
   'language.label': {
     en: 'Language',
     fr: 'Langue',
+  },
+  'setup.title': {
+    en: 'Create your administrator account',
+    fr: 'Créez votre compte administrateur',
+  },
+  'setup.subtitle': {
+    en: 'Welcome to Peregrine. This is the first launch — set up the main account to get started.',
+    fr: "Bienvenue sur Peregrine. C'est le premier lancement — configurez le compte principal pour commencer.",
+  },
+  'setup.usernameLabel': {
+    en: 'Username',
+    fr: "Nom d'utilisateur",
+  },
+  'setup.emailLabel': {
+    en: 'Email address',
+    fr: 'Adresse email',
+  },
+  'setup.passwordLabel': {
+    en: 'Password',
+    fr: 'Mot de passe',
+  },
+  'setup.confirmLabel': {
+    en: 'Confirm password',
+    fr: 'Confirmer le mot de passe',
+  },
+  'setup.submit': {
+    en: 'Create account',
+    fr: 'Créer le compte',
+  },
+  'setup.errorShort': {
+    en: 'The password must be at least 8 characters long.',
+    fr: 'Le mot de passe doit contenir au moins 8 caractères.',
+  },
+  'setup.errorMismatch': {
+    en: 'The two passwords do not match.',
+    fr: 'Les deux mots de passe ne correspondent pas.',
+  },
+  'login.title': {
+    en: 'Sign in',
+    fr: 'Connexion',
+  },
+  'login.subtitle': {
+    en: 'Sign in to your Peregrine panel.',
+    fr: 'Connectez-vous à votre panel Peregrine.',
+  },
+  'login.emailLabel': {
+    en: 'Email address',
+    fr: 'Adresse email',
+  },
+  'login.passwordLabel': {
+    en: 'Password',
+    fr: 'Mot de passe',
+  },
+  'login.submit': {
+    en: 'Sign in',
+    fr: 'Se connecter',
+  },
+  'login.errorInvalid': {
+    en: 'Invalid email or password.',
+    fr: 'Email ou mot de passe incorrect.',
+  },
+  'dashboard.greeting': {
+    en: 'Welcome back,',
+    fr: 'Bon retour,',
+  },
+  'dashboard.subtitle': {
+    en: 'Your Peregrine panel is ready.',
+    fr: 'Votre panel Peregrine est prêt.',
+  },
+  'dashboard.accountTitle': {
+    en: 'Your account',
+    fr: 'Votre compte',
+  },
+  'dashboard.emailLabel': {
+    en: 'Email',
+    fr: 'Email',
+  },
+  'dashboard.roleLabel': {
+    en: 'Role',
+    fr: 'Rôle',
+  },
+  'dashboard.logout': {
+    en: 'Log out',
+    fr: 'Déconnexion',
+  },
+  'dashboard.nextTitle': {
+    en: 'Coming next',
+    fr: 'Prochainement',
+  },
+  'dashboard.nextText': {
+    en: 'Game server creation and management arrives in Phase 2. You will be able to create Minecraft servers, each in its own Docker container, right from here.',
+    fr: 'La création et la gestion de serveurs de jeu arrivent en Phase 2. Vous pourrez créer des serveurs Minecraft, chacun dans son propre conteneur Docker, directement depuis ici.',
   },
 } as const;
 
