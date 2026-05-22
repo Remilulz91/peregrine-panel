@@ -88,6 +88,10 @@ export default function Dashboard() {
     return templates.find((template) => template.id === id)?.name ?? 'Minecraft';
   }
 
+  function templateKind(id: string): string {
+    return templates.find((template) => template.id === id)?.kind ?? 'java';
+  }
+
   return (
     <div className="min-h-full bg-peregrine-950 text-peregrine-200">
       <header className="flex items-center gap-3 border-b border-peregrine-800 bg-peregrine-900 px-5 py-3">
@@ -169,6 +173,7 @@ export default function Dashboard() {
       {consoleServer && (
         <ConsoleDialog
           server={consoleServer}
+          commandsEnabled={templateKind(consoleServer.templateId) !== 'bedrock'}
           onClose={() => setConsoleServer(null)}
         />
       )}

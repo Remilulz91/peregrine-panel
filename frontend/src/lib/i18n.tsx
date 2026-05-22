@@ -95,6 +95,7 @@ const translations = {
 
   'server.versionLabel': { en: 'Version', fr: 'Version' },
   'server.memoryLabel': { en: 'Memory', fr: 'Mémoire' },
+  'server.cpuLabel': { en: 'CPU', fr: 'CPU' },
   'server.portLabel': { en: 'Port', fr: 'Port' },
   'server.start': { en: 'Start', fr: 'Démarrer' },
   'server.stop': { en: 'Stop', fr: 'Arrêter' },
@@ -127,6 +128,7 @@ const translations = {
     fr: 'Utilisez LATEST pour la dernière version, ou un numéro comme 1.21.',
   },
   'create.memoryLabel': { en: 'Memory', fr: 'Mémoire' },
+  'create.cpuLabel': { en: 'CPU cores', fr: 'Cœurs CPU' },
   'create.submit': { en: 'Create', fr: 'Créer' },
   'create.error': {
     en: 'The server could not be created.',
@@ -145,6 +147,10 @@ const translations = {
   },
   'console.send': { en: 'Send', fr: 'Envoyer' },
   'console.error': { en: 'console error', fr: 'erreur de console' },
+  'console.viewOnly': {
+    en: 'Sending commands is not available for Bedrock servers — the console is view-only.',
+    fr: "L'envoi de commandes n'est pas disponible pour les serveurs Bedrock — la console est en lecture seule.",
+  },
 
   'files.loadError': {
     en: 'Cannot load the files.',

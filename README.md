@@ -3,12 +3,12 @@
 **A self-hostable game server panel.**
 
 Peregrine lets you install a control panel on your own Linux machine, then
-create and manage game servers (starting with Minecraft) that each run in an
-isolated Docker container. The project follows the spirit of Pterodactyl and
-Pelican.
+create and manage game servers (Minecraft Java and Bedrock) that each run in
+an isolated Docker container. The project follows the spirit of Pterodactyl
+and Pelican.
 
-> **Work in progress.** Current version: `0.1.0` — Phase 5 (file manager).
-> See the roadmap below.
+> **Work in progress.** Current version: `0.1.0` — Phase 6 (resource limits &
+> games). See the roadmap below.
 
 ## Planned features
 
@@ -17,7 +17,7 @@ Pelican.
 - Start, stop and restart servers
 - Live console
 - File manager
-- Per-server resource limits (CPU, RAM, disk)
+- Per-server resource limits (CPU, RAM)
 
 ## Tech stack
 
@@ -100,7 +100,7 @@ peregrine-panel/
 - [x] **Phase 3** — Server control (start / stop / restart)
 - [x] **Phase 4** — Live console
 - [x] **Phase 5** — File manager
-- [ ] **Phase 6** — Resource limits & game templates
+- [x] **Phase 6** — Resource limits & Minecraft Bedrock
 - [ ] **Phase 7** — Polish & first public release
 
 Full details in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).

@@ -22,6 +22,7 @@ interface CreateServerBody {
   templateId: string;
   minecraftVersion?: string;
   memoryMb: number;
+  cpuLimit: number;
 }
 
 /**
@@ -49,6 +50,7 @@ async function publicServer(server: ServerRecord) {
     templateId: server.templateId,
     minecraftVersion: server.minecraftVersion,
     memoryMb: server.memoryMb,
+    cpuLimit: server.cpuLimit,
     port: server.port,
     createdAt: server.createdAt,
   };
@@ -83,13 +85,14 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
       schema: {
         body: {
           type: 'object',
-          required: ['name', 'templateId', 'memoryMb'],
+          required: ['name', 'templateId', 'memoryMb', 'cpuLimit'],
           additionalProperties: false,
           properties: {
             name: { type: 'string', minLength: 1, maxLength: 48 },
             templateId: { type: 'string', minLength: 1 },
             minecraftVersion: { type: 'string', maxLength: 32 },
             memoryMb: { type: 'integer', minimum: 512, maximum: 16384 },
+            cpuLimit: { type: 'number', minimum: 0.5, maximum: 16 },
           },
         },
       },
@@ -118,12 +121,13 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
         minecraftVersion:
           body.minecraftVersion?.trim() || template.defaultVersion,
         memoryMb: body.memoryMb,
+        cpuLimit: body.cpuLimit,
         port,
       });
 
       // Pull the image and create the container in the background, so the
       // request returns immediately. The frontend polls for the status.
-      void provisionServer(server, template.dockerImage);
+      void provisionServer(server, template);
 
       return reply.code(201).send({ server: await publicServer(server) });
     },
@@ -139,8 +143,6 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
     deleteServer(server.id);
     return { ok: true };
   });
-
-  // --- Power controls: start / stop / restart ---
 
   app.post('/servers/:id/start', async (request, reply) => {
     const { id } = request.params as { id: string };

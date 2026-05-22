@@ -11,6 +11,7 @@ export interface ServerRecord {
   containerId: string | null;
   minecraftVersion: string;
   memoryMb: number;
+  cpuLimit: number;
   port: number;
   createdAt: string;
 }
@@ -24,6 +25,7 @@ interface ServerRow {
   container_id: string | null;
   minecraft_version: string;
   memory_mb: number;
+  cpu_limit: number;
   port: number;
   created_at: string;
 }
@@ -38,6 +40,7 @@ function toRecord(row: ServerRow): ServerRecord {
     containerId: row.container_id,
     minecraftVersion: row.minecraft_version,
     memoryMb: row.memory_mb,
+    cpuLimit: row.cpu_limit,
     port: row.port,
     createdAt: row.created_at,
   };
@@ -68,13 +71,15 @@ export function createServer(input: {
   name: string;
   minecraftVersion: string;
   memoryMb: number;
+  cpuLimit: number;
   port: number;
 }): ServerRecord {
   const id = randomUUID();
   db.prepare(
     `INSERT INTO servers
-       (id, owner_id, template_id, name, minecraft_version, memory_mb, port)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+       (id, owner_id, template_id, name, minecraft_version,
+        memory_mb, cpu_limit, port)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     id,
     input.ownerId,
@@ -82,6 +87,7 @@ export function createServer(input: {
     input.name,
     input.minecraftVersion,
     input.memoryMb,
+    input.cpuLimit,
     input.port,
   );
   const created = getServer(id);

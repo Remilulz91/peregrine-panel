@@ -8,11 +8,17 @@ const MAX_OUTPUT_CHARS = 60000;
 
 interface ConsoleDialogProps {
   server: ApiServer;
+  /** Whether the user can send commands (false for Bedrock servers). */
+  commandsEnabled: boolean;
   onClose: () => void;
 }
 
 /** Modal showing a server's live console, with a command input. */
-export default function ConsoleDialog({ server, onClose }: ConsoleDialogProps) {
+export default function ConsoleDialog({
+  server,
+  commandsEnabled,
+  onClose,
+}: ConsoleDialogProps) {
   const { t } = useTranslation();
   const [output, setOutput] = useState('');
   const [command, setCommand] = useState('');
@@ -99,24 +105,30 @@ export default function ConsoleDialog({ server, onClose }: ConsoleDialogProps) {
           {output || t('console.waiting')}
         </pre>
 
-        <form
-          onSubmit={handleSubmit}
-          className="flex gap-2 border-t border-peregrine-800 p-3"
-        >
-          <input
-            type="text"
-            value={command}
-            onChange={(e) => setCommand(e.target.value)}
-            placeholder={t('console.placeholder')}
-            className="flex-1 rounded-lg border border-peregrine-700 bg-peregrine-950 px-3 py-2 font-mono text-sm text-white outline-none transition-colors placeholder:text-peregrine-600 focus:border-falcon"
-          />
-          <button
-            type="submit"
-            className="rounded-lg bg-falcon px-4 py-2 text-sm font-semibold text-peregrine-950 transition-colors hover:bg-falcon-bright"
+        {commandsEnabled ? (
+          <form
+            onSubmit={handleSubmit}
+            className="flex gap-2 border-t border-peregrine-800 p-3"
           >
-            {t('console.send')}
-          </button>
-        </form>
+            <input
+              type="text"
+              value={command}
+              onChange={(e) => setCommand(e.target.value)}
+              placeholder={t('console.placeholder')}
+              className="flex-1 rounded-lg border border-peregrine-700 bg-peregrine-950 px-3 py-2 font-mono text-sm text-white outline-none transition-colors placeholder:text-peregrine-600 focus:border-falcon"
+            />
+            <button
+              type="submit"
+              className="rounded-lg bg-falcon px-4 py-2 text-sm font-semibold text-peregrine-950 transition-colors hover:bg-falcon-bright"
+            >
+              {t('console.send')}
+            </button>
+          </form>
+        ) : (
+          <p className="border-t border-peregrine-800 p-3 text-center text-xs text-peregrine-500">
+            {t('console.viewOnly')}
+          </p>
+        )}
       </div>
     </div>
   );

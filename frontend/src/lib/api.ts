@@ -17,6 +17,8 @@ export interface ApiTemplate {
   name: string;
   dockerImage: string;
   defaultVersion: string;
+  /** "java" or "bedrock". */
+  kind: string;
 }
 
 /** A game server, as returned by the API. */
@@ -27,6 +29,7 @@ export interface ApiServer {
   templateId: string;
   minecraftVersion: string;
   memoryMb: number;
+  cpuLimit: number;
   port: number;
   createdAt: string;
 }
@@ -87,6 +90,7 @@ interface CreateServerInput {
   templateId: string;
   minecraftVersion?: string;
   memoryMb: number;
+  cpuLimit: number;
 }
 
 /** The set of API calls used by the interface. */

@@ -75,7 +75,7 @@ export default function ServerCard({
         </span>
       </div>
 
-      <dl className="mt-4 grid grid-cols-3 gap-2 text-xs">
+      <dl className="mt-4 grid grid-cols-2 gap-2 text-xs">
         <div>
           <dt className="text-peregrine-400">{t('server.versionLabel')}</dt>
           <dd className="mt-0.5 text-peregrine-200">
@@ -83,12 +83,16 @@ export default function ServerCard({
           </dd>
         </div>
         <div>
+          <dt className="text-peregrine-400">{t('server.portLabel')}</dt>
+          <dd className="mt-0.5 font-mono text-peregrine-200">{server.port}</dd>
+        </div>
+        <div>
           <dt className="text-peregrine-400">{t('server.memoryLabel')}</dt>
           <dd className="mt-0.5 text-peregrine-200">{server.memoryMb} MB</dd>
         </div>
         <div>
-          <dt className="text-peregrine-400">{t('server.portLabel')}</dt>
-          <dd className="mt-0.5 font-mono text-peregrine-200">{server.port}</dd>
+          <dt className="text-peregrine-400">{t('server.cpuLabel')}</dt>
+          <dd className="mt-0.5 text-peregrine-200">{server.cpuLimit}</dd>
         </div>
       </dl>
 

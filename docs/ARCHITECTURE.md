@@ -118,24 +118,24 @@ containers. This is powerful but requires care — see the Security section.
 ### Game "templates"
 
 Pterodactyl calls these "Eggs". In Peregrine they are called **templates**. A
-template describes **how to run a game**: which Docker image to use and the
-default version. The built-in templates are seeded into the database on
-startup.
+template describes **how to run a game**: the Docker image, the default
+version, and the port the game uses (and its protocol). The built-in templates
+are seeded into the database on startup.
 
-For the MVP, two templates are planned:
+Two templates ship with Peregrine, both *(implemented)*:
 
-- **Minecraft Java** — Docker image `itzg/minecraft-server`. *(Implemented in
-  Phase 2.)*
-- **Minecraft Bedrock** — image `itzg/minecraft-bedrock-server`. *(Phase 6.)*
+- **Minecraft Java** — image `itzg/minecraft-server`, port `25565/tcp`.
+- **Minecraft Bedrock** — image `itzg/minecraft-bedrock-server`, port
+  `19132/udp`.
 
 The system is designed so that **adding a new game later = adding a template**,
 without touching the rest of the code.
 
 ### The lifecycle of a server
 
-1. **Creation**: the user picks a template, a name, a version and an amount of
-   RAM. The API reserves a free port, downloads the Docker image and creates
-   the container. *(Phase 2.)*
+1. **Creation**: the user picks a template, a name, a version, an amount of RAM
+   and a CPU limit. The API reserves a free port, downloads the Docker image
+   and creates the container with its resource limits. *(Phases 2 & 6.)*
 2. **Start / stop / restart**: the API tells Docker to start, stop or restart
    the container; the interface shows the live status. *(Phase 3.)*
 3. **Live console**: the server's output is streamed to the browser over
@@ -157,22 +157,21 @@ The schema grows phase by phase. The actual SQL lives in
 - `role` — `ADMIN` or `USER`
 - `created_at`
 
-**`game_templates` — the game templates** *(Phase 2)*
-- `id`, `name` (unique)
-- `docker_image`, `default_version`, `created_at`
+**`game_templates` — the game templates** *(Phases 2 & 6)*
+- `id`, `name` (unique), `docker_image`, `default_version`
+- `kind` — `java` or `bedrock`
+- `internal_port`, `port_protocol`
 
-**`servers` — the created game servers** *(Phase 2)*
+**`servers` — the created game servers** *(Phases 2 & 6)*
 - `id`, `owner_id`, `template_id`
-- `name`, `status` (`INSTALLING`, `OFFLINE`, `INSTALL_FAILED`, ...)
-- `container_id` — the Docker container id (empty until provisioned)
-- `minecraft_version`, `memory_mb`
+- `name`, `status`, `container_id`
+- `minecraft_version`, `memory_mb`, `cpu_limit`
 - `port` — the unique host port reserved for this server
 - `created_at`
 
 The running state shown to the user (running / offline) is read live from
-Docker, not stored in the database, so it always reflects reality. The game
-server's files are stored on disk under a per-server folder, not in the
-database.
+Docker, so it always reflects reality. The game server's files are stored on
+disk under a per-server folder, not in the database.
 
 ---
 
@@ -258,18 +257,17 @@ status read directly from Docker.
 **Phase 4 — Live console**: Socket.IO streams the server output to the browser
 in real time, and the user can type commands (sent via RCON).
 
-**Phase 5 — File manager**: browse, edit, upload and delete a server's files
-from the browser.
+**Phase 5 — File manager**: browse, edit, upload and delete a server's files.
 
-**Phase 6 — Limits & templates**: apply CPU/RAM/disk limits, add the Minecraft
-Bedrock template, an administration page.
+**Phase 6 — Resource limits & games**: CPU and RAM limits enforced on every
+container, and the Minecraft Bedrock template as a second game.
 
 **Phase 7 — Polish & release**: a polished installation guide, an installation
 script, the first published version (`v0.1.0`).
 
 **After the MVP**: multi-machine support (a separate "daemon" agent per
-machine), automatic backups, sub-users and fine-grained permissions, a task
-scheduler, usage statistics, more games.
+machine), user management and an administration page, automatic backups, a
+task scheduler, usage statistics, more games.
 
 ---
 
@@ -281,8 +279,8 @@ people. To keep in mind from the start, even if not everything is for the MVP:
 - **The Docker socket must never be exposed to the Internet.** Being able to
   talk to Docker means being able to do anything on the machine. Only the panel
   accesses it, locally.
-- **Mandatory resource limits** on every game container (CPU, RAM, disk), so
-  that one server cannot starve the others. *(Phase 6.)*
+- **Resource limits**: every game container is created with a hard CPU and RAM
+  limit, so that one server cannot starve the others.
 - **Game containers without privileges**: never `--privileged`, drop unneeded
   Linux capabilities, avoid running as `root` inside the container when
   possible.
@@ -356,7 +354,7 @@ required.
 | Docker | dockerode |
 | Real time | Socket.IO |
 | Deployment | Docker Compose |
-| Games at launch | Minecraft Java + Minecraft Bedrock |
+| Games | Minecraft Java + Minecraft Bedrock |
 | License | Custom source-available — "free use, reselling forbidden" |
 | Repository visibility | Private at first, while the MVP is stabilized |
 | UI languages | Bilingual: English / French |
@@ -367,10 +365,11 @@ required.
 
 ## 12. Current status & next steps
 
-**Phase 5 is complete.** Each game server now has a file manager: the user can
-browse its folders, open and edit text files (such as `server.properties`),
-upload files, and delete files or folders — all from the browser. Every path
-is checked to stay inside the server's own directory.
+**Phase 6 is complete.** Every game server is now created with hard CPU and
+RAM limits, so one server cannot starve the others. A second game is
+available — Minecraft Bedrock — alongside Minecraft Java; the create form
+lets the user pick the game, version, RAM and CPU.
 
-Next up is **Phase 6** — resource limits and more games: enforcing CPU, RAM
-and disk limits on each container, and adding the Minecraft Bedrock template.
+Next up is **Phase 7** — polish and the first release: cleaning up small
+rough edges, a finished installation experience, and tagging version
+`v0.1.0`.

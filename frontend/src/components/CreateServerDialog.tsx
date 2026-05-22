@@ -6,6 +6,9 @@ import { useTranslation } from '../lib/i18n';
 // Memory amounts (in MB) offered when creating a server.
 const MEMORY_OPTIONS = [1024, 2048, 4096, 8192];
 
+// CPU limits (in cores) offered when creating a server.
+const CPU_OPTIONS = [1, 2, 4];
+
 const SELECT_CLASS =
   'w-full rounded-lg border border-peregrine-700 bg-peregrine-950 px-3 py-2 text-sm text-white outline-none transition-colors focus:border-falcon';
 
@@ -26,6 +29,7 @@ export default function CreateServerDialog({
   const [templateId, setTemplateId] = useState(templates[0]?.id ?? '');
   const [version, setVersion] = useState('LATEST');
   const [memoryMb, setMemoryMb] = useState(2048);
+  const [cpuLimit, setCpuLimit] = useState(2);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -39,6 +43,7 @@ export default function CreateServerDialog({
         templateId,
         minecraftVersion: version,
         memoryMb,
+        cpuLimit,
       });
       onCreated();
     } catch {
@@ -104,25 +109,47 @@ export default function CreateServerDialog({
             </p>
           </div>
 
-          <div>
-            <label
-              htmlFor="srv-memory"
-              className="mb-1 block text-xs font-medium text-peregrine-400"
-            >
-              {t('create.memoryLabel')}
-            </label>
-            <select
-              id="srv-memory"
-              value={memoryMb}
-              onChange={(e) => setMemoryMb(Number(e.target.value))}
-              className={SELECT_CLASS}
-            >
-              {MEMORY_OPTIONS.map((mb) => (
-                <option key={mb} value={mb}>
-                  {mb / 1024} GB
-                </option>
-              ))}
-            </select>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label
+                htmlFor="srv-memory"
+                className="mb-1 block text-xs font-medium text-peregrine-400"
+              >
+                {t('create.memoryLabel')}
+              </label>
+              <select
+                id="srv-memory"
+                value={memoryMb}
+                onChange={(e) => setMemoryMb(Number(e.target.value))}
+                className={SELECT_CLASS}
+              >
+                {MEMORY_OPTIONS.map((mb) => (
+                  <option key={mb} value={mb}>
+                    {mb / 1024} GB
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label
+                htmlFor="srv-cpu"
+                className="mb-1 block text-xs font-medium text-peregrine-400"
+              >
+                {t('create.cpuLabel')}
+              </label>
+              <select
+                id="srv-cpu"
+                value={cpuLimit}
+                onChange={(e) => setCpuLimit(Number(e.target.value))}
+                className={SELECT_CLASS}
+              >
+                {CPU_OPTIONS.map((cores) => (
+                  <option key={cores} value={cores}>
+                    {cores}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {error && <p className="text-sm text-rose-400">{error}</p>}

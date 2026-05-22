@@ -33,36 +33,53 @@ export async function pullImage(image: string): Promise<void> {
 interface CreateContainerInput {
   serverId: string;
   image: string;
+  /** "java" or "bedrock" — drives the environment variables. */
+  kind: string;
   version: string;
+  /** RAM limit, in MB. */
   memoryMb: number;
-  /** Host port mapped to the game's port inside the container. */
+  /** CPU limit, in cores (e.g. 1.5). */
+  cpuLimit: number;
+  /** Port the game listens on inside the container. */
+  internalPort: number;
+  /** "tcp" or "udp". */
+  portProtocol: string;
+  /** Host port mapped to the game's port. */
   port: number;
   /** Host directory bind-mounted as the server's /data folder. */
   dataDir: string;
 }
 
 /**
- * Creates (without starting) the Docker container for a game server,
- * and returns its container id.
+ * Creates (without starting) the Docker container for a game server, with
+ * CPU and RAM limits applied, and returns its container id.
  */
 export async function createServerContainer(
   input: CreateContainerInput,
 ): Promise<string> {
+  const portKey = `${input.internalPort}/${input.portProtocol}`;
+
+  // Environment variables understood by the itzg Minecraft images.
+  const env = ['EULA=TRUE', `VERSION=${input.version}`];
+  if (input.kind === 'java') {
+    // Leave headroom below the container limit for the JVM's non-heap memory.
+    const heapMb = Math.max(input.memoryMb - 512, 512);
+    env.push(`MEMORY=${heapMb}M`);
+  }
+
   const container = await docker.createContainer({
     name: `peregrine-${input.serverId}`,
     Image: input.image,
-    // Environment variables understood by the itzg/minecraft-server image.
-    Env: [
-      'EULA=TRUE',
-      `VERSION=${input.version}`,
-      `MEMORY=${input.memoryMb}M`,
-    ],
-    ExposedPorts: { '25565/tcp': {} },
+    Env: env,
+    ExposedPorts: { [portKey]: {} },
     HostConfig: {
       Binds: [`${input.dataDir}:/data`],
       PortBindings: {
-        '25565/tcp': [{ HostPort: String(input.port) }],
+        [portKey]: [{ HostPort: String(input.port) }],
       },
+      // Resource limits: hard RAM cap and CPU share.
+      Memory: input.memoryMb * 1024 * 1024,
+      NanoCpus: Math.round(input.cpuLimit * 1e9),
       RestartPolicy: { Name: 'unless-stopped' },
     },
   });

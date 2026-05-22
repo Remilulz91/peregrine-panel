@@ -41,6 +41,12 @@ const MIGRATIONS: string[] = [
      port              INTEGER NOT NULL UNIQUE,
      created_at        TEXT NOT NULL DEFAULT (datetime('now'))
    );`,
+
+  // Migration 3 - resource limits and per-game template details
+  `ALTER TABLE game_templates ADD COLUMN kind TEXT NOT NULL DEFAULT 'java';
+   ALTER TABLE game_templates ADD COLUMN internal_port INTEGER NOT NULL DEFAULT 25565;
+   ALTER TABLE game_templates ADD COLUMN port_protocol TEXT NOT NULL DEFAULT 'tcp';
+   ALTER TABLE servers ADD COLUMN cpu_limit REAL NOT NULL DEFAULT 2;`,
 ];
 
 /** Applies any migrations that have not been run on this database yet. */

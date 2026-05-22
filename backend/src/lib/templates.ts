@@ -7,6 +7,12 @@ export interface GameTemplate {
   name: string;
   dockerImage: string;
   defaultVersion: string;
+  /** "java" or "bedrock" — drives the container's environment. */
+  kind: string;
+  /** The port the game listens on inside the container. */
+  internalPort: number;
+  /** "tcp" or "udp" — the protocol of that port. */
+  portProtocol: string;
 }
 
 interface TemplateRow {
@@ -14,6 +20,9 @@ interface TemplateRow {
   name: string;
   docker_image: string;
   default_version: string;
+  kind: string;
+  internal_port: number;
+  port_protocol: string;
 }
 
 function toTemplate(row: TemplateRow): GameTemplate {
@@ -22,16 +31,29 @@ function toTemplate(row: TemplateRow): GameTemplate {
     name: row.name,
     dockerImage: row.docker_image,
     defaultVersion: row.default_version,
+    kind: row.kind,
+    internalPort: row.internal_port,
+    portProtocol: row.port_protocol,
   };
 }
 
-// The game templates Peregrine ships with. More can be added in later
-// phases (Minecraft Bedrock, etc.) simply by extending this list.
+// The game templates Peregrine ships with.
 const BUILT_IN_TEMPLATES = [
   {
     name: 'Minecraft Java',
     dockerImage: 'itzg/minecraft-server',
     defaultVersion: 'LATEST',
+    kind: 'java',
+    internalPort: 25565,
+    portProtocol: 'tcp',
+  },
+  {
+    name: 'Minecraft Bedrock',
+    dockerImage: 'itzg/minecraft-bedrock-server',
+    defaultVersion: 'LATEST',
+    kind: 'bedrock',
+    internalPort: 19132,
+    portProtocol: 'udp',
   },
 ];
 
@@ -43,13 +65,18 @@ export function seedTemplates(): void {
       .get(template.name);
     if (!existing) {
       db.prepare(
-        `INSERT INTO game_templates (id, name, docker_image, default_version)
-         VALUES (?, ?, ?, ?)`,
+        `INSERT INTO game_templates
+           (id, name, docker_image, default_version, kind,
+            internal_port, port_protocol)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
       ).run(
         randomUUID(),
         template.name,
         template.dockerImage,
         template.defaultVersion,
+        template.kind,
+        template.internalPort,
+        template.portProtocol,
       );
     }
   }
