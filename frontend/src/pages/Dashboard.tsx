@@ -5,6 +5,7 @@ import ServerCard from '../components/ServerCard';
 import CreateServerDialog from '../components/CreateServerDialog';
 import {
   api,
+  ApiError,
   type ApiServer,
   type ApiTemplate,
   type ServerAction,
@@ -47,11 +48,21 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, [loadServers]);
 
+  // Reports an error to the user instead of letting it fail silently.
+  function reportError(err: unknown): void {
+    const message = err instanceof ApiError ? err.message : t('common.errorGeneric');
+    window.alert(message);
+  }
+
   async function handleAction(
     server: ApiServer,
     action: ServerAction,
   ): Promise<void> {
-    await api.serverAction(server.id, action).catch(() => undefined);
+    try {
+      await api.serverAction(server.id, action);
+    } catch (err) {
+      reportError(err);
+    }
     await loadServers();
   }
 
@@ -59,7 +70,11 @@ export default function Dashboard() {
     if (!window.confirm(t('server.deleteConfirm'))) {
       return;
     }
-    await api.deleteServer(server.id).catch(() => undefined);
+    try {
+      await api.deleteServer(server.id);
+    } catch (err) {
+      reportError(err);
+    }
     void loadServers();
   }
 

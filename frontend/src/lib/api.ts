@@ -46,10 +46,18 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const headers = new Headers(options.headers);
+  // Only declare a JSON body when there actually is one. A bodyless
+  // POST/DELETE request must NOT send "Content-Type: application/json",
+  // otherwise the server rejects it as an empty JSON body (HTTP 400).
+  if (options.body !== undefined && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+
   const response = await fetch(path, {
     ...options,
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...options.headers },
+    headers,
   });
 
   const data: unknown = await response.json().catch(() => ({}));
