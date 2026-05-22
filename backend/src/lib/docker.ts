@@ -10,6 +10,36 @@ const docker = new Docker({ socketPath: config.dockerSocket });
 /** The runtime state of a container, as seen by Docker. */
 export type ContainerState = 'running' | 'stopped' | 'missing';
 
+// Minecraft colour codes: the section sign (char 0xA7) followed by one char.
+const MINECRAFT_COLOUR = new RegExp(String.fromCharCode(0xa7) + '.', 'g');
+// ANSI escape sequences: ESC (char 0x1B) + "[" + parameters + "m".
+const ANSI_ESCAPE = new RegExp(String.fromCharCode(0x1b) + '\\[[0-9;]*m', 'g');
+
+/**
+ * Cleans console text for display by removing Minecraft colour codes, ANSI
+ * escape sequences and non-printable control characters. Tab, newline and
+ * carriage return are kept.
+ */
+function cleanConsoleText(text: string): string {
+  const withoutCodes = text
+    .replace(MINECRAFT_COLOUR, '')
+    .replace(ANSI_ESCAPE, '');
+
+  let result = '';
+  for (const character of withoutCodes) {
+    const code = character.codePointAt(0) ?? 0;
+    const isAllowed =
+      code === 0x09 || // tab
+      code === 0x0a || // newline
+      code === 0x0d || // carriage return
+      (code >= 0x20 && code !== 0x7f); // printable characters
+    if (isAllowed) {
+      result += character;
+    }
+  }
+  return result;
+}
+
 /** Returns true for a Docker error meaning "already in that state". */
 function isAlreadyInState(err: unknown): boolean {
   return (
@@ -133,7 +163,7 @@ export async function getContainerState(
 /**
  * Streams a container's console output (the recent history, then live).
  *
- * `onData` is called with each chunk of decoded text. The returned function
+ * `onData` is called with each chunk of cleaned text. The returned function
  * stops the stream and must be called when the listener goes away.
  */
 export async function attachConsole(
@@ -153,7 +183,8 @@ export async function attachConsole(
   const stderr = new PassThrough();
   container.modem.demuxStream(logStream, stdout, stderr);
 
-  const forward = (chunk: Buffer): void => onData(chunk.toString('utf8'));
+  const forward = (chunk: Buffer): void =>
+    onData(cleanConsoleText(chunk.toString('utf8')));
   stdout.on('data', forward);
   stderr.on('data', forward);
 
@@ -187,5 +218,5 @@ export async function sendConsoleCommand(
     stream.on('end', resolve);
     stream.on('error', reject);
   });
-  return Buffer.concat(chunks).toString('utf8');
+  return cleanConsoleText(Buffer.concat(chunks).toString('utf8')).trim();
 }

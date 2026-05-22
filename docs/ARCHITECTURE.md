@@ -2,7 +2,7 @@
 
 > Version 1.0 — living document.
 > Peregrine is a self-hostable game server panel, in the spirit of Pterodactyl
-> and Pelican.
+> and Pelican. The MVP (`v0.1.0`) is complete — see section 12.
 
 ---
 
@@ -122,7 +122,7 @@ template describes **how to run a game**: the Docker image, the default
 version, and the port the game uses (and its protocol). The built-in templates
 are seeded into the database on startup.
 
-Two templates ship with Peregrine, both *(implemented)*:
+Two templates ship with Peregrine:
 
 - **Minecraft Java** — image `itzg/minecraft-server`, port `25565/tcp`.
 - **Minecraft Bedrock** — image `itzg/minecraft-bedrock-server`, port
@@ -135,34 +135,34 @@ without touching the rest of the code.
 
 1. **Creation**: the user picks a template, a name, a version, an amount of RAM
    and a CPU limit. The API reserves a free port, downloads the Docker image
-   and creates the container with its resource limits. *(Phases 2 & 6.)*
+   and creates the container with its resource limits.
 2. **Start / stop / restart**: the API tells Docker to start, stop or restart
-   the container; the interface shows the live status. *(Phase 3.)*
+   the container; the interface shows the live status.
 3. **Live console**: the server's output is streamed to the browser over
-   Socket.IO, and the user can type commands (sent via RCON). *(Phase 4.)*
+   Socket.IO, and the user can type commands (Java servers, sent via RCON).
 4. **File management**: the user can browse, edit, upload and delete the
-   server's files from the browser. *(Phase 5.)*
-5. **Deletion**: the container and the data folder are removed. *(Phase 2.)*
+   server's files from the browser.
+5. **Deletion**: the container and the data folder are removed.
 
 ---
 
 ## 5. Data model (database schema)
 
-The schema grows phase by phase. The actual SQL lives in
-`backend/src/lib/db.ts` and is applied automatically on startup.
+The schema is described by ordered migrations in `backend/src/lib/db.ts`,
+applied automatically on startup.
 
-**`users` — the accounts** *(Phase 1)*
+**`users` — the accounts**
 - `id`, `email` (unique), `username`
 - `password_hash` — the password hashed with Argon2 (never in plain text)
 - `role` — `ADMIN` or `USER`
 - `created_at`
 
-**`game_templates` — the game templates** *(Phases 2 & 6)*
+**`game_templates` — the game templates**
 - `id`, `name` (unique), `docker_image`, `default_version`
 - `kind` — `java` or `bedrock`
 - `internal_port`, `port_protocol`
 
-**`servers` — the created game servers** *(Phases 2 & 6)*
+**`servers` — the created game servers**
 - `id`, `owner_id`, `template_id`
 - `name`, `status`, `container_id`
 - `minecraft_version`, `memory_mb`, `cpu_limit`
@@ -182,7 +182,9 @@ A simple layout with two main folders: `backend` and `frontend`.
 ```
 peregrine-panel/
 ├── README.md                 # Overview + installation guide
+├── CHANGELOG.md               # Release notes
 ├── LICENSE                   # The license
+├── install.sh                 # Automated installer for Debian
 ├── docker-compose.yml        # Runs all of Peregrine in one command
 ├── .env.example              # Configuration template
 │
@@ -213,33 +215,33 @@ peregrine-panel/
 
 ## 7. Main API routes
 
-Routes implemented so far, and the planned ones (mounted under `/api`).
+All routes are mounted under `/api`.
 
-| Method | URL | Purpose | Status |
-|---|---|---|---|
-| `GET` | `/api/health` | Service health check | Done |
-| `GET` | `/api/auth/setup-required` | Is the first-run setup still needed? | Done |
-| `POST` | `/api/auth/setup` | Create the first account (the administrator) | Done |
-| `POST` | `/api/auth/login` | Log in (sets an httpOnly cookie) | Done |
-| `POST` | `/api/auth/logout` | Log out | Done |
-| `GET` | `/api/auth/me` | The currently logged-in user | Done |
-| `GET` | `/api/templates` | List the available game templates | Done |
-| `GET` | `/api/servers` | List the user's servers (with live status) | Done |
-| `POST` | `/api/servers` | Create a server | Done |
-| `DELETE` | `/api/servers/:id` | Delete a server (container + files) | Done |
-| `POST` | `/api/servers/:id/start` `/stop` `/restart` | Server power controls | Done |
-| `GET` | `/api/servers/:id/files` | List a directory | Done |
-| `GET/PUT` | `/api/servers/:id/file` | Read / write a text file | Done |
-| `DELETE` | `/api/servers/:id/file` | Delete a file or directory | Done |
-| `POST` | `/api/servers/:id/files` | Upload a file | Done |
-| *(Socket.IO)* | `console:subscribe` / `console:command` | Live console | Done |
+| Method | URL | Purpose |
+|---|---|---|
+| `GET` | `/api/health` | Service health check |
+| `GET` | `/api/auth/setup-required` | Is the first-run setup still needed? |
+| `POST` | `/api/auth/setup` | Create the first account (the administrator) |
+| `POST` | `/api/auth/login` | Log in (sets an httpOnly cookie) |
+| `POST` | `/api/auth/logout` | Log out |
+| `GET` | `/api/auth/me` | The currently logged-in user |
+| `GET` | `/api/templates` | List the available game templates |
+| `GET` | `/api/servers` | List the user's servers (with live status) |
+| `POST` | `/api/servers` | Create a server |
+| `DELETE` | `/api/servers/:id` | Delete a server (container + files) |
+| `POST` | `/api/servers/:id/start` `/stop` `/restart` | Server power controls |
+| `GET` | `/api/servers/:id/files` | List a directory |
+| `GET/PUT` | `/api/servers/:id/file` | Read / write a text file |
+| `DELETE` | `/api/servers/:id/file` | Delete a file or directory |
+| `POST` | `/api/servers/:id/files` | Upload a file |
+| *(Socket.IO)* | `console:subscribe` / `console:command` | Live console |
 
 ---
 
 ## 8. Roadmap — development by phases
 
-The idea: move forward in small steps, each producing something that **works and
-can be tested**. A phase is only left once the previous one is solid.
+The MVP was built in small steps, each producing something that **works and can
+be tested**. All seven phases are complete.
 
 **Phase 0 — Setup**: the repository, the folder structure, the base files, and
 the basic backend and frontend configuration.
@@ -262,8 +264,8 @@ in real time, and the user can type commands (sent via RCON).
 **Phase 6 — Resource limits & games**: CPU and RAM limits enforced on every
 container, and the Minecraft Bedrock template as a second game.
 
-**Phase 7 — Polish & release**: a polished installation guide, an installation
-script, the first published version (`v0.1.0`).
+**Phase 7 — Polish & release**: console output cleaned of colour codes, an
+automated installer for Debian, the changelog, and the `v0.1.0` release.
 
 **After the MVP**: multi-machine support (a separate "daemon" agent per
 machine), user management and an administration page, automatic backups, a
@@ -274,24 +276,23 @@ task scheduler, usage statistics, more games.
 ## 9. Security — points of attention
 
 A panel runs arbitrary code (mods, plugins) on machines, sometimes for other
-people. To keep in mind from the start, even if not everything is for the MVP:
+people. Points kept in mind throughout the project:
 
 - **The Docker socket must never be exposed to the Internet.** Being able to
   talk to Docker means being able to do anything on the machine. Only the panel
   accesses it, locally.
 - **Resource limits**: every game container is created with a hard CPU and RAM
   limit, so that one server cannot starve the others.
-- **Game containers without privileges**: never `--privileged`, drop unneeded
-  Linux capabilities, avoid running as `root` inside the container when
-  possible.
+- **Game containers without privileges**: never `--privileged`. (Dropping
+  unneeded Linux capabilities is a planned hardening step.)
 - **File manager**: every path is resolved and checked to stay inside the
   server's own folder, which blocks "path traversal" attacks.
 - **Passwords** hashed with Argon2, never stored in plain text.
 - **Authentication tokens** kept in httpOnly cookies; the websocket console is
   authenticated with the same cookie, and a user can only reach their own
   servers.
-- **Permission checks** on every request: a user must only be able to manage
-  their own servers; only an `ADMIN` can access the administration area.
+- **Permission checks** on every request: a user can only manage their own
+  servers.
 - **HTTPS** in production via a reverse proxy (see `docs/DEPLOYMENT.md`).
 
 ---
@@ -335,7 +336,8 @@ required.
 
 - **Repository name**: `peregrine-panel` (lowercase with a hyphen). The
   displayed product name remains "Peregrine".
-- **Base files**: `README.md`, `LICENSE`, `CONTRIBUTING.md`, `SECURITY.md`.
+- **Base files**: `README.md`, `LICENSE`, `CHANGELOG.md`, `CONTRIBUTING.md`,
+  `SECURITY.md`.
 - **GitHub Issues** are used for bug reports; issue templates guide reporters.
 
 ---
@@ -365,11 +367,19 @@ required.
 
 ## 12. Current status & next steps
 
-**Phase 6 is complete.** Every game server is now created with hard CPU and
-RAM limits, so one server cannot starve the others. A second game is
-available — Minecraft Bedrock — alongside Minecraft Java; the create form
-lets the user pick the game, version, RAM and CPU.
+**The MVP is complete — Peregrine `v0.1.0`.** All seven phases are done: from a
+fresh install, a user creates the administrator account, then creates Minecraft
+Java or Bedrock servers and manages them fully — start/stop/restart, a live
+console, a file manager, and per-server CPU and RAM limits. The panel ships
+with a Docker Compose setup, a production deployment guide and an automated
+installer for Debian (HTTPS, firewall, intrusion protection).
 
-Next up is **Phase 7** — polish and the first release: cleaning up small
-rough edges, a finished installation experience, and tagging version
-`v0.1.0`.
+Ideas for after `v0.1.0`, in no particular order:
+
+- **Multi-machine support** — a separate "daemon" agent so the panel can manage
+  game servers across several machines.
+- **User management** — letting the administrator create and manage other
+  accounts, with an administration page.
+- **Automatic backups** of game server data.
+- **A task scheduler** (automatic restarts, scheduled commands).
+- **More games** beyond Minecraft.

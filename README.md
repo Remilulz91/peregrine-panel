@@ -7,10 +7,10 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Work in progress.** Current version: `0.1.0` — Phase 6 (resource limits &
-> games). See the roadmap below.
+> **Version 0.1.0** — the first release of the MVP. See the changelog in
+> [`CHANGELOG.md`](CHANGELOG.md).
 
-## Planned features
+## Features
 
 - User accounts, with an administrator account created on first launch
 - Create Minecraft servers (Java and Bedrock) in a few clicks
@@ -18,11 +18,12 @@ and Pelican.
 - Live console
 - File manager
 - Per-server resource limits (CPU, RAM)
+- Bilingual interface (English / French)
 
 ## Tech stack
 
 - **Backend**: Node.js + Fastify (TypeScript)
-- **Frontend**: React + Vite + Tailwind CSS (bilingual UI: English / French)
+- **Frontend**: React + Vite + Tailwind CSS
 - **Database**: SQLite, via Node's built-in driver (`node:sqlite`)
 - **Authentication**: JSON Web Tokens + Argon2 password hashing
 - **Containers**: Docker, controlled with dockerode
@@ -47,9 +48,13 @@ wizard guides you through creating the administrator account.
 ## Production deployment
 
 To deploy Peregrine on a server with your own domain name, automatic HTTPS, a
-firewall (UFW), intrusion protection (fail2ban) and an optional dedicated disk
-for game server data, follow the full guide:
-[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+firewall (UFW) and intrusion protection (fail2ban):
+
+- **Automated** — from the cloned directory, run
+  `sudo bash install.sh your-domain.example`.
+- **Manual** — follow the step-by-step guide in
+  [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md), which also covers an optional
+  dedicated disk for game server data.
 
 ## Updating Peregrine
 
@@ -88,6 +93,7 @@ peregrine-panel/
 ├── backend/            Fastify API (TypeScript)
 ├── frontend/           React interface (Vite + Tailwind)
 ├── docs/               Documentation (architecture, deployment)
+├── install.sh          Automated installer for Debian
 ├── docker-compose.yml  One-command startup
 └── Dockerfile          Production image
 ```
@@ -101,9 +107,11 @@ peregrine-panel/
 - [x] **Phase 4** — Live console
 - [x] **Phase 5** — File manager
 - [x] **Phase 6** — Resource limits & Minecraft Bedrock
-- [ ] **Phase 7** — Polish & first public release
+- [x] **Phase 7** — Polish & first release (`v0.1.0`)
 
-Full details in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+Ideas for after v0.1.0: multi-machine support, user management with an
+administration page, automatic backups, more games. Full details in
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## License
 
