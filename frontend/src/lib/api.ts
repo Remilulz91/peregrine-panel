@@ -9,19 +9,20 @@ export interface ApiUser {
   email: string;
   role: string;
   createdAt: string;
+  /** True when this account has TOTP MFA active. */
+  mfaEnabled?: boolean;
+  /** How many unused recovery codes the account has left. */
+  mfaRecoveryRemaining?: number;
 }
 
-/** A game template, as returned by the API. */
 export interface ApiTemplate {
   id: string;
   name: string;
   dockerImage: string;
   defaultVersion: string;
-  /** "java" or "bedrock". */
   kind: string;
 }
 
-/** A game server, as returned by the API. */
 export interface ApiServer {
   id: string;
   name: string;
@@ -36,12 +37,10 @@ export interface ApiServer {
   ownerUsername: string;
 }
 
-/** A game server as seen from the admin view (includes the owner). */
 export interface ApiAdminServer extends ApiServer {
   owner: { id: string; username: string };
 }
 
-/** One entry in a server's activity log. */
 export interface ApiActivityEntry {
   id: string;
   serverId: string;
@@ -63,6 +62,8 @@ export interface ApiAdminUser {
   role: 'USER' | 'ADMIN';
   createdAt: string;
   needsActivation: boolean;
+  /** True if this account has MFA active. Admins can reset it. */
+  mfaEnabled: boolean;
   pendingInvite: ApiPendingInvite | null;
 }
 
@@ -98,7 +99,6 @@ export interface ApiSubuser {
   createdAt: string;
 }
 
-/** One scheduled recurring task on a server. */
 export interface ApiSchedule {
   id: string;
   serverId: string;
@@ -112,6 +112,17 @@ export interface ApiSchedule {
   lastRunAt: string | null;
   nextRunAt: string | null;
   createdAt: string;
+}
+
+/** What POST /api/auth/login returns when MFA is enabled on the account. */
+export interface ApiMfaChallenge {
+  requiresMfa: true;
+}
+
+/** Payload returned by POST /api/auth/mfa/setup. */
+export interface ApiMfaSetup {
+  secret: string;
+  otpAuthUri: string;
 }
 
 export type ServerAction = 'start' | 'stop' | 'restart';
@@ -169,7 +180,6 @@ interface CreateServerInput {
   cpuLimit: number;
 }
 
-/** Body shape for schedule create/update. */
 export interface ScheduleInput {
   name: string;
   frequency: 'hourly' | 'daily' | 'weekly';
@@ -179,7 +189,11 @@ export interface ScheduleInput {
   enabled: boolean;
 }
 
-/** The set of API calls used by the interface. */
+/** Login response: either the user (no MFA) or a challenge (MFA required). */
+export type LoginResponse =
+  | { user: ApiUser; requiresMfa?: undefined }
+  | ApiMfaChallenge;
+
 export const api = {
   setupRequired: () =>
     request<{ setupRequired: boolean }>('/api/auth/setup-required'),
@@ -190,12 +204,32 @@ export const api = {
       body: JSON.stringify(body),
     }),
   login: (body: LoginCredentials) =>
-    request<{ user: ApiUser }>('/api/auth/login', {
+    request<LoginResponse>('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify(body),
     }),
   logout: () => request<{ ok: boolean }>('/api/auth/logout', { method: 'POST' }),
 
+  // --- MFA ---
+  mfaSetup: () =>
+    request<ApiMfaSetup>('/api/auth/mfa/setup', { method: 'POST' }),
+  mfaEnable: (secret: string, code: string) =>
+    request<{ recoveryCodes: string[] }>('/api/auth/mfa/enable', {
+      method: 'POST',
+      body: JSON.stringify({ secret, code }),
+    }),
+  mfaDisable: (password: string) =>
+    request<{ ok: boolean }>('/api/auth/mfa/disable', {
+      method: 'POST',
+      body: JSON.stringify({ password }),
+    }),
+  mfaVerify: (input: { code?: string; recoveryCode?: string }) =>
+    request<{ user: ApiUser }>('/api/auth/mfa/verify', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+
+  // --- Invitations ---
   getInvite: (token: string) =>
     request<{ username: string }>(`/api/auth/invite/${token}`),
   acceptInvite: (token: string, password: string) =>
@@ -204,6 +238,7 @@ export const api = {
       body: JSON.stringify({ password }),
     }),
 
+  // --- Admin ---
   listAdminUsers: () =>
     request<{ users: ApiAdminUser[] }>('/api/admin/users'),
   createAdminUser: (body: CreateUserInput) =>
@@ -216,6 +251,11 @@ export const api = {
       `/api/admin/users/${userId}/invite`,
       { method: 'POST' },
     ),
+  resetUserMfa: (userId: string) =>
+    request<{ user: ApiAdminUser }>(
+      `/api/admin/users/${userId}/mfa-reset`,
+      { method: 'POST' },
+    ),
   deleteAdminUser: (userId: string) =>
     request<{ ok: boolean }>(`/api/admin/users/${userId}`, {
       method: 'DELETE',
@@ -223,6 +263,7 @@ export const api = {
   listAdminServers: () =>
     request<{ servers: ApiAdminServer[] }>('/api/admin/servers'),
 
+  // --- Game servers ---
   listTemplates: () =>
     request<{ templates: ApiTemplate[] }>('/api/templates'),
   listServers: () => request<{ servers: ApiServer[] }>('/api/servers'),
@@ -251,7 +292,7 @@ export const api = {
       `/api/servers/${id}/activity`,
     ),
 
-  // --- Subusers (owner-only) ---
+  // --- Subusers ---
   listSubusers: (serverId: string) =>
     request<{ subusers: ApiSubuser[]; availablePermissions: string[] }>(
       `/api/servers/${serverId}/subusers`,
@@ -276,7 +317,7 @@ export const api = {
       { method: 'DELETE' },
     ),
 
-  // --- Schedules (owner-only) ---
+  // --- Schedules ---
   listSchedules: (serverId: string) =>
     request<{ schedules: ApiSchedule[] }>(
       `/api/servers/${serverId}/schedules`,
@@ -358,8 +399,6 @@ export const api = {
     );
   },
 };
-
-// --- Shared permission constants (must mirror backend lib/permissions.ts) ---
 
 export const PERM = {
   CONTROL_START: 'control.start',

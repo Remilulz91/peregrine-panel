@@ -52,8 +52,6 @@ const STATUS_KEY: Record<string, TranslationKey> = {
   STOPPING: 'status.STOPPING',
 };
 
-// Tabs in display order. `subusers` and `schedules` are owner-only and
-// filtered out at render time.
 const TABS: { id: ServerTab; key: TranslationKey; ownerOnly?: boolean }[] = [
   { id: 'console', key: 'detail.tab.console' },
   { id: 'files', key: 'detail.tab.files' },
@@ -65,10 +63,6 @@ const TABS: { id: ServerTab; key: TranslationKey; ownerOnly?: boolean }[] = [
   { id: 'activity', key: 'detail.tab.activity' },
 ];
 
-/**
- * The server-detail page. Fetches the server + the viewer's permission
- * set every 4 s so the badge and ACL gates stay in sync.
- */
 export default function ServerDetail({ id, tab }: ServerDetailProps) {
   const { t } = useTranslation();
   const { user, signOut } = useAuth();
@@ -198,9 +192,15 @@ export default function ServerDetail({ id, tab }: ServerDetailProps) {
         <div className="flex-1" />
         <LanguageToggle />
         {user && (
-          <span className="hidden text-sm text-peregrine-400 sm:inline">
+          /* Clicking the username opens the account / security page. */
+          <button
+            type="button"
+            onClick={() => navigate('/account')}
+            title={t('dashboard.account')}
+            className="hidden text-sm text-peregrine-400 transition-colors hover:text-peregrine-200 sm:inline"
+          >
             {user.username}
-          </span>
+          </button>
         )}
         <button
           type="button"

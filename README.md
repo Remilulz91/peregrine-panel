@@ -7,14 +7,17 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.6.0** — scheduled tasks. Owners can set up recurring
-> backups (hourly / daily / weekly) and the panel takes care of them in
-> the background. See the changelog in
+> **Version 0.7.0** — two-factor authentication. Each user can secure
+> their account with a 6-digit code from an authenticator app, plus
+> single-use recovery codes. See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features
 
 - User accounts, with an administrator account created on first launch
+- **Two-factor authentication (2FA)** via TOTP (Google Authenticator,
+  Authy, 1Password, Bitwarden, ...) — optional per account, with 8
+  single-use recovery codes and an admin reset button
 - The administrator can create more accounts (User or Administrator) and
   share a single-use invitation link so each person picks their own
   password
@@ -31,12 +34,10 @@ and Pelican.
     permission set (owner-only)
   - **Settings** — rename, delete (blocked while running)
   - **Activity** — chronological log of who did what
-- **Granular subuser permissions** — control / console / files /
-  backups / settings. The UI hides every button the viewer cannot
-  use; the backend enforces the same rules.
+- **Granular subuser permissions** — the UI hides every button the
+  viewer cannot use; the backend enforces the same rules.
 - **Disk safety** — Peregrine refuses to create a server or a backup if
-  doing so would push the dedicated disk below a 2 GiB / 5 % reserve,
-  so a runaway server can never starve the others
+  doing so would push the dedicated disk below a 2 GiB / 5 % reserve
 - Create Minecraft servers (Java and Bedrock) in a few clicks
 - Start, stop and restart servers
 - Per-server resource limits (CPU, RAM)
@@ -47,7 +48,8 @@ and Pelican.
 - **Backend**: Node.js + Fastify (TypeScript)
 - **Frontend**: React + Vite + Tailwind CSS
 - **Database**: SQLite, via Node's built-in driver (`node:sqlite`)
-- **Authentication**: JSON Web Tokens + Argon2 password hashing
+- **Authentication**: JSON Web Tokens + Argon2 password hashing, TOTP
+  2FA (RFC 6238, hand-rolled, no external dep)
 - **Containers**: Docker, controlled with dockerode
 - **Real time**: Socket.IO (live console)
 - **Backups**: system `tar` (no JS dependency), stored on the dedicated
@@ -134,10 +136,11 @@ peregrine-panel/
 - [x] **Phase 11** — Subusers with granular per-server permissions
   (`v0.5.0`)
 - [x] **Phase 12** — Scheduled tasks for recurring backups (`v0.6.0`)
+- [x] **Phase 13** — Two-factor authentication (TOTP, `v0.7.0`)
 
-Ideas for later: multi-machine support, databases, more games, more
-schedule actions (restart on a schedule, send a console command). Full
-details in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+Ideas for later: multi-machine support, more games, more schedule
+actions (restart on a schedule, send a console command), observability.
+Full details in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## License
 

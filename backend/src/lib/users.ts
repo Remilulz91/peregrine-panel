@@ -9,9 +9,16 @@ export interface UserRecord {
   passwordHash: string;
   role: string;
   createdAt: string;
+  /** Base32 TOTP secret, or null when MFA is off. */
+  mfaSecret: string | null;
+  /**
+   * JSON-encoded array of Argon2-hashed recovery codes, or null when
+   * MFA is off. The raw string is intentionally exposed so lib/mfa.ts
+   * can manage the list (parse / verify / shrink).
+   */
+  mfaRecoveryCodes: string | null;
 }
 
-// The raw row shape stored in SQLite (snake_case column names).
 interface UserRow {
   id: string;
   email: string;
@@ -19,6 +26,8 @@ interface UserRow {
   password_hash: string;
   role: string;
   created_at: string;
+  mfa_secret: string | null;
+  mfa_recovery_codes: string | null;
 }
 
 function toRecord(row: UserRow): UserRecord {
@@ -29,13 +38,13 @@ function toRecord(row: UserRow): UserRecord {
     passwordHash: row.password_hash,
     role: row.role,
     createdAt: row.created_at,
+    mfaSecret: row.mfa_secret,
+    mfaRecoveryCodes: row.mfa_recovery_codes,
   };
 }
 
 // Placeholder prefix used as the password hash for accounts that were
 // created by an administrator but have not yet accepted their invitation.
-// It is intentionally not a valid Argon2 hash, so verifyPassword always
-// returns false — nobody can log in until the user sets a real password.
 const PENDING_PASSWORD_PREFIX = 'PENDING:';
 
 /** Builds the placeholder password hash for a freshly invited account. */

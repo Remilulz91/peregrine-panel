@@ -29,6 +29,7 @@ const translations = {
   'common.cancel': { en: 'Cancel', fr: 'Annuler' },
   'common.close': { en: 'Close', fr: 'Fermer' },
   'common.save': { en: 'Save', fr: 'Enregistrer' },
+  'common.back': { en: 'Back', fr: 'Retour' },
   'language.label': { en: 'Language', fr: 'Langue' },
 
   'setup.title': {
@@ -66,6 +67,27 @@ const translations = {
     fr: "Nom d'utilisateur ou mot de passe incorrect.",
   },
 
+  'login.mfa.title': { en: 'Two-step verification', fr: 'Vérification en deux étapes' },
+  'login.mfa.subtitle': {
+    en: 'Enter the 6-digit code from your authenticator app to finish signing in.',
+    fr: "Saisissez le code à 6 chiffres affiché par votre application d'authentification pour terminer la connexion.",
+  },
+  'login.mfa.codeLabel': { en: 'Code', fr: 'Code' },
+  'login.mfa.submit': { en: 'Verify', fr: 'Vérifier' },
+  'login.mfa.useRecovery': {
+    en: 'Use a recovery code instead',
+    fr: 'Utiliser un code de récupération à la place',
+  },
+  'login.mfa.useCode': {
+    en: 'Use a code from my authenticator',
+    fr: "Utiliser un code de mon application d'authentification",
+  },
+  'login.mfa.recoveryLabel': { en: 'Recovery code', fr: 'Code de récupération' },
+  'login.mfa.errorInvalid': {
+    en: 'The code is invalid or has expired. Try again.',
+    fr: "Le code est invalide ou a expiré. Réessayez.",
+  },
+
   'invite.title': { en: 'Set your password', fr: 'Définissez votre mot de passe' },
   'invite.welcome': {
     en: 'Welcome to Peregrine, {username}. Choose a password to finish setting up your account.',
@@ -95,6 +117,7 @@ const translations = {
   'dashboard.viewServers': { en: 'Servers', fr: 'Serveurs' },
   'dashboard.viewAdmin': { en: 'Admin', fr: 'Admin' },
   'dashboard.sharedBy': { en: 'shared by', fr: 'partagé par' },
+  'dashboard.account': { en: 'My account', fr: 'Mon compte' },
 
   'admin.title': { en: 'Administration', fr: 'Administration' },
   'admin.subtitle': {
@@ -123,6 +146,13 @@ const translations = {
     en: 'Unable to load the accounts.',
     fr: 'Impossible de charger les comptes.',
   },
+  'admin.users.mfaBadge': { en: '2FA', fr: '2FA' },
+  'admin.users.resetMfa': { en: 'Reset 2FA', fr: 'Réinitialiser la 2FA' },
+  'admin.users.resetMfaConfirm': {
+    en: 'Reset 2FA for this account? They will be able to sign in with just their password until they re-enable it.',
+    fr: 'Réinitialiser la 2FA de ce compte ? La personne pourra se connecter avec son mot de passe seul jusqu’à ce qu’elle la réactive.',
+  },
+
   'admin.role.USER': { en: 'User', fr: 'Utilisateur' },
   'admin.role.ADMIN': { en: 'Administrator', fr: 'Administrateur' },
 
@@ -451,7 +481,6 @@ const translations = {
   'perm.backups.download': { en: 'Download backups', fr: 'Télécharger des sauvegardes' },
   'perm.settings.rename': { en: 'Rename the server', fr: 'Renommer le serveur' },
 
-  // --- Schedules ---
   'schedules.title': { en: 'Scheduled tasks', fr: 'Tâches planifiées' },
   'schedules.subtitle': {
     en: 'Run backups automatically on a recurring schedule. The newest backups always replace the oldest once the per-server limit is reached.',
@@ -498,8 +527,6 @@ const translations = {
   'schedules.freq.daily': { en: 'Every day', fr: 'Chaque jour' },
   'schedules.freq.weekly': { en: 'Every week', fr: 'Chaque semaine' },
 
-  // Frequency descriptions used in the list. Templated with {time} or
-  // {day}+{time} for daily / weekly. Hourly uses just {minute}.
   'schedules.freq.hourly.desc': {
     en: 'Every hour at minute {minute}',
     fr: 'Toutes les heures à {minute} minute(s)',
@@ -520,6 +547,60 @@ const translations = {
   'schedules.day.4': { en: 'Thursday', fr: 'jeudi' },
   'schedules.day.5': { en: 'Friday', fr: 'vendredi' },
   'schedules.day.6': { en: 'Saturday', fr: 'samedi' },
+
+  // --- Account page + MFA ---
+  'account.title': { en: 'My account', fr: 'Mon compte' },
+  'account.back': { en: 'Back to servers', fr: 'Retour aux serveurs' },
+  'account.profile.title': { en: 'Profile', fr: 'Profil' },
+  'account.profile.username': { en: 'Username', fr: "Nom d'utilisateur" },
+  'account.profile.email': { en: 'Email', fr: 'Email' },
+  'account.profile.role': { en: 'Role', fr: 'Rôle' },
+
+  'account.security.title': { en: 'Security', fr: 'Sécurité' },
+  'account.mfa.title': { en: 'Two-step verification (2FA)', fr: 'Vérification en deux étapes (2FA)' },
+  'account.mfa.intro': {
+    en: 'Protect your account with a 6-digit code from an authenticator app such as Google Authenticator, Authy, 1Password or Bitwarden.',
+    fr: "Protégez votre compte avec un code à 6 chiffres généré par une application d'authentification comme Google Authenticator, Authy, 1Password ou Bitwarden.",
+  },
+  'account.mfa.statusOn': {
+    en: 'Two-step verification is enabled. {count} recovery code(s) left.',
+    fr: 'La 2FA est activée. {count} code(s) de récupération restant(s).',
+  },
+  'account.mfa.statusOff': {
+    en: 'Two-step verification is not enabled.',
+    fr: "La 2FA n'est pas activée.",
+  },
+  'account.mfa.enable': { en: 'Enable 2FA', fr: 'Activer la 2FA' },
+  'account.mfa.disable': { en: 'Disable 2FA', fr: 'Désactiver la 2FA' },
+
+  'account.mfa.setup.title': { en: 'Set up two-step verification', fr: 'Configurer la 2FA' },
+  'account.mfa.setup.step1Title': { en: 'Step 1 — Scan the QR code', fr: 'Étape 1 — Scannez le QR code' },
+  'account.mfa.setup.step1Body': {
+    en: 'Open your authenticator app and scan this QR code, or paste the secret manually.',
+    fr: "Ouvrez votre application d'authentification et scannez ce QR code, ou collez le secret manuellement.",
+  },
+  'account.mfa.setup.secretLabel': { en: 'Secret', fr: 'Secret' },
+  'account.mfa.setup.step2Title': { en: 'Step 2 — Enter the 6-digit code', fr: 'Étape 2 — Saisissez le code à 6 chiffres' },
+  'account.mfa.setup.step2Body': {
+    en: 'Type the code your app is showing right now to confirm everything is wired up.',
+    fr: "Tapez le code que votre application affiche en ce moment pour confirmer que tout est bien connecté.",
+  },
+  'account.mfa.setup.codeLabel': { en: 'Code', fr: 'Code' },
+  'account.mfa.setup.activate': { en: 'Activate', fr: 'Activer' },
+  'account.mfa.setup.step3Title': { en: 'Step 3 — Save your recovery codes', fr: 'Étape 3 — Sauvegardez vos codes de récupération' },
+  'account.mfa.setup.step3Body': {
+    en: 'Each code can be used once if you lose access to your authenticator. Save them somewhere safe — they will not be shown again.',
+    fr: "Chaque code peut être utilisé une fois si vous perdez l'accès à votre application. Sauvegardez-les en lieu sûr — ils ne seront plus jamais affichés.",
+  },
+  'account.mfa.setup.done': { en: 'I have saved them', fr: 'Je les ai sauvegardés' },
+
+  'account.mfa.disable.title': { en: 'Disable 2FA', fr: 'Désactiver la 2FA' },
+  'account.mfa.disable.body': {
+    en: 'Re-enter your password to confirm.',
+    fr: 'Saisissez à nouveau votre mot de passe pour confirmer.',
+  },
+  'account.mfa.disable.passwordLabel': { en: 'Password', fr: 'Mot de passe' },
+  'account.mfa.disable.confirm': { en: 'Disable', fr: 'Désactiver' },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

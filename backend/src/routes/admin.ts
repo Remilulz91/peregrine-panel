@@ -27,6 +27,7 @@ import {
 } from '../lib/servers';
 import { getContainerState } from '../lib/docker';
 import { deprovisionServer } from '../services/provisioning';
+import { disableMfa, userHasMfa } from '../lib/mfa';
 
 interface CreateUserBody {
   username: string;
@@ -34,17 +35,13 @@ interface CreateUserBody {
   role: 'USER' | 'ADMIN';
 }
 
-// A simple email check — avoids depending on JSON-schema format extensions.
 const EMAIL_PATTERN = '^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$';
-// Usernames stay in the printable ASCII range that is safe for logins.
 const USERNAME_PATTERN = '^[A-Za-z0-9._-]+$';
 
-/** Builds the URL an invitee should open in their browser. */
 function inviteUrlFor(token: string): string {
   return `${config.appUrl.replace(/\/+$/, '')}/invite/${token}`;
 }
 
-/** Shapes a user for the API response — never exposes the password hash. */
 function publicUser(user: UserRecord, invite: InviteRecord | null) {
   return {
     id: user.id,
@@ -52,25 +49,17 @@ function publicUser(user: UserRecord, invite: InviteRecord | null) {
     email: user.email,
     role: user.role,
     createdAt: user.createdAt,
-    // True while the account waits for its invitation to be accepted; the
-    // admin uses this to know whether the "regenerate invite" action even
-    // makes sense (it is not allowed on activated accounts).
     needsActivation: needsActivation(user),
-    // The presence of an invitation tells the admin that a still-valid
-    // link exists in the database. Expired invites are cleaned up on
-    // lookup, so this can be null even when needsActivation is true.
+    mfaEnabled: userHasMfa(user),
     pendingInvite: invite ? { expiresAt: invite.expiresAt } : null,
   };
 }
 
-/** Computes the status to show for a server (database + Docker probe). */
 async function effectiveStatus(server: ServerRecord): Promise<string> {
   if (server.status === 'INSTALLING' || server.status === 'INSTALL_FAILED') {
     return server.status;
   }
-  if (!server.containerId) {
-    return 'OFFLINE';
-  }
+  if (!server.containerId) return 'OFFLINE';
   const state = await getContainerState(server.containerId);
   return state === 'running' ? 'RUNNING' : 'OFFLINE';
 }
@@ -78,11 +67,6 @@ async function effectiveStatus(server: ServerRecord): Promise<string> {
 /**
  * Administrator routes (mounted under /api/admin). Every route requires
  * a logged-in user with the ADMIN role.
- *   GET    /users                - list every account
- *   POST   /users                - create an invited account
- *   POST   /users/:id/invite     - regenerate the invitation link
- *   DELETE /users/:id            - delete an account and its servers
- *   GET    /servers              - list every server, with owner info
  */
 export async function adminRoutes(app: FastifyInstance): Promise<void> {
   app.addHook('preHandler', authenticateAdmin);
@@ -132,9 +116,6 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
           .send({ error: 'This email is already in use.' });
       }
 
-      // The placeholder is not a valid Argon2 hash, so verifyPassword
-      // returns false: nobody can log in until the invitation is accepted
-      // and a real password is set.
       const user = createUser({
         username: body.username,
         email,
@@ -156,12 +137,10 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
     if (!user) {
       return reply.code(404).send({ error: 'User not found.' });
     }
-    // Regenerating an invitation only makes sense for accounts that have
-    // not yet been activated. Allowing it on an active account would let
-    // an admin silently reset another user's password.
     if (!needsActivation(user)) {
       return reply.code(409).send({
-        error: 'This account is already active — no invitation can be regenerated.',
+        error:
+          'This account is already active — no invitation can be regenerated.',
       });
     }
     const invite = createInviteFor(user.id);
@@ -171,14 +150,30 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
     };
   });
 
+  // Reset a user's MFA — useful when they have lost both their phone
+  // and their recovery codes. The user can re-enable MFA from their
+  // Account page after logging in again.
+  app.post('/users/:id/mfa-reset', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const user = findUserById(id);
+    if (!user) {
+      return reply.code(404).send({ error: 'User not found.' });
+    }
+    if (!userHasMfa(user)) {
+      return reply.code(409).send({ error: 'MFA is not enabled on this account.' });
+    }
+    disableMfa(user.id);
+    return {
+      user: publicUser(user, findInviteByUserId(user.id)),
+    };
+  });
+
   app.delete('/users/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
     const user = findUserById(id);
     if (!user) {
       return reply.code(404).send({ error: 'User not found.' });
     }
-    // Safety: an admin cannot delete themselves, and the last remaining
-    // administrator cannot be removed (the panel would become unusable).
     if (user.id === request.user.sub) {
       return reply
         .code(400)
@@ -190,8 +185,6 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
         .send({ error: 'Cannot delete the last administrator.' });
     }
 
-    // Tear down every Docker container this user owned, then drop the
-    // server rows, then the user (which cascades to the invite row).
     const servers = listServersByOwner(user.id);
     for (const server of servers) {
       await deprovisionServer(server);
@@ -218,6 +211,8 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
           cpuLimit: server.cpuLimit,
           port: server.port,
           createdAt: server.createdAt,
+          isOwner: false,
+          ownerUsername: owner?.username ?? '?',
           owner: owner
             ? { id: owner.id, username: owner.username }
             : { id: server.ownerId, username: '?' },
