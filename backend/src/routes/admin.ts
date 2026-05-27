@@ -10,6 +10,8 @@ import {
   findUserById,
   findUserByUsername,
   listAllUsers,
+  needsActivation,
+  pendingPasswordHash,
   type UserRecord,
 } from '../lib/users';
 import {
@@ -50,12 +52,14 @@ function publicUser(user: UserRecord, invite: InviteRecord | null) {
     email: user.email,
     role: user.role,
     createdAt: user.createdAt,
-    // The presence of an invitation tells the admin the user has not yet
-    // set a password. The token itself is not exposed in listings; the
-    // admin must call the regenerate route to get a fresh invite URL.
-    pendingInvite: invite
-      ? { expiresAt: invite.expiresAt }
-      : null,
+    // True while the account waits for its invitation to be accepted; the
+    // admin uses this to know whether the "regenerate invite" action even
+    // makes sense (it is not allowed on activated accounts).
+    needsActivation: needsActivation(user),
+    // The presence of an invitation tells the admin that a still-valid
+    // link exists in the database. Expired invites are cleaned up on
+    // lookup, so this can be null even when needsActivation is true.
+    pendingInvite: invite ? { expiresAt: invite.expiresAt } : null,
   };
 }
 
@@ -131,11 +135,10 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
       // The placeholder is not a valid Argon2 hash, so verifyPassword
       // returns false: nobody can log in until the invitation is accepted
       // and a real password is set.
-      const placeholder = `PENDING:${randomUUID()}`;
       const user = createUser({
         username: body.username,
         email,
-        passwordHash: placeholder,
+        passwordHash: pendingPasswordHash(randomUUID()),
         role: body.role,
       });
       const invite = createInviteFor(user.id);
@@ -152,6 +155,14 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
     const user = findUserById(id);
     if (!user) {
       return reply.code(404).send({ error: 'User not found.' });
+    }
+    // Regenerating an invitation only makes sense for accounts that have
+    // not yet been activated. Allowing it on an active account would let
+    // an admin silently reset another user's password.
+    if (!needsActivation(user)) {
+      return reply.code(409).send({
+        error: 'This account is already active — no invitation can be regenerated.',
+      });
     }
     const invite = createInviteFor(user.id);
     return {

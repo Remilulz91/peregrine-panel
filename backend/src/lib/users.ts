@@ -32,6 +32,26 @@ function toRecord(row: UserRow): UserRecord {
   };
 }
 
+// Placeholder prefix used as the password hash for accounts that were
+// created by an administrator but have not yet accepted their invitation.
+// It is intentionally not a valid Argon2 hash, so verifyPassword always
+// returns false — nobody can log in until the user sets a real password.
+const PENDING_PASSWORD_PREFIX = 'PENDING:';
+
+/** Builds the placeholder password hash for a freshly invited account. */
+export function pendingPasswordHash(uniqueSuffix: string): string {
+  return `${PENDING_PASSWORD_PREFIX}${uniqueSuffix}`;
+}
+
+/**
+ * Returns true when the account has not yet accepted its invitation, i.e.
+ * the password is still the placeholder set by the administrator at
+ * creation time.
+ */
+export function needsActivation(user: UserRecord): boolean {
+  return user.passwordHash.startsWith(PENDING_PASSWORD_PREFIX);
+}
+
 /** Counts how many accounts exist (used to detect the first run). */
 export function countUsers(): number {
   const row = db

@@ -235,7 +235,7 @@ export default function AdminPanel({ templates }: AdminPanelProps) {
                         </td>
                         <td className="px-4 py-2">{t(roleKey)}</td>
                         <td className="px-4 py-2">
-                          {row.pendingInvite ? (
+                          {row.needsActivation ? (
                             <span className="rounded-full bg-falcon/15 px-2 py-0.5 text-xs text-falcon">
                               {t('admin.users.statusPending')}
                             </span>
@@ -247,19 +247,20 @@ export default function AdminPanel({ templates }: AdminPanelProps) {
                         </td>
                         <td className="px-4 py-2">
                           <div className="flex justify-end gap-2">
-                            <button
-                              type="button"
-                              onClick={() => void regenerateInvite(row)}
-                              className="rounded-lg border border-peregrine-700 px-2.5 py-1 text-xs font-medium text-peregrine-200 transition-colors hover:bg-peregrine-800"
-                            >
-                              {t('admin.users.regenerate')}
-                            </button>
+                            {row.needsActivation && (
+                              <button
+                                type="button"
+                                onClick={() => void regenerateInvite(row)}
+                                className="rounded-lg border border-peregrine-700 px-2.5 py-1 text-xs font-medium text-peregrine-200 transition-colors hover:bg-peregrine-800"
+                              >
+                                {t('admin.users.regenerate')}
+                              </button>
+                            )}
                             <button
                               type="button"
                               disabled={isSelf}
                               onClick={() => void deleteUser(row)}
                               className="rounded-lg border border-peregrine-700 px-2.5 py-1 text-xs font-medium text-rose-400 transition-colors hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-40"
-                              title={isSelf ? '' : undefined}
                             >
                               {t('admin.users.delete')}
                             </button>

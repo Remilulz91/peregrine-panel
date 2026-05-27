@@ -51,6 +51,9 @@ export interface ApiAdminUser {
   email: string;
   role: 'USER' | 'ADMIN';
   createdAt: string;
+  /** True until the account holder accepts their invitation. */
+  needsActivation: boolean;
+  /** Present only while a still-valid invitation token exists. */
   pendingInvite: ApiPendingInvite | null;
 }
 
