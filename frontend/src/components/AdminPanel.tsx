@@ -39,6 +39,9 @@ export default function AdminPanel({ templates }: AdminPanelProps) {
   // --- Users ----------------------------------------------------------------
 
   const [users, setUsers] = useState<ApiAdminUser[]>([]);
+  // Tracks whether the first load has completed: the empty-state card
+  // should only ever appear after we know the list is truly empty.
+  const [usersLoaded, setUsersLoaded] = useState(false);
   const [usersError, setUsersError] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
 
@@ -49,12 +52,15 @@ export default function AdminPanel({ templates }: AdminPanelProps) {
       setUsersError(false);
     } catch {
       setUsersError(true);
+    } finally {
+      setUsersLoaded(true);
     }
   }, []);
 
   // --- Servers --------------------------------------------------------------
 
   const [servers, setServers] = useState<ApiAdminServer[]>([]);
+  const [serversLoaded, setServersLoaded] = useState(false);
   const [serversError, setServersError] = useState(false);
 
   const loadServers = useCallback(async () => {
@@ -64,6 +70,8 @@ export default function AdminPanel({ templates }: AdminPanelProps) {
       setServersError(false);
     } catch {
       setServersError(true);
+    } finally {
+      setServersLoaded(true);
     }
   }, []);
 
@@ -202,7 +210,9 @@ export default function AdminPanel({ templates }: AdminPanelProps) {
             </p>
           )}
 
-          {users.length === 0 && !usersError ? (
+          {/* Wait for the first load before deciding between "empty" and
+              "list of users", to avoid a flash of the empty state. */}
+          {!usersLoaded ? null : users.length === 0 && !usersError ? (
             <div className="mt-6 rounded-2xl border border-dashed border-peregrine-700 p-8 text-center text-sm text-peregrine-400">
               {t('admin.users.empty')}
             </div>
@@ -291,7 +301,9 @@ export default function AdminPanel({ templates }: AdminPanelProps) {
             </p>
           )}
 
-          {servers.length === 0 && !serversError ? (
+          {/* Same trick on the all-servers list: wait for the first load
+              before showing the empty-state. */}
+          {!serversLoaded ? null : servers.length === 0 && !serversError ? (
             <div className="mt-6 rounded-2xl border border-dashed border-peregrine-700 p-8 text-center text-sm text-peregrine-400">
               {t('admin.servers.empty')}
             </div>

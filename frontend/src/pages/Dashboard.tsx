@@ -29,6 +29,9 @@ export default function Dashboard() {
   const { t } = useTranslation();
   const { user, signOut } = useAuth();
   const [servers, setServers] = useState<ApiServer[]>([]);
+  // Distinguishes "list still loading" from "list loaded and empty", so
+  // the empty-state card does not flash on every page refresh.
+  const [serversLoaded, setServersLoaded] = useState(false);
   const [templates, setTemplates] = useState<ApiTemplate[]>([]);
   const [loadError, setLoadError] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -47,6 +50,8 @@ export default function Dashboard() {
       setLoadError(false);
     } catch {
       setLoadError(true);
+    } finally {
+      setServersLoaded(true);
     }
   }, []);
 
@@ -180,7 +185,10 @@ export default function Dashboard() {
               </p>
             )}
 
-            {servers.length === 0 && !loadError ? (
+            {/* Render the empty-state ONLY once the first load has actually
+                completed; otherwise the page flashes "no servers yet" on
+                every refresh while waiting for the API. */}
+            {!serversLoaded ? null : servers.length === 0 && !loadError ? (
               <div className="mt-8 rounded-2xl border border-dashed border-peregrine-700 p-10 text-center text-sm text-peregrine-400">
                 {t('servers.empty')}
               </div>
