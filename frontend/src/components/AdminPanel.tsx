@@ -5,14 +5,10 @@ import {
   type ApiAdminServer,
   type ApiAdminUser,
   type ApiTemplate,
-  type ApiServer,
-  type ServerAction,
 } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useTranslation, type TranslationKey } from '../lib/i18n';
-import ConsoleDialog from './ConsoleDialog';
 import CreateUserDialog from './CreateUserDialog';
-import FilesDialog from './FilesDialog';
 import ServerCard from './ServerCard';
 
 interface AdminPanelProps {
@@ -26,9 +22,9 @@ type Tab = 'users' | 'servers';
  *
  * Two tabs:
  *   * Users    — list, create, regenerate invite, delete accounts.
- *   * Servers  — every server on the panel (regardless of owner), with
- *                the same controls as the user dashboard so the admin
- *                can troubleshoot servers that belong to other users.
+ *   * Servers  — every server on the panel (regardless of owner). The
+ *                rows are clickable just like the regular dashboard and
+ *                open the server-detail page where every action lives.
  */
 export default function AdminPanel({ templates }: AdminPanelProps) {
   const { t } = useTranslation();
@@ -83,45 +79,14 @@ export default function AdminPanel({ templates }: AdminPanelProps) {
     return () => clearInterval(interval);
   }, [loadUsers, loadServers]);
 
-  // --- Server controls (admin can act on any server) ----------------------
-
-  const [consoleServer, setConsoleServer] = useState<ApiServer | null>(null);
-  const [filesServer, setFilesServer] = useState<ApiServer | null>(null);
-
   function reportError(err: unknown): void {
     const message =
       err instanceof ApiError ? err.message : t('common.errorGeneric');
     window.alert(message);
   }
 
-  async function handleServerAction(
-    server: ApiServer,
-    action: ServerAction,
-  ): Promise<void> {
-    try {
-      await api.serverAction(server.id, action);
-    } catch (err) {
-      reportError(err);
-    }
-    void loadServers();
-  }
-
-  async function handleServerDelete(server: ApiServer): Promise<void> {
-    if (!window.confirm(t('server.deleteConfirm'))) return;
-    try {
-      await api.deleteServer(server.id);
-    } catch (err) {
-      reportError(err);
-    }
-    void loadServers();
-  }
-
   function templateName(id: string): string {
     return templates.find((tpl) => tpl.id === id)?.name ?? 'Minecraft';
-  }
-
-  function templateKind(id: string): string {
-    return templates.find((tpl) => tpl.id === id)?.kind ?? 'java';
   }
 
   // --- User actions ---------------------------------------------------------
@@ -315,10 +280,6 @@ export default function AdminPanel({ templates }: AdminPanelProps) {
                   server={server}
                   templateName={templateName(server.templateId)}
                   ownerName={server.owner.username}
-                  onAction={handleServerAction}
-                  onConsole={setConsoleServer}
-                  onFiles={setFilesServer}
-                  onDelete={handleServerDelete}
                 />
               ))}
             </div>
@@ -330,21 +291,6 @@ export default function AdminPanel({ templates }: AdminPanelProps) {
         <CreateUserDialog
           onClose={() => setCreateOpen(false)}
           onCreated={() => void loadUsers()}
-        />
-      )}
-
-      {consoleServer && (
-        <ConsoleDialog
-          server={consoleServer}
-          commandsEnabled={templateKind(consoleServer.templateId) !== 'bedrock'}
-          onClose={() => setConsoleServer(null)}
-        />
-      )}
-
-      {filesServer && (
-        <FilesDialog
-          server={filesServer}
-          onClose={() => setFilesServer(null)}
         />
       )}
     </div>

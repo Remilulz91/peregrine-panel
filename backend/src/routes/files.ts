@@ -8,6 +8,7 @@ import {
   saveUploadedFile,
   writeTextFile,
 } from '../lib/files';
+import { logActivity } from '../lib/activity';
 
 interface PathQuery {
   path?: string;
@@ -96,6 +97,12 @@ export async function fileRoutes(app: FastifyInstance): Promise<void> {
       const { path: filePath, content } = request.body as WriteBody;
       try {
         writeTextFile(id, filePath, content);
+        logActivity({
+          serverId: id,
+          actorId: request.user.sub,
+          kind: 'files.write',
+          details: filePath,
+        });
         return { ok: true };
       } catch {
         return reply.code(400).send({ error: 'Cannot write this file.' });
@@ -112,6 +119,12 @@ export async function fileRoutes(app: FastifyInstance): Promise<void> {
     }
     try {
       deleteEntry(id, target);
+      logActivity({
+        serverId: id,
+        actorId: request.user.sub,
+        kind: 'files.delete',
+        details: target,
+      });
       return { ok: true };
     } catch {
       return reply.code(400).send({ error: 'Cannot delete this item.' });
@@ -129,6 +142,12 @@ export async function fileRoutes(app: FastifyInstance): Promise<void> {
     try {
       const data = await uploaded.toBuffer();
       saveUploadedFile(id, dirPath, uploaded.filename, data);
+      logActivity({
+        serverId: id,
+        actorId: request.user.sub,
+        kind: 'files.upload',
+        details: `${dirPath.replace(/\/+$/, '')}/${uploaded.filename}`,
+      });
       return { ok: true };
     } catch {
       return reply.code(400).send({ error: 'Cannot save the uploaded file.' });

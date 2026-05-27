@@ -4,26 +4,18 @@ import FalconMark from '../components/FalconMark';
 import LanguageToggle from '../components/LanguageToggle';
 import ServerCard from '../components/ServerCard';
 import CreateServerDialog from '../components/CreateServerDialog';
-import ConsoleDialog from '../components/ConsoleDialog';
-import FilesDialog from '../components/FilesDialog';
-import {
-  api,
-  ApiError,
-  type ApiServer,
-  type ApiTemplate,
-  type ServerAction,
-} from '../lib/api';
+import { api, type ApiServer, type ApiTemplate } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useTranslation } from '../lib/i18n';
 
 /**
  * The protected screen shown once a user is signed in: the list of their
- * game servers, with controls to create, start, stop and delete them, open
- * their live console, and manage their files.
+ * game servers. Clicking a server row opens its detail page where all
+ * actions (console, files, settings, start/stop/...) live.
  *
- * Administrators get an extra "Admin" toggle in the header that swaps the
- * main area for the administration view (user accounts + every server on
- * the panel, with full controls for troubleshooting).
+ * Administrators get an extra "Admin" toggle in the header that swaps
+ * the main area for the administration view (user accounts + every
+ * server on the panel, for troubleshooting).
  */
 export default function Dashboard() {
   const { t } = useTranslation();
@@ -35,8 +27,6 @@ export default function Dashboard() {
   const [templates, setTemplates] = useState<ApiTemplate[]>([]);
   const [loadError, setLoadError] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [consoleServer, setConsoleServer] = useState<ApiServer | null>(null);
-  const [filesServer, setFilesServer] = useState<ApiServer | null>(null);
 
   // Admins can switch between their own dashboard ("servers") and the
   // administration view ("admin"). Regular users only ever see "servers".
@@ -68,43 +58,8 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, [loadServers]);
 
-  // Reports an error to the user instead of letting it fail silently.
-  function reportError(err: unknown): void {
-    const message =
-      err instanceof ApiError ? err.message : t('common.errorGeneric');
-    window.alert(message);
-  }
-
-  async function handleAction(
-    server: ApiServer,
-    action: ServerAction,
-  ): Promise<void> {
-    try {
-      await api.serverAction(server.id, action);
-    } catch (err) {
-      reportError(err);
-    }
-    await loadServers();
-  }
-
-  async function handleDelete(server: ApiServer): Promise<void> {
-    if (!window.confirm(t('server.deleteConfirm'))) {
-      return;
-    }
-    try {
-      await api.deleteServer(server.id);
-    } catch (err) {
-      reportError(err);
-    }
-    void loadServers();
-  }
-
   function templateName(id: string): string {
     return templates.find((template) => template.id === id)?.name ?? 'Minecraft';
-  }
-
-  function templateKind(id: string): string {
-    return templates.find((template) => template.id === id)?.kind ?? 'java';
   }
 
   return (
@@ -199,10 +154,6 @@ export default function Dashboard() {
                     key={server.id}
                     server={server}
                     templateName={templateName(server.templateId)}
-                    onAction={handleAction}
-                    onConsole={setConsoleServer}
-                    onFiles={setFilesServer}
-                    onDelete={handleDelete}
                   />
                 ))}
               </div>
@@ -219,21 +170,6 @@ export default function Dashboard() {
             setDialogOpen(false);
             void loadServers();
           }}
-        />
-      )}
-
-      {consoleServer && (
-        <ConsoleDialog
-          server={consoleServer}
-          commandsEnabled={templateKind(consoleServer.templateId) !== 'bedrock'}
-          onClose={() => setConsoleServer(null)}
-        />
-      )}
-
-      {filesServer && (
-        <FilesDialog
-          server={filesServer}
-          onClose={() => setFilesServer(null)}
         />
       )}
     </div>

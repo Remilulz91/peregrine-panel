@@ -136,6 +136,11 @@ export function updateServerStatus(
   }
 }
 
+/** Renames a server (updates the human-readable name only). */
+export function renameServer(id: string, name: string): void {
+  db.prepare('UPDATE servers SET name = ? WHERE id = ?').run(name, id);
+}
+
 /** Removes a server row from the database. */
 export function deleteServer(id: string): void {
   db.prepare('DELETE FROM servers WHERE id = ?').run(id);

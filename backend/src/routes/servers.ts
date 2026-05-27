@@ -7,6 +7,7 @@ import {
   deleteServer,
   getServer,
   listServersByOwner,
+  renameServer,
   type ServerRecord,
 } from '../lib/servers';
 import {
@@ -16,6 +17,7 @@ import {
   stopContainer,
 } from '../lib/docker';
 import { deprovisionServer, provisionServer } from '../services/provisioning';
+import { listActivityForServer, logActivity } from '../lib/activity';
 
 interface CreateServerBody {
   name: string;
@@ -23,6 +25,10 @@ interface CreateServerBody {
   minecraftVersion?: string;
   memoryMb: number;
   cpuLimit: number;
+}
+
+interface RenameServerBody {
+  name: string;
 }
 
 /**
@@ -92,6 +98,16 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
     return { servers: result };
   });
 
+  // Single-server endpoint — used by the detail page header.
+  app.get('/servers/:id', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const server = accessibleServer(request, id);
+    if (!server) {
+      return reply.code(404).send({ error: 'Server not found.' });
+    }
+    return { server: await publicServer(server) };
+  });
+
   app.post(
     '/servers',
     {
@@ -138,11 +154,57 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
         port,
       });
 
+      logActivity({
+        serverId: server.id,
+        actorId: request.user.sub,
+        kind: 'server.create',
+      });
+
       // Pull the image and create the container in the background, so the
       // request returns immediately. The frontend polls for the status.
       void provisionServer(server, template);
 
       return reply.code(201).send({ server: await publicServer(server) });
+    },
+  );
+
+  // Rename — does not touch the container, just the human-readable name.
+  app.patch(
+    '/servers/:id',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['name'],
+          additionalProperties: false,
+          properties: {
+            name: { type: 'string', minLength: 1, maxLength: 48 },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const server = accessibleServer(request, id);
+      if (!server) {
+        return reply.code(404).send({ error: 'Server not found.' });
+      }
+      const { name } = request.body as RenameServerBody;
+      const newName = name.trim();
+      if (newName.length === 0) {
+        return reply.code(400).send({ error: 'Name cannot be empty.' });
+      }
+      if (newName !== server.name) {
+        renameServer(server.id, newName);
+        logActivity({
+          serverId: server.id,
+          actorId: request.user.sub,
+          kind: 'server.rename',
+          details: `${server.name} → ${newName}`,
+        });
+      }
+      const updated = getServer(server.id);
+      return { server: updated && (await publicServer(updated)) };
     },
   );
 
@@ -152,6 +214,23 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
     if (!server) {
       return reply.code(404).send({ error: 'Server not found.' });
     }
+    // Refuse to delete a server that is currently running — the user
+    // (or admin) must stop it first. Prevents accidental container kill
+    // mid-game.
+    if (server.containerId) {
+      const state = await getContainerState(server.containerId);
+      if (state === 'running') {
+        return reply.code(409).send({
+          error: 'Stop the server before deleting it.',
+        });
+      }
+    }
+    logActivity({
+      serverId: server.id,
+      actorId: request.user.sub,
+      kind: 'server.delete',
+      details: server.name,
+    });
     await deprovisionServer(server);
     deleteServer(server.id);
     return { ok: true };
@@ -171,6 +250,11 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
     } catch {
       return reply.code(502).send({ error: 'Could not start the server.' });
     }
+    logActivity({
+      serverId: server.id,
+      actorId: request.user.sub,
+      kind: 'server.start',
+    });
     return { ok: true };
   });
 
@@ -188,6 +272,11 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
     } catch {
       return reply.code(502).send({ error: 'Could not stop the server.' });
     }
+    logActivity({
+      serverId: server.id,
+      actorId: request.user.sub,
+      kind: 'server.stop',
+    });
     return { ok: true };
   });
 
@@ -205,6 +294,21 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
     } catch {
       return reply.code(502).send({ error: 'Could not restart the server.' });
     }
+    logActivity({
+      serverId: server.id,
+      actorId: request.user.sub,
+      kind: 'server.restart',
+    });
     return { ok: true };
+  });
+
+  // Activity feed (latest events first, capped server-side).
+  app.get('/servers/:id/activity', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const server = accessibleServer(request, id);
+    if (!server) {
+      return reply.code(404).send({ error: 'Server not found.' });
+    }
+    return { entries: listActivityForServer(server.id, 100) };
   });
 }

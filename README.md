@@ -7,9 +7,9 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.2.0** — multi-user release: the administrator can create
-> accounts and send each user a one-time invitation link. See the
-> changelog in [`CHANGELOG.md`](CHANGELOG.md).
+> **Version 0.3.0** — detail-page architecture: clicking a server in the
+> list opens its dedicated page with Console, Files, Network, Settings
+> and Activity tabs. See the changelog in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features
 
@@ -19,10 +19,14 @@ and Pelican.
   password
 - Server isolation: each account only sees its own game servers (the
   administrator gets a separate view with every server, to troubleshoot)
+- **Per-server detail page** with tabs:
+  - **Console** — live output and command input (Java servers)
+  - **Files** — browse, edit, upload, delete
+  - **Network** — host, port, protocol, connection string
+  - **Settings** — rename, delete (blocked while running)
+  - **Activity** — chronological log of who did what
 - Create Minecraft servers (Java and Bedrock) in a few clicks
 - Start, stop and restart servers
-- Live console
-- File manager
 - Per-server resource limits (CPU, RAM)
 - Bilingual interface (English / French)
 
@@ -115,9 +119,14 @@ peregrine-panel/
 - [x] **Phase 6** — Resource limits & Minecraft Bedrock
 - [x] **Phase 7** — Polish & first release (`v0.1.0`)
 - [x] **Phase 8** — User management & invitations (`v0.2.0`)
+- [x] **Phase 9** — Detail-page architecture (`v0.3.0`)
+- [ ] **Phase 10** — Backups on the dedicated disk, with disk-space
+  pre-checks (`v0.4.0`, next)
+- [ ] **Phase 11** — Subusers with granular per-server permissions
+- [ ] **Phase 12** — Scheduled tasks (recurring backups)
 
-Ideas for after v0.2.0: multi-machine support, automatic backups, more
-games. Full details in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+Ideas for later: multi-machine support, databases, more games. Full details
+in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## License
 

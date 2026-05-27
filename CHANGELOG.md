@@ -2,6 +2,48 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.3.0 — 2026-05-27
+
+A Pterodactyl-style detail-page architecture: the server list becomes
+pure navigation, and every per-server action moves into a dedicated
+detail page with tabs.
+
+### Added
+
+- **Server detail page** at `/servers/<id>`. Clicking a row in the list
+  opens it. A small in-app router handles back/forward without any
+  external dependency.
+- **Tabs**: Console, Files, Network, Settings, Activity. Switching tabs
+  updates the URL (e.g. `/servers/<id>/files`) so each tab can be
+  bookmarked or shared.
+- **Network** tab — the host, port, protocol and a copy-paste-ready
+  `host:port` connection string.
+- **Settings** tab — rename the server, and a "Danger zone" with the
+  Delete button.
+- **Activity** tab — chronological log of what happened on the server:
+  power actions (start / stop / restart), renames, file edits, file
+  deletes, file uploads. New SQLite migration adds the
+  `server_activity` table.
+- **Server name renaming** via `PATCH /api/servers/:id`.
+
+### Changed
+
+- **List rows are now clickable**. No more inline action buttons on the
+  list — every action lives in the detail page. The list is purely a
+  navigation surface, easier to scan when you have many servers.
+- **Delete is blocked while the server is running** (both in the UI,
+  with a disabled button + tooltip, and on the backend with a 409
+  response). You must stop the server before removing it.
+- The console and the file manager moved out of modal dialogs into
+  full-page tabs inside the detail page.
+- The Stop button on the detail page is styled as a destructive action
+  (red border) to match the gravity of the action.
+
+### Removed
+
+- `ConsoleDialog` and `FilesDialog` components — replaced by their
+  full-page equivalents in the detail page.
+
 ## v0.2.0 — 2026-05-27
 
 User management: the administrator can now create accounts for other

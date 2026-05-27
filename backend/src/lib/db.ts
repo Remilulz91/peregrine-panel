@@ -59,6 +59,20 @@ const MIGRATIONS: string[] = [
      expires_at TEXT NOT NULL,
      created_at TEXT NOT NULL DEFAULT (datetime('now'))
    );`,
+
+  // Migration 5 - per-server activity log. Each event is a small row
+  // describing what happened (kind), who did it (actor_id, nullable for
+  // system events), and optional human-readable details. Cascading deletes
+  // keep the table tidy when a server or user is removed.
+  `CREATE TABLE server_activity (
+     id         TEXT PRIMARY KEY,
+     server_id  TEXT NOT NULL REFERENCES servers(id) ON DELETE CASCADE,
+     actor_id   TEXT REFERENCES users(id) ON DELETE SET NULL,
+     kind       TEXT NOT NULL,
+     details    TEXT,
+     created_at TEXT NOT NULL DEFAULT (datetime('now'))
+   );
+   CREATE INDEX server_activity_by_server ON server_activity(server_id, created_at DESC);`,
 ];
 
 /** Applies any migrations that have not been run on this database yet. */

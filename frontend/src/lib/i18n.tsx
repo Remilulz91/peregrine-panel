@@ -272,6 +272,92 @@ const translations = {
     en: 'Delete this item permanently?',
     fr: 'Supprimer cet élément définitivement ?',
   },
+
+  'detail.back': { en: 'Back to servers', fr: 'Retour aux serveurs' },
+  'detail.loadError': {
+    en: 'Unable to load this server.',
+    fr: 'Impossible de charger ce serveur.',
+  },
+  'detail.tab.console': { en: 'Console', fr: 'Console' },
+  'detail.tab.files': { en: 'Files', fr: 'Fichiers' },
+  'detail.tab.network': { en: 'Network', fr: 'Réseau' },
+  'detail.tab.settings': { en: 'Settings', fr: 'Paramètres' },
+  'detail.tab.activity': { en: 'Activity', fr: 'Activité' },
+
+  'network.title': { en: 'Connection details', fr: 'Détails de connexion' },
+  'network.subtitle': {
+    en: 'How to connect to this server from a game client.',
+    fr: 'Comment se connecter à ce serveur depuis un client de jeu.',
+  },
+  'network.address': { en: 'Address', fr: 'Adresse' },
+  'network.port': { en: 'Port', fr: 'Port' },
+  'network.protocol': { en: 'Protocol', fr: 'Protocole' },
+  'network.connectionString': {
+    en: 'Connection string',
+    fr: 'Chaîne de connexion',
+  },
+  'network.copy': { en: 'Copy', fr: 'Copier' },
+  'network.copied': { en: 'Copied!', fr: 'Copié !' },
+
+  'settings.title': { en: 'Server settings', fr: 'Paramètres du serveur' },
+  'settings.renameTitle': { en: 'Rename', fr: 'Renommer' },
+  'settings.renameLabel': { en: 'Server name', fr: 'Nom du serveur' },
+  'settings.renameSave': { en: 'Save name', fr: 'Enregistrer' },
+  'settings.dangerZone': { en: 'Danger zone', fr: 'Zone dangereuse' },
+  'settings.delete': { en: 'Delete this server', fr: 'Supprimer ce serveur' },
+  'settings.deleteHint': {
+    en: 'Permanently removes the container and all files. This cannot be undone.',
+    fr: 'Supprime définitivement le conteneur et tous les fichiers. Action irréversible.',
+  },
+  'settings.deleteBlocked': {
+    en: 'Stop the server before deleting it.',
+    fr: 'Arrêtez le serveur avant de le supprimer.',
+  },
+
+  'activity.title': { en: 'Activity log', fr: "Journal d'activité" },
+  'activity.subtitle': {
+    en: 'The most recent 100 events on this server.',
+    fr: 'Les 100 derniers événements sur ce serveur.',
+  },
+  'activity.empty': { en: 'No activity yet.', fr: "Aucune activité pour l'instant." },
+  'activity.system': { en: 'system', fr: 'système' },
+  'activity.kind.server.create': {
+    en: 'created the server',
+    fr: 'a créé le serveur',
+  },
+  'activity.kind.server.start': {
+    en: 'started the server',
+    fr: 'a démarré le serveur',
+  },
+  'activity.kind.server.stop': {
+    en: 'stopped the server',
+    fr: 'a arrêté le serveur',
+  },
+  'activity.kind.server.restart': {
+    en: 'restarted the server',
+    fr: 'a redémarré le serveur',
+  },
+  'activity.kind.server.rename': {
+    en: 'renamed the server',
+    fr: 'a renommé le serveur',
+  },
+  'activity.kind.server.delete': {
+    en: 'deleted the server',
+    fr: 'a supprimé le serveur',
+  },
+  'activity.kind.files.write': {
+    en: 'edited a file',
+    fr: 'a modifié un fichier',
+  },
+  'activity.kind.files.delete': {
+    en: 'deleted a file',
+    fr: 'a supprimé un fichier',
+  },
+  'activity.kind.files.upload': {
+    en: 'uploaded a file',
+    fr: 'a téléversé un fichier',
+  },
+  'activity.kind.unknown': { en: 'did something', fr: 'a fait quelque chose' },
 } as const;
 
 /** A valid translation key (any key declared in `translations`). */

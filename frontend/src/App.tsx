@@ -2,20 +2,12 @@ import { useEffect, useState } from 'react';
 import AuthCard from './components/AuthCard';
 import { AuthProvider, useAuth } from './lib/auth';
 import { LanguageProvider, useTranslation } from './lib/i18n';
+import { useRoute } from './lib/router';
 import Dashboard from './pages/Dashboard';
 import Invite from './pages/Invite';
 import Login from './pages/Login';
+import ServerDetail from './pages/ServerDetail';
 import Setup from './pages/Setup';
-
-// Match /invite/<token> in the URL. The token is a 64-char hex string,
-// but we accept anything reasonable so the invite page can surface a
-// proper "invalid link" message for typos.
-const INVITE_PATH = /^\/invite\/([A-Za-z0-9._-]+)\/?$/;
-
-function inviteTokenFromUrl(): string | null {
-  const match = INVITE_PATH.exec(window.location.pathname);
-  return match ? match[1] : null;
-}
 
 // Grace period before the full loading screen appears. The auth check is
 // almost always faster than this on a healthy connection, so on a normal
@@ -37,14 +29,13 @@ function LoadingScreen() {
 }
 
 /**
- * Picks which screen to display, based purely on the authentication state:
- *   loading        -> a short loading screen (delayed to avoid flashes)
- *   setup          -> the first-run administrator wizard
- *   authenticated  -> the dashboard
- *   otherwise      -> the login screen
+ * Picks which screen to display, based on the URL and the authentication
+ * state. The router runs OUTSIDE the AuthProvider so the invite page is
+ * reachable without a session.
  */
 function CurrentScreen() {
   const { status } = useAuth();
+  const route = useRoute();
   const [showLoading, setShowLoading] = useState(false);
 
   useEffect(() => {
@@ -63,36 +54,41 @@ function CurrentScreen() {
     case 'loading':
       // During the grace period, render nothing — the dark body
       // background is already painted, so the page looks calm rather
-      // than flashy. After the grace period, fall back to the branded
-      // loading screen so the user knows something is happening.
+      // than flashy.
       return showLoading ? <LoadingScreen /> : null;
     case 'setup':
       return <Setup />;
     case 'authenticated':
+      if (route.name === 'server') {
+        return <ServerDetail id={route.id} tab={route.tab} />;
+      }
       return <Dashboard />;
     default:
       return <Login />;
   }
 }
 
-// Root component. The providers make the language and the authentication
-// state available to the whole interface. Invitation URLs short-circuit
-// the auth flow: they need to be reachable even without a session.
-export default function App() {
-  const inviteToken = inviteTokenFromUrl();
-  if (inviteToken) {
-    return (
-      <LanguageProvider>
-        <Invite token={inviteToken} />
-      </LanguageProvider>
-    );
+/** Root component below the language provider. */
+function AppRoot() {
+  const route = useRoute();
+  // The invitation page must work without a session, so it bypasses the
+  // AuthProvider entirely.
+  if (route.name === 'invite') {
+    return <Invite token={route.token} />;
   }
+  return (
+    <AuthProvider>
+      <CurrentScreen />
+    </AuthProvider>
+  );
+}
 
+// Root component. The LanguageProvider wraps everything so even the
+// invite page is bilingual.
+export default function App() {
   return (
     <LanguageProvider>
-      <AuthProvider>
-        <CurrentScreen />
-      </AuthProvider>
+      <AppRoot />
     </LanguageProvider>
   );
 }

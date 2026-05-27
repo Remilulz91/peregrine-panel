@@ -39,6 +39,17 @@ export interface ApiAdminServer extends ApiServer {
   owner: { id: string; username: string };
 }
 
+/** One entry in a server's activity log. */
+export interface ApiActivityEntry {
+  id: string;
+  serverId: string;
+  actorId: string | null;
+  actorUsername: string | null;
+  kind: string;
+  details: string | null;
+  createdAt: string;
+}
+
 /** Summary of a pending invitation, included in admin user listings. */
 export interface ApiPendingInvite {
   expiresAt: string;
@@ -192,10 +203,19 @@ export const api = {
 
   listServers: () => request<{ servers: ApiServer[] }>('/api/servers'),
 
+  getServer: (id: string) =>
+    request<{ server: ApiServer }>(`/api/servers/${id}`),
+
   createServer: (body: CreateServerInput) =>
     request<{ server: ApiServer }>('/api/servers', {
       method: 'POST',
       body: JSON.stringify(body),
+    }),
+
+  renameServer: (id: string, name: string) =>
+    request<{ server: ApiServer }>(`/api/servers/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ name }),
     }),
 
   deleteServer: (id: string) =>
@@ -206,6 +226,12 @@ export const api = {
     request<{ ok: boolean }>(`/api/servers/${id}/${action}`, {
       method: 'POST',
     }),
+
+  /** Latest activity entries for a server (newest first, capped server-side). */
+  listActivity: (id: string) =>
+    request<{ entries: ApiActivityEntry[] }>(
+      `/api/servers/${id}/activity`,
+    ),
 
   // --- File manager ---
 
