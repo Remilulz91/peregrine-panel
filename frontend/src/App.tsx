@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import AuthCard from './components/AuthCard';
 import { AuthProvider, useAuth } from './lib/auth';
 import { LanguageProvider, useTranslation } from './lib/i18n';
@@ -16,7 +17,14 @@ function inviteTokenFromUrl(): string | null {
   return match ? match[1] : null;
 }
 
-/** Shown briefly while the authentication state is being checked. */
+// Grace period before the full loading screen appears. The auth check is
+// almost always faster than this on a healthy connection, so on a normal
+// refresh nothing flashes — the user sees a single dark frame and then
+// the actual screen. The branded loading screen only appears if /me is
+// genuinely slow (cold backend, bad network, ...).
+const LOADING_GRACE_MS = 250;
+
+/** Shown only after the loading state has lasted past the grace period. */
 function LoadingScreen() {
   const { t } = useTranslation();
   return (
@@ -30,16 +38,34 @@ function LoadingScreen() {
 
 /**
  * Picks which screen to display, based purely on the authentication state:
- *   loading        -> a short loading screen
+ *   loading        -> a short loading screen (delayed to avoid flashes)
  *   setup          -> the first-run administrator wizard
  *   authenticated  -> the dashboard
  *   otherwise      -> the login screen
  */
 function CurrentScreen() {
   const { status } = useAuth();
+  const [showLoading, setShowLoading] = useState(false);
+
+  useEffect(() => {
+    if (status !== 'loading') {
+      setShowLoading(false);
+      return;
+    }
+    const timer = window.setTimeout(
+      () => setShowLoading(true),
+      LOADING_GRACE_MS,
+    );
+    return () => window.clearTimeout(timer);
+  }, [status]);
+
   switch (status) {
     case 'loading':
-      return <LoadingScreen />;
+      // During the grace period, render nothing — the dark body
+      // background is already painted, so the page looks calm rather
+      // than flashy. After the grace period, fall back to the branded
+      // loading screen so the user knows something is happening.
+      return showLoading ? <LoadingScreen /> : null;
     case 'setup':
       return <Setup />;
     case 'authenticated':

@@ -39,16 +39,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<ApiUser | null>(null);
 
   const refresh = useCallback(async () => {
+    // Try /me first: the common case is an already-logged-in user, and
+    // that's one round trip instead of two. We only ask /setup-required
+    // if /me fails, which is also the only case where the answer matters.
     try {
-      const { setupRequired } = await api.setupRequired();
-      if (setupRequired) {
-        setUser(null);
-        setStatus('setup');
-        return;
-      }
       const { user: current } = await api.me();
       setUser(current);
       setStatus('authenticated');
+      return;
+    } catch {
+      // Not logged in — fall through to the setup / login decision.
+    }
+    try {
+      const { setupRequired } = await api.setupRequired();
+      setUser(null);
+      setStatus(setupRequired ? 'setup' : 'unauthenticated');
     } catch {
       setUser(null);
       setStatus('unauthenticated');

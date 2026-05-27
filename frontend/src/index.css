@@ -14,6 +14,11 @@ body,
 
 body {
   margin: 0;
+  /* Matches Tailwind's `bg-peregrine-950` so the page background is
+     already dark before any React component mounts. Prevents a white
+     flash on slow first paints. */
+  background-color: #0b0f17;
+  color-scheme: dark;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
