@@ -7,9 +7,9 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.5.0** — subusers with granular permissions. Owners can
-> grant another existing account access to one of their servers and
-> pick exactly what that user is allowed to do. See the changelog in
+> **Version 0.6.0** — scheduled tasks. Owners can set up recurring
+> backups (hourly / daily / weekly) and the panel takes care of them in
+> the background. See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features
@@ -25,6 +25,8 @@ and Pelican.
   - **Files** — browse, edit, upload, delete
   - **Network** — host, port, protocol, connection string
   - **Backups** — manual snapshots stored on the dedicated disk
+  - **Schedules** — recurring backups (hourly / daily / weekly),
+    owner-only
   - **Users** — grant a fellow account access with a granular
     permission set (owner-only)
   - **Settings** — rename, delete (blocked while running)
@@ -50,6 +52,7 @@ and Pelican.
 - **Real time**: Socket.IO (live console)
 - **Backups**: system `tar` (no JS dependency), stored on the dedicated
   disk
+- **Scheduler**: built-in 60 s tick worker (no external cron daemon)
 - **Deployment**: Docker Compose
 
 ## Quick start (with Docker)
@@ -96,18 +99,11 @@ Database migrations apply automatically on first launch.
 Requirements: Node.js 22 or newer.
 
 ```bash
-# Install backend and frontend dependencies
 npm run install:all
-
-# Start the backend (port 3000)
 npm run dev:backend
-
-# In another terminal, start the frontend (port 5173)
+# In another terminal:
 npm run dev:frontend
 ```
-
-The development frontend runs at `http://localhost:5173`; it automatically
-forwards `/api` calls and the websocket to the backend.
 
 ## Project structure
 
@@ -137,10 +133,11 @@ peregrine-panel/
   pre-checks (`v0.4.0`)
 - [x] **Phase 11** — Subusers with granular per-server permissions
   (`v0.5.0`)
-- [ ] **Phase 12** — Scheduled tasks (recurring backups, `v0.6.0` next)
+- [x] **Phase 12** — Scheduled tasks for recurring backups (`v0.6.0`)
 
-Ideas for later: multi-machine support, databases, more games. Full details
-in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+Ideas for later: multi-machine support, databases, more games, more
+schedule actions (restart on a schedule, send a console command). Full
+details in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## License
 

@@ -32,9 +32,7 @@ export interface ApiServer {
   cpuLimit: number;
   port: number;
   createdAt: string;
-  /** True when the viewer is the server's owner. */
   isOwner: boolean;
-  /** Username of the owner — useful when the viewer is a subuser. */
   ownerUsername: string;
 }
 
@@ -54,12 +52,10 @@ export interface ApiActivityEntry {
   createdAt: string;
 }
 
-/** Summary of a pending invitation, included in admin user listings. */
 export interface ApiPendingInvite {
   expiresAt: string;
 }
 
-/** A user account as seen from the admin view. */
 export interface ApiAdminUser {
   id: string;
   username: string;
@@ -70,14 +66,12 @@ export interface ApiAdminUser {
   pendingInvite: ApiPendingInvite | null;
 }
 
-/** One entry in a server's file list. */
 export interface ApiFileEntry {
   name: string;
   type: 'file' | 'directory';
   size: number;
 }
 
-/** One backup for a server, as returned by the API. */
 export interface ApiBackup {
   id: string;
   serverId: string;
@@ -87,7 +81,6 @@ export interface ApiBackup {
   createdByUsername: string | null;
 }
 
-/** Current usage of the backups disk, in bytes. */
 export interface ApiDiskUsage {
   totalBytes: number;
   freeBytes: number;
@@ -95,7 +88,6 @@ export interface ApiDiskUsage {
   reservedBytes: number;
 }
 
-/** One subuser on a server, as returned by the API. */
 export interface ApiSubuser {
   id: string;
   serverId: string;
@@ -106,13 +98,26 @@ export interface ApiSubuser {
   createdAt: string;
 }
 
-/** A power action that can be applied to a server. */
+/** One scheduled recurring task on a server. */
+export interface ApiSchedule {
+  id: string;
+  serverId: string;
+  name: string;
+  action: string;
+  frequency: 'hourly' | 'daily' | 'weekly';
+  hour: number;
+  minute: number;
+  dayOfWeek: number;
+  enabled: boolean;
+  lastRunAt: string | null;
+  nextRunAt: string | null;
+  createdAt: string;
+}
+
 export type ServerAction = 'start' | 'stop' | 'restart';
 
-/** An error that carries the HTTP status code returned by the API. */
 export class ApiError extends Error {
   readonly status: number;
-
   constructor(status: number, message: string) {
     super(message);
     this.status = status;
@@ -164,6 +169,16 @@ interface CreateServerInput {
   cpuLimit: number;
 }
 
+/** Body shape for schedule create/update. */
+export interface ScheduleInput {
+  name: string;
+  frequency: 'hourly' | 'daily' | 'weekly';
+  hour: number;
+  minute: number;
+  dayOfWeek: number;
+  enabled: boolean;
+}
+
 /** The set of API calls used by the interface. */
 export const api = {
   setupRequired: () =>
@@ -181,7 +196,6 @@ export const api = {
     }),
   logout: () => request<{ ok: boolean }>('/api/auth/logout', { method: 'POST' }),
 
-  // --- Invitation flow (admin-created accounts) ---
   getInvite: (token: string) =>
     request<{ username: string }>(`/api/auth/invite/${token}`),
   acceptInvite: (token: string, password: string) =>
@@ -190,7 +204,6 @@ export const api = {
       body: JSON.stringify({ password }),
     }),
 
-  // --- Admin ---
   listAdminUsers: () =>
     request<{ users: ApiAdminUser[] }>('/api/admin/users'),
   createAdminUser: (body: CreateUserInput) =>
@@ -210,7 +223,6 @@ export const api = {
   listAdminServers: () =>
     request<{ servers: ApiAdminServer[] }>('/api/admin/servers'),
 
-  // --- Game servers ---
   listTemplates: () =>
     request<{ templates: ApiTemplate[] }>('/api/templates'),
   listServers: () => request<{ servers: ApiServer[] }>('/api/servers'),
@@ -262,6 +274,36 @@ export const api = {
     request<{ ok: boolean }>(
       `/api/servers/${serverId}/subusers/${subId}`,
       { method: 'DELETE' },
+    ),
+
+  // --- Schedules (owner-only) ---
+  listSchedules: (serverId: string) =>
+    request<{ schedules: ApiSchedule[] }>(
+      `/api/servers/${serverId}/schedules`,
+    ),
+  createSchedule: (serverId: string, body: ScheduleInput) =>
+    request<{ schedule: ApiSchedule }>(
+      `/api/servers/${serverId}/schedules`,
+      { method: 'POST', body: JSON.stringify(body) },
+    ),
+  updateSchedule: (
+    serverId: string,
+    scheduleId: string,
+    body: ScheduleInput,
+  ) =>
+    request<{ schedule: ApiSchedule }>(
+      `/api/servers/${serverId}/schedules/${scheduleId}`,
+      { method: 'PATCH', body: JSON.stringify(body) },
+    ),
+  deleteSchedule: (serverId: string, scheduleId: string) =>
+    request<{ ok: boolean }>(
+      `/api/servers/${serverId}/schedules/${scheduleId}`,
+      { method: 'DELETE' },
+    ),
+  runScheduleNow: (serverId: string, scheduleId: string) =>
+    request<{ ok: boolean }>(
+      `/api/servers/${serverId}/schedules/${scheduleId}/run`,
+      { method: 'POST' },
     ),
 
   // --- Backups & disk ---
@@ -333,7 +375,6 @@ export const PERM = {
   SETTINGS_RENAME: 'settings.rename',
 } as const;
 
-/** Convenience: does the viewer have a given permission on this server? */
 export function hasPermission(
   myPermissions: string[],
   permission: string,

@@ -24,6 +24,7 @@ import ConsolePage from './server/Console';
 import FilesPage from './server/Files';
 import NetworkPage from './server/Network';
 import BackupsPage from './server/Backups';
+import SchedulesPage from './server/Schedules';
 import SubusersPage from './server/Subusers';
 import SettingsPage from './server/Settings';
 import ActivityPage from './server/Activity';
@@ -51,21 +52,22 @@ const STATUS_KEY: Record<string, TranslationKey> = {
   STOPPING: 'status.STOPPING',
 };
 
-// Tabs in display order, plus the translation key. The 'subusers' tab
-// is filtered out at render time for non-owners.
-const TABS: { id: ServerTab; key: TranslationKey }[] = [
+// Tabs in display order. `subusers` and `schedules` are owner-only and
+// filtered out at render time.
+const TABS: { id: ServerTab; key: TranslationKey; ownerOnly?: boolean }[] = [
   { id: 'console', key: 'detail.tab.console' },
   { id: 'files', key: 'detail.tab.files' },
   { id: 'network', key: 'detail.tab.network' },
   { id: 'backups', key: 'detail.tab.backups' },
-  { id: 'subusers', key: 'detail.tab.subusers' },
+  { id: 'schedules', key: 'detail.tab.schedules', ownerOnly: true },
+  { id: 'subusers', key: 'detail.tab.subusers', ownerOnly: true },
   { id: 'settings', key: 'detail.tab.settings' },
   { id: 'activity', key: 'detail.tab.activity' },
 ];
 
 /**
- * The server-detail page. Fetches the server (and the viewer's
- * permission set) every 4 s so the badge and ACL gates stay in sync.
+ * The server-detail page. Fetches the server + the viewer's permission
+ * set every 4 s so the badge and ACL gates stay in sync.
  */
 export default function ServerDetail({ id, tab }: ServerDetailProps) {
   const { t } = useTranslation();
@@ -124,12 +126,10 @@ export default function ServerDetail({ id, tab }: ServerDetailProps) {
     : null;
   const isBedrock = template?.kind === 'bedrock';
 
-  // Owner/admin → see every tab. Subuser → no 'subusers' tab.
-  const showSubusersTab = server?.isOwner || user?.role === 'ADMIN';
-  const visibleTabs = TABS.filter((entry) => {
-    if (entry.id === 'subusers') return showSubusersTab;
-    return true;
-  });
+  const isOwnerLike = server?.isOwner || user?.role === 'ADMIN';
+  const visibleTabs = TABS.filter((entry) =>
+    entry.ownerOnly ? Boolean(isOwnerLike) : true,
+  );
 
   const statusKey = server
     ? STATUS_KEY[server.status] ?? 'status.UNKNOWN'
@@ -138,8 +138,6 @@ export default function ServerDetail({ id, tab }: ServerDetailProps) {
     ? STATUS_BADGE[server.status] ?? 'bg-peregrine-700 text-peregrine-200'
     : 'bg-peregrine-700 text-peregrine-200';
 
-  // Render the active tab. If the viewer follows a deep link to a tab
-  // they cannot see (e.g. /subusers as a subuser), fall back to Console.
   function renderTab(active: ApiServer): ReactNode {
     const safeTab =
       visibleTabs.find((entry) => entry.id === tab)?.id ?? 'console';
@@ -160,6 +158,8 @@ export default function ServerDetail({ id, tab }: ServerDetailProps) {
         return (
           <BackupsPage server={active} myPermissions={myPermissions} />
         );
+      case 'schedules':
+        return <SchedulesPage server={active} />;
       case 'subusers':
         return <SubusersPage server={active} />;
       case 'settings':

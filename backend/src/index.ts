@@ -14,15 +14,17 @@ import { fileRoutes } from './routes/files';
 import { adminRoutes } from './routes/admin';
 import { backupRoutes } from './routes/backups';
 import { subuserRoutes } from './routes/subusers';
+import { scheduleRoutes } from './routes/schedules';
 import { AUTH_COOKIE } from './plugins/auth';
 import { setupConsole } from './realtime/console';
+import { startScheduleWorker } from './services/scheduleWorker';
 
 /**
  * Builds and configures the Peregrine HTTP server.
  *
- * Beyond authentication, Docker server management, the live console,
- * the file manager and backups, the server now lets owners share access
- * to a server with another account via a subuser permission set.
+ * Beyond authentication, Docker management, the live console, the file
+ * manager, backups and subuser ACLs, the server now runs a background
+ * worker that fires recurring tasks (currently: scheduled backups).
  */
 export async function buildServer() {
   const app = Fastify({
@@ -32,19 +34,16 @@ export async function buildServer() {
   // Make sure the built-in game templates exist in the database.
   seedTemplates();
 
-  // --- Authentication building blocks: cookies + JSON Web Tokens ---
   await app.register(fastifyCookie);
   await app.register(fastifyJwt, {
     secret: config.jwtSecret,
     cookie: { cookieName: AUTH_COOKIE, signed: false },
   });
 
-  // --- File uploads (used by the file manager) ---
   await app.register(fastifyMultipart, {
     limits: { fileSize: 50 * 1024 * 1024, files: 1 },
   });
 
-  // --- API routes (everything is prefixed with /api) ---
   await app.register(healthRoutes, { prefix: '/api' });
   await app.register(authRoutes, { prefix: '/api/auth' });
   await app.register(serverRoutes, { prefix: '/api' });
@@ -52,14 +51,12 @@ export async function buildServer() {
   await app.register(adminRoutes, { prefix: '/api/admin' });
   await app.register(backupRoutes, { prefix: '/api' });
   await app.register(subuserRoutes, { prefix: '/api' });
+  await app.register(scheduleRoutes, { prefix: '/api' });
 
-  // --- Real-time console (Socket.IO, shares the HTTP server) ---
   setupConsole(app, app.server);
 
-  // --- Web interface (static files) ---
   const frontendDir = path.resolve(__dirname, '../../frontend/dist');
   const indexHtml = path.join(frontendDir, 'index.html');
-
   if (fs.existsSync(indexHtml)) {
     await app.register(fastifyStatic, { root: frontendDir });
     app.setNotFoundHandler((request, reply) => {
@@ -81,9 +78,12 @@ export async function buildServer() {
   return app;
 }
 
-/** Entry point: starts the HTTP server. */
+/** Entry point: starts the HTTP server and the background workers. */
 async function start(): Promise<void> {
   const app = await buildServer();
+  // The schedule worker runs alongside the HTTP server. It's started
+  // unconditionally because it does nothing until a schedule is due.
+  startScheduleWorker();
   try {
     await app.listen({ port: config.port, host: config.host });
     app.log.info(`Peregrine started - ${config.appUrl}`);

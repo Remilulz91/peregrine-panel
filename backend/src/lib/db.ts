@@ -49,8 +49,6 @@ const MIGRATIONS: string[] = [
    ALTER TABLE servers ADD COLUMN cpu_limit REAL NOT NULL DEFAULT 2;`,
 
   // Migration 4 - username login (case-insensitive unique) + invite tokens.
-  // The expression index makes "alice" and "ALICE" collide, so usernames
-  // can be compared without surprises across cases.
   `CREATE UNIQUE INDEX users_username_unique ON users(LOWER(username));
    CREATE TABLE user_invites (
      id         TEXT PRIMARY KEY,
@@ -60,10 +58,7 @@ const MIGRATIONS: string[] = [
      created_at TEXT NOT NULL DEFAULT (datetime('now'))
    );`,
 
-  // Migration 5 - per-server activity log. Each event is a small row
-  // describing what happened (kind), who did it (actor_id, nullable for
-  // system events), and optional human-readable details. Cascading deletes
-  // keep the table tidy when a server or user is removed.
+  // Migration 5 - per-server activity log.
   `CREATE TABLE server_activity (
      id         TEXT PRIMARY KEY,
      server_id  TEXT NOT NULL REFERENCES servers(id) ON DELETE CASCADE,
@@ -74,10 +69,7 @@ const MIGRATIONS: string[] = [
    );
    CREATE INDEX server_activity_by_server ON server_activity(server_id, created_at DESC);`,
 
-  // Migration 6 - per-server backups. The actual archive lives on disk
-  // (path stored as `file_path`); this row holds the metadata. Cascades
-  // so deleting a server cleans up backup metadata too (the on-disk
-  // files are removed by the deprovisioning service in tandem).
+  // Migration 6 - per-server backups (metadata only; archive on disk).
   `CREATE TABLE server_backups (
      id          TEXT PRIMARY KEY,
      server_id   TEXT NOT NULL REFERENCES servers(id) ON DELETE CASCADE,
@@ -89,11 +81,7 @@ const MIGRATIONS: string[] = [
    );
    CREATE INDEX server_backups_by_server ON server_backups(server_id, created_at DESC);`,
 
-  // Migration 7 - per-server subusers. Lets the owner grant another
-  // existing account access to one of their servers, with a granular
-  // permission set (JSON array of strings). UNIQUE(server_id, user_id)
-  // means each account appears at most once per server. Both cascades
-  // are intentional: removing a user (or a server) tidies up the link.
+  // Migration 7 - per-server subusers with a granular permission set.
   `CREATE TABLE server_subusers (
      id          TEXT PRIMARY KEY,
      server_id   TEXT NOT NULL REFERENCES servers(id) ON DELETE CASCADE,
@@ -103,6 +91,30 @@ const MIGRATIONS: string[] = [
      UNIQUE(server_id, user_id)
    );
    CREATE INDEX server_subusers_by_user ON server_subusers(user_id);`,
+
+  // Migration 8 - per-server schedules (recurring tasks). Currently the
+  // only supported action is "backup.create", but the schema is open so
+  // we can extend it later without another migration. Parameters are
+  // stored directly (frequency / hour / minute / day_of_week) rather
+  // than as a cron string — much friendlier for the UI to render and
+  // explain. `next_run_at` is recomputed each tick by the worker.
+  `CREATE TABLE server_schedules (
+     id          TEXT PRIMARY KEY,
+     server_id   TEXT NOT NULL REFERENCES servers(id) ON DELETE CASCADE,
+     name        TEXT NOT NULL,
+     action      TEXT NOT NULL DEFAULT 'backup.create',
+     frequency   TEXT NOT NULL,
+     hour        INTEGER NOT NULL DEFAULT 3,
+     minute      INTEGER NOT NULL DEFAULT 0,
+     day_of_week INTEGER NOT NULL DEFAULT 1,
+     enabled     INTEGER NOT NULL DEFAULT 1,
+     last_run_at TEXT,
+     next_run_at TEXT,
+     created_by  TEXT REFERENCES users(id) ON DELETE SET NULL,
+     created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+   );
+   CREATE INDEX server_schedules_by_next_run
+     ON server_schedules(next_run_at) WHERE enabled = 1;`,
 ];
 
 /** Applies any migrations that have not been run on this database yet. */
@@ -113,14 +125,12 @@ function applyMigrations(database: DatabaseSync): void {
   for (let version = row.user_version; version < MIGRATIONS.length; version++) {
     database.exec(MIGRATIONS[version]);
   }
-  // PRAGMA does not accept bound parameters; the value is our own integer.
   database.exec(`PRAGMA user_version = ${MIGRATIONS.length}`);
 }
 
 /** Opens the database file, creating it (and its folder) if necessary. */
 function openDatabase(): DatabaseSync {
   fs.mkdirSync(path.dirname(config.databasePath), { recursive: true });
-
   const database = new DatabaseSync(config.databasePath);
   database.exec('PRAGMA journal_mode = WAL;');
   database.exec('PRAGMA foreign_keys = ON;');

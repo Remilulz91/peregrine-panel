@@ -17,6 +17,7 @@ export type ServerTab =
   | 'files'
   | 'network'
   | 'backups'
+  | 'schedules'
   | 'subusers'
   | 'settings'
   | 'activity';
@@ -26,6 +27,7 @@ const SERVER_TABS: readonly ServerTab[] = [
   'files',
   'network',
   'backups',
+  'schedules',
   'subusers',
   'settings',
   'activity',

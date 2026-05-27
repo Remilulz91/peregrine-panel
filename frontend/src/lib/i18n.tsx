@@ -8,21 +8,13 @@ import {
   type ReactNode,
 } from 'react';
 
-/** Languages supported by the panel interface. */
 export type Language = 'en' | 'fr';
 
-/** The list of languages, used to build the language selector. */
 export const LANGUAGES: { code: Language; label: string }[] = [
   { code: 'en', label: 'English' },
   { code: 'fr', label: 'Français' },
 ];
 
-/**
- * All UI text, grouped by translation key.
- *
- * To add a string: add a key here with its `en` and `fr` values, then use
- * it in a component with `t('your.key')`.
- */
 const translations = {
   'app.footer': {
     en: '© 2026 Peregrine — All rights reserved.',
@@ -271,6 +263,7 @@ const translations = {
   'detail.tab.files': { en: 'Files', fr: 'Fichiers' },
   'detail.tab.network': { en: 'Network', fr: 'Réseau' },
   'detail.tab.backups': { en: 'Backups', fr: 'Sauvegardes' },
+  'detail.tab.schedules': { en: 'Schedules', fr: 'Planifications' },
   'detail.tab.subusers': { en: 'Users', fr: 'Utilisateurs' },
   'detail.tab.settings': { en: 'Settings', fr: 'Paramètres' },
   'detail.tab.activity': { en: 'Activity', fr: 'Activité' },
@@ -332,6 +325,12 @@ const translations = {
   'activity.kind.subuser.add': { en: 'added a subuser', fr: 'a ajouté un sous-utilisateur' },
   'activity.kind.subuser.update': { en: 'updated subuser permissions', fr: "a mis à jour les permissions d'un sous-utilisateur" },
   'activity.kind.subuser.remove': { en: 'removed a subuser', fr: 'a retiré un sous-utilisateur' },
+  'activity.kind.schedule.create': { en: 'created a schedule', fr: 'a créé une planification' },
+  'activity.kind.schedule.update': { en: 'updated a schedule', fr: 'a modifié une planification' },
+  'activity.kind.schedule.delete': { en: 'deleted a schedule', fr: 'a supprimé une planification' },
+  'activity.kind.schedule.run': { en: 'ran a scheduled task', fr: 'a exécuté une tâche planifiée' },
+  'activity.kind.schedule.skipped': { en: 'skipped a scheduled task', fr: 'a sauté une tâche planifiée' },
+  'activity.kind.schedule.failed': { en: 'failed a scheduled task', fr: 'a échoué une tâche planifiée' },
   'activity.kind.unknown': { en: 'did something', fr: 'a fait quelque chose' },
 
   'backups.title': { en: 'Backups', fr: 'Sauvegardes' },
@@ -428,26 +427,15 @@ const translations = {
     fr: 'Impossible de charger les utilisateurs.',
   },
 
-  // Permission group headings
   'perm.group.control': { en: 'Power', fr: 'Alimentation' },
   'perm.group.console': { en: 'Console', fr: 'Console' },
   'perm.group.files': { en: 'Files', fr: 'Fichiers' },
   'perm.group.backups': { en: 'Backups', fr: 'Sauvegardes' },
   'perm.group.settings': { en: 'Settings', fr: 'Paramètres' },
 
-  // Per-permission labels (shown in the permission picker and the list)
-  'perm.control.start': {
-    en: 'Start the server',
-    fr: 'Démarrer le serveur',
-  },
-  'perm.control.stop': {
-    en: 'Stop the server',
-    fr: 'Arrêter le serveur',
-  },
-  'perm.control.restart': {
-    en: 'Restart the server',
-    fr: 'Redémarrer le serveur',
-  },
+  'perm.control.start': { en: 'Start the server', fr: 'Démarrer le serveur' },
+  'perm.control.stop': { en: 'Stop the server', fr: 'Arrêter le serveur' },
+  'perm.control.restart': { en: 'Restart the server', fr: 'Redémarrer le serveur' },
   'perm.console.send': {
     en: 'Send commands via the console',
     fr: 'Envoyer des commandes via la console',
@@ -456,33 +444,84 @@ const translations = {
     en: 'Create, edit and upload files',
     fr: 'Créer, modifier et téléverser des fichiers',
   },
-  'perm.files.delete': {
-    en: 'Delete files',
-    fr: 'Supprimer des fichiers',
+  'perm.files.delete': { en: 'Delete files', fr: 'Supprimer des fichiers' },
+  'perm.backups.create': { en: 'Create backups', fr: 'Créer des sauvegardes' },
+  'perm.backups.restore': { en: 'Restore a backup', fr: 'Restaurer une sauvegarde' },
+  'perm.backups.delete': { en: 'Delete backups', fr: 'Supprimer des sauvegardes' },
+  'perm.backups.download': { en: 'Download backups', fr: 'Télécharger des sauvegardes' },
+  'perm.settings.rename': { en: 'Rename the server', fr: 'Renommer le serveur' },
+
+  // --- Schedules ---
+  'schedules.title': { en: 'Scheduled tasks', fr: 'Tâches planifiées' },
+  'schedules.subtitle': {
+    en: 'Run backups automatically on a recurring schedule. The newest backups always replace the oldest once the per-server limit is reached.',
+    fr: 'Exécutez des sauvegardes automatiquement selon une planification récurrente. Les plus récentes remplacent les plus anciennes une fois la limite par serveur atteinte.',
   },
-  'perm.backups.create': {
-    en: 'Create backups',
-    fr: 'Créer des sauvegardes',
+  'schedules.empty': {
+    en: 'No scheduled tasks yet.',
+    fr: "Aucune tâche planifiée pour l'instant.",
   },
-  'perm.backups.restore': {
-    en: 'Restore a backup',
-    fr: 'Restaurer une sauvegarde',
+  'schedules.create': { en: 'New schedule', fr: 'Nouvelle planification' },
+  'schedules.colName': { en: 'Name', fr: 'Nom' },
+  'schedules.colFrequency': { en: 'Frequency', fr: 'Fréquence' },
+  'schedules.colNext': { en: 'Next run', fr: 'Prochaine exécution' },
+  'schedules.colLast': { en: 'Last run', fr: 'Dernière exécution' },
+  'schedules.colEnabled': { en: 'Enabled', fr: 'Activée' },
+  'schedules.colActions': { en: 'Actions', fr: 'Actions' },
+  'schedules.runNow': { en: 'Run now', fr: 'Exécuter maintenant' },
+  'schedules.edit': { en: 'Edit', fr: 'Modifier' },
+  'schedules.delete': { en: 'Delete', fr: 'Supprimer' },
+  'schedules.deleteConfirm': {
+    en: 'Delete this schedule? Existing backups it produced are kept.',
+    fr: 'Supprimer cette planification ? Les sauvegardes existantes qu’elle a produites sont conservées.',
   },
-  'perm.backups.delete': {
-    en: 'Delete backups',
-    fr: 'Supprimer des sauvegardes',
+  'schedules.runConfirm': {
+    en: 'Trigger this scheduled task now? It will produce a backup immediately.',
+    fr: 'Déclencher cette tâche maintenant ? Elle créera une sauvegarde immédiatement.',
   },
-  'perm.backups.download': {
-    en: 'Download backups',
-    fr: 'Télécharger des sauvegardes',
+  'schedules.loadError': {
+    en: 'Unable to load the schedules.',
+    fr: 'Impossible de charger les planifications.',
   },
-  'perm.settings.rename': {
-    en: 'Rename the server',
-    fr: 'Renommer le serveur',
+  'schedules.never': { en: 'never', fr: 'jamais' },
+
+  'schedules.form.title': { en: 'Schedule', fr: 'Planification' },
+  'schedules.form.editTitle': { en: 'Edit schedule', fr: 'Modifier la planification' },
+  'schedules.form.name': { en: 'Name', fr: 'Nom' },
+  'schedules.form.frequency': { en: 'Frequency', fr: 'Fréquence' },
+  'schedules.form.time': { en: 'Time', fr: 'Heure' },
+  'schedules.form.day': { en: 'Day of the week', fr: 'Jour de la semaine' },
+  'schedules.form.enabled': { en: 'Enabled', fr: 'Activée' },
+  'schedules.form.submit': { en: 'Save', fr: 'Enregistrer' },
+
+  'schedules.freq.hourly': { en: 'Every hour', fr: 'Toutes les heures' },
+  'schedules.freq.daily': { en: 'Every day', fr: 'Chaque jour' },
+  'schedules.freq.weekly': { en: 'Every week', fr: 'Chaque semaine' },
+
+  // Frequency descriptions used in the list. Templated with {time} or
+  // {day}+{time} for daily / weekly. Hourly uses just {minute}.
+  'schedules.freq.hourly.desc': {
+    en: 'Every hour at minute {minute}',
+    fr: 'Toutes les heures à {minute} minute(s)',
   },
+  'schedules.freq.daily.desc': {
+    en: 'Every day at {time}',
+    fr: 'Chaque jour à {time}',
+  },
+  'schedules.freq.weekly.desc': {
+    en: 'Every {day} at {time}',
+    fr: 'Chaque {day} à {time}',
+  },
+
+  'schedules.day.0': { en: 'Sunday', fr: 'dimanche' },
+  'schedules.day.1': { en: 'Monday', fr: 'lundi' },
+  'schedules.day.2': { en: 'Tuesday', fr: 'mardi' },
+  'schedules.day.3': { en: 'Wednesday', fr: 'mercredi' },
+  'schedules.day.4': { en: 'Thursday', fr: 'jeudi' },
+  'schedules.day.5': { en: 'Friday', fr: 'vendredi' },
+  'schedules.day.6': { en: 'Saturday', fr: 'samedi' },
 } as const;
 
-/** A valid translation key (any key declared in `translations`). */
 export type TranslationKey = keyof typeof translations;
 
 const STORAGE_KEY = 'peregrine.language';
@@ -504,8 +543,7 @@ interface LanguageContextValue {
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguageState] =
-    useState<Language>(detectInitialLanguage);
+  const [language, setLanguageState] = useState<Language>(detectInitialLanguage);
 
   useEffect(() => {
     document.documentElement.lang = language;
