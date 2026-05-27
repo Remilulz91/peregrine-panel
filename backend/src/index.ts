@@ -12,14 +12,17 @@ import { authRoutes } from './routes/auth';
 import { serverRoutes } from './routes/servers';
 import { fileRoutes } from './routes/files';
 import { adminRoutes } from './routes/admin';
+import { backupRoutes } from './routes/backups';
 import { AUTH_COOKIE } from './plugins/auth';
 import { setupConsole } from './realtime/console';
 
 /**
  * Builds and configures the Peregrine HTTP server.
  *
- * Phase 5: on top of authentication, Docker server management and the live
- * console, the server exposes a file manager for each game server.
+ * Beyond authentication, Docker server management, the live console and
+ * the file manager, the server exposes per-server backups stored on the
+ * dedicated disk, with a safety reserve to keep running servers alive
+ * even when many backups exist.
  */
 export async function buildServer() {
   const app = Fastify({
@@ -47,6 +50,7 @@ export async function buildServer() {
   await app.register(serverRoutes, { prefix: '/api' });
   await app.register(fileRoutes, { prefix: '/api' });
   await app.register(adminRoutes, { prefix: '/api/admin' });
+  await app.register(backupRoutes, { prefix: '/api' });
 
   // --- Real-time console (Socket.IO, shares the HTTP server) ---
   setupConsole(app, app.server);

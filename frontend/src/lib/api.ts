@@ -75,6 +75,24 @@ export interface ApiFileEntry {
   size: number;
 }
 
+/** One backup for a server, as returned by the API. */
+export interface ApiBackup {
+  id: string;
+  serverId: string;
+  name: string;
+  sizeBytes: number;
+  createdAt: string;
+  createdByUsername: string | null;
+}
+
+/** Current usage of the backups disk, in bytes. */
+export interface ApiDiskUsage {
+  totalBytes: number;
+  freeBytes: number;
+  usedBytes: number;
+  reservedBytes: number;
+}
+
 /** A power action that can be applied to a server. */
 export type ServerAction = 'start' | 'stop' | 'restart';
 
@@ -233,7 +251,38 @@ export const api = {
       `/api/servers/${id}/activity`,
     ),
 
-  // --- File manager ---
+  // --- Backups & disk ----------------------------------------------------
+
+  diskUsage: () => request<{ usage: ApiDiskUsage }>('/api/disk'),
+
+  listBackups: (serverId: string) =>
+    request<{ backups: ApiBackup[]; max: number }>(
+      `/api/servers/${serverId}/backups`,
+    ),
+
+  createBackup: (serverId: string, name: string) =>
+    request<{ backup: ApiBackup }>(`/api/servers/${serverId}/backups`, {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    }),
+
+  deleteBackup: (serverId: string, backupId: string) =>
+    request<{ ok: boolean }>(
+      `/api/servers/${serverId}/backups/${backupId}`,
+      { method: 'DELETE' },
+    ),
+
+  restoreBackup: (serverId: string, backupId: string) =>
+    request<{ ok: boolean }>(
+      `/api/servers/${serverId}/backups/${backupId}/restore`,
+      { method: 'POST' },
+    ),
+
+  /** Direct URL the browser can hit to download a backup .tar.gz. */
+  backupDownloadUrl: (serverId: string, backupId: string) =>
+    `/api/servers/${serverId}/backups/${backupId}/download`,
+
+  // --- File manager ------------------------------------------------------
 
   listFiles: (serverId: string, dirPath: string) =>
     request<{ path: string; entries: ApiFileEntry[] }>(

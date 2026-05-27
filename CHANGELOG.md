@@ -2,6 +2,51 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.4.0 — 2026-05-27
+
+Backups: take, restore, download and delete snapshots of a server's
+files, stored on the dedicated disk, with a safety reserve that prevents
+a runaway server from filling the disk and crashing every other server.
+
+### Added
+
+- **Backups tab** in the server detail page. Create a backup (optional
+  custom name), list existing backups, download the .tar.gz archive,
+  restore a backup, or delete one.
+- **Storage on the dedicated disk** — archives live at
+  `${BACKUPS_PATH}/<server-id>/<backup-id>.tar.gz`. By default
+  `BACKUPS_PATH` is a sibling of `SERVERS_PATH`, so a single mount holds
+  both. A new bind mount in `docker-compose.yml` exposes it to the
+  Peregrine container.
+- **Per-server cap** — up to 5 backups per server (configurable in the
+  source). Creating a 6th prunes the oldest automatically.
+- **Disk-usage indicator** — a compact bar in the Backups tab shows
+  used / reserved / free space on the dedicated disk.
+- **Safety reserve** — Peregrine refuses to write a new server or a
+  new backup if doing so would push the free space below the larger of
+  2 GiB or 5 % of the disk. The API returns HTTP 507 with a clear
+  message; the UI shows it inline.
+- **New REST endpoints**:
+  - `GET /api/disk` — current disk usage of the dedicated disk
+  - `GET /api/servers/:id/backups` — list backups (with the cap)
+  - `POST /api/servers/:id/backups` — create a backup
+  - `DELETE /api/servers/:id/backups/:backupId` — delete one
+  - `POST /api/servers/:id/backups/:backupId/restore` — restore one
+  - `GET /api/servers/:id/backups/:backupId/download` — stream the
+    archive
+- **Activity events** — backup create / restore / delete are recorded
+  in the activity log.
+
+### Changed
+
+- **Restore is blocked while the server is running** (refused with HTTP
+  409 server-side, and the button is disabled with a tooltip in the UI).
+  Restoring over a live container would corrupt the running game.
+- **Deleting a server now also wipes its backup folder on disk** (the
+  DB rows already cascaded).
+- **install.sh** creates `/srv/peregrine/backups` next to
+  `/srv/peregrine/servers`.
+
 ## v0.3.0 — 2026-05-27
 
 A Pterodactyl-style detail-page architecture: the server list becomes

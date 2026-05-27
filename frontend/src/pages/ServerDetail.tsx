@@ -21,6 +21,7 @@ import {
 import ConsolePage from './server/Console';
 import FilesPage from './server/Files';
 import NetworkPage from './server/Network';
+import BackupsPage from './server/Backups';
 import SettingsPage from './server/Settings';
 import ActivityPage from './server/Activity';
 
@@ -53,6 +54,7 @@ const TABS: { id: ServerTab; key: TranslationKey }[] = [
   { id: 'console', key: 'detail.tab.console' },
   { id: 'files', key: 'detail.tab.files' },
   { id: 'network', key: 'detail.tab.network' },
+  { id: 'backups', key: 'detail.tab.backups' },
   { id: 'settings', key: 'detail.tab.settings' },
   { id: 'activity', key: 'detail.tab.activity' },
 ];
@@ -119,8 +121,6 @@ export default function ServerDetail({ id, tab }: ServerDetailProps) {
     : null;
   const commandsEnabled = template?.kind !== 'bedrock';
 
-  // --- Render -----------------------------------------------------------
-
   const statusKey = server
     ? STATUS_KEY[server.status] ?? 'status.UNKNOWN'
     : 'status.UNKNOWN';
@@ -141,6 +141,8 @@ export default function ServerDetail({ id, tab }: ServerDetailProps) {
         return <FilesPage server={active} />;
       case 'network':
         return <NetworkPage server={active} template={template} />;
+      case 'backups':
+        return <BackupsPage server={active} />;
       case 'settings':
         return <SettingsPage server={active} onRenamed={setServer} />;
       case 'activity':
@@ -158,7 +160,6 @@ export default function ServerDetail({ id, tab }: ServerDetailProps) {
 
   return (
     <div className="min-h-full bg-peregrine-950 text-peregrine-200">
-      {/* Global header — same as the dashboard so the user is never lost */}
       <header className="flex items-center gap-3 border-b border-peregrine-800 bg-peregrine-900 px-5 py-3">
         <FalconMark className="h-7 w-7 text-falcon" />
         <span className="text-sm font-bold tracking-[0.18em] text-white">
@@ -181,7 +182,6 @@ export default function ServerDetail({ id, tab }: ServerDetailProps) {
       </header>
 
       <main className="mx-auto max-w-5xl px-6 py-8">
-        {/* Back link */}
         <button
           type="button"
           onClick={() => navigate('/')}
@@ -194,7 +194,6 @@ export default function ServerDetail({ id, tab }: ServerDetailProps) {
           <p className="mb-4 text-sm text-rose-400">{t('detail.loadError')}</p>
         )}
 
-        {/* Server header */}
         {loaded && server && (
           <>
             <div className="flex flex-wrap items-center gap-3">
@@ -207,8 +206,6 @@ export default function ServerDetail({ id, tab }: ServerDetailProps) {
                 {t(statusKey)}
               </span>
               <div className="flex-1" />
-              {/* Power actions live in the header so they are accessible
-                  from any tab. Same conditional logic as the list row. */}
               <div className="flex flex-wrap gap-2">
                 {server.status === 'OFFLINE' && (
                   <button
@@ -243,7 +240,6 @@ export default function ServerDetail({ id, tab }: ServerDetailProps) {
               </div>
             </div>
 
-            {/* Tab bar */}
             <div className="mt-6 flex flex-wrap border-b border-peregrine-800">
               {TABS.map((entry) => (
                 <button
@@ -257,7 +253,6 @@ export default function ServerDetail({ id, tab }: ServerDetailProps) {
               ))}
             </div>
 
-            {/* Active tab content */}
             <div className="mt-6">{renderTab(server)}</div>
           </>
         )}

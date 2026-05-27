@@ -60,7 +60,9 @@ if [ ! -f .env ]; then
 else
   echo "    .env already exists, keeping it."
 fi
-mkdir -p /srv/peregrine/servers
+# Both folders live on the dedicated disk by default. Backups sit next
+# to the servers so a single mount holds everything.
+mkdir -p /srv/peregrine/servers /srv/peregrine/backups
 
 echo "==> Building and starting Peregrine..."
 docker compose up -d --build

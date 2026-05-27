@@ -73,6 +73,21 @@ const MIGRATIONS: string[] = [
      created_at TEXT NOT NULL DEFAULT (datetime('now'))
    );
    CREATE INDEX server_activity_by_server ON server_activity(server_id, created_at DESC);`,
+
+  // Migration 6 - per-server backups. The actual archive lives on disk
+  // (path stored as `file_path`); this row holds the metadata. Cascades
+  // so deleting a server cleans up backup metadata too (the on-disk
+  // files are removed by the deprovisioning service in tandem).
+  `CREATE TABLE server_backups (
+     id          TEXT PRIMARY KEY,
+     server_id   TEXT NOT NULL REFERENCES servers(id) ON DELETE CASCADE,
+     name        TEXT NOT NULL,
+     file_path   TEXT NOT NULL,
+     size_bytes  INTEGER NOT NULL DEFAULT 0,
+     created_by  TEXT REFERENCES users(id) ON DELETE SET NULL,
+     created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+   );
+   CREATE INDEX server_backups_by_server ON server_backups(server_id, created_at DESC);`,
 ];
 
 /** Applies any migrations that have not been run on this database yet. */

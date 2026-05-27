@@ -13,6 +13,9 @@ function readNumber(name: string, fallback: number): number {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+const defaultServersPath = path.resolve(__dirname, '../../data/servers');
+const serversPath = process.env.SERVERS_PATH ?? defaultServersPath;
+
 /** Central application configuration, read from the environment. */
 export const config = {
   /** Port the HTTP server listens on. */
@@ -44,8 +47,15 @@ export const config = {
    * IMPORTANT: this path is interpreted on the Docker host, so it must be
    * identical inside and outside the Peregrine container.
    */
-  serversPath:
-    process.env.SERVERS_PATH ?? path.resolve(__dirname, '../../data/servers'),
+  serversPath,
+
+  /**
+   * Host directory that holds every server's .tar.gz backups, grouped in
+   * per-server sub-folders. Defaults to a sibling of SERVERS_PATH so a
+   * single dedicated disk holds both live data and backups.
+   */
+  backupsPath:
+    process.env.BACKUPS_PATH ?? path.resolve(serversPath, '../backups'),
 
   /** True when running the production build. */
   get isProduction(): boolean {

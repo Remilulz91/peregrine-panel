@@ -18,6 +18,9 @@ import {
 } from '../lib/docker';
 import { deprovisionServer, provisionServer } from '../services/provisioning';
 import { listActivityForServer, logActivity } from '../lib/activity';
+import { assertEnoughFreeSpace, DiskFullError } from '../lib/disk';
+import { deleteAllBackupsForServer } from '../services/backups';
+import { config } from '../config';
 
 interface CreateServerBody {
   name: string;
@@ -134,6 +137,23 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
         return reply.code(400).send({ error: 'Unknown game template.' });
       }
 
+      // Preflight: refuse if creating this server would push the
+      // dedicated disk below the safety reserve. A freshly provisioned
+      // Minecraft server typically uses a couple of GiB once worlds are
+      // generated, so we budget conservatively.
+      try {
+        await assertEnoughFreeSpace(config.serversPath, 2 * 1024 * 1024 * 1024);
+      } catch (err) {
+        if (err instanceof DiskFullError) {
+          return reply.code(507).send({
+            error:
+              'Not enough free disk space to create a new server. ' +
+              'Delete unused servers or backups and try again.',
+          });
+        }
+        throw err;
+      }
+
       let port: number;
       try {
         port = allocatePort();
@@ -232,6 +252,9 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
       details: server.name,
     });
     await deprovisionServer(server);
+    // Drop the backup archives too; the DB rows cascade away when the
+    // server row is removed.
+    deleteAllBackupsForServer(server.id);
     deleteServer(server.id);
     return { ok: true };
   });

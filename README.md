@@ -7,9 +7,10 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.3.0** — detail-page architecture: clicking a server in the
-> list opens its dedicated page with Console, Files, Network, Settings
-> and Activity tabs. See the changelog in [`CHANGELOG.md`](CHANGELOG.md).
+> **Version 0.4.0** — backups. Take, restore, download and delete
+> snapshots of a server's files. Stored on the dedicated disk, with a
+> safety reserve that prevents a runaway server from filling the disk.
+> See the changelog in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features
 
@@ -23,8 +24,12 @@ and Pelican.
   - **Console** — live output and command input (Java servers)
   - **Files** — browse, edit, upload, delete
   - **Network** — host, port, protocol, connection string
+  - **Backups** — manual snapshots stored on the dedicated disk
   - **Settings** — rename, delete (blocked while running)
   - **Activity** — chronological log of who did what
+- **Disk safety** — Peregrine refuses to create a server or a backup if
+  doing so would push the dedicated disk below a 2 GiB / 5 % reserve,
+  so a runaway server can never starve the others
 - Create Minecraft servers (Java and Bedrock) in a few clicks
 - Start, stop and restart servers
 - Per-server resource limits (CPU, RAM)
@@ -38,6 +43,8 @@ and Pelican.
 - **Authentication**: JSON Web Tokens + Argon2 password hashing
 - **Containers**: Docker, controlled with dockerode
 - **Real time**: Socket.IO (live console)
+- **Backups**: system `tar` (no JS dependency), stored on the dedicated
+  disk
 - **Deployment**: Docker Compose
 
 ## Quick start (with Docker)
@@ -77,6 +84,7 @@ docker compose up -d --build
 ```
 
 Your data (the `peregrine-data` volume) is preserved across updates.
+Database migrations apply automatically on first launch.
 
 ## Development (without Docker)
 
@@ -120,9 +128,10 @@ peregrine-panel/
 - [x] **Phase 7** — Polish & first release (`v0.1.0`)
 - [x] **Phase 8** — User management & invitations (`v0.2.0`)
 - [x] **Phase 9** — Detail-page architecture (`v0.3.0`)
-- [ ] **Phase 10** — Backups on the dedicated disk, with disk-space
-  pre-checks (`v0.4.0`, next)
+- [x] **Phase 10** — Backups on the dedicated disk, with disk-space
+  pre-checks (`v0.4.0`)
 - [ ] **Phase 11** — Subusers with granular per-server permissions
+  (`v0.5.0`, next)
 - [ ] **Phase 12** — Scheduled tasks (recurring backups)
 
 Ideas for later: multi-machine support, databases, more games. Full details

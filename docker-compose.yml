@@ -22,6 +22,9 @@ services:
       # the container, so that bind mounts for the game containers resolve
       # correctly on the Docker host.
       - "${SERVERS_PATH:-/srv/peregrine/servers}:${SERVERS_PATH:-/srv/peregrine/servers}"
+      # Backup archives (.tar.gz). Lives on the same dedicated disk as
+      # the servers by default, so a single mount holds both.
+      - "${BACKUPS_PATH:-/srv/peregrine/backups}:${BACKUPS_PATH:-/srv/peregrine/backups}"
 
 volumes:
   peregrine-data:

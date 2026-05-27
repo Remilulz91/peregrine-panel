@@ -281,6 +281,7 @@ const translations = {
   'detail.tab.console': { en: 'Console', fr: 'Console' },
   'detail.tab.files': { en: 'Files', fr: 'Fichiers' },
   'detail.tab.network': { en: 'Network', fr: 'Réseau' },
+  'detail.tab.backups': { en: 'Backups', fr: 'Sauvegardes' },
   'detail.tab.settings': { en: 'Settings', fr: 'Paramètres' },
   'detail.tab.activity': { en: 'Activity', fr: 'Activité' },
 
@@ -357,7 +358,71 @@ const translations = {
     en: 'uploaded a file',
     fr: 'a téléversé un fichier',
   },
+  'activity.kind.backup.create': {
+    en: 'created a backup',
+    fr: 'a créé une sauvegarde',
+  },
+  'activity.kind.backup.restore': {
+    en: 'restored a backup',
+    fr: 'a restauré une sauvegarde',
+  },
+  'activity.kind.backup.delete': {
+    en: 'deleted a backup',
+    fr: 'a supprimé une sauvegarde',
+  },
   'activity.kind.unknown': { en: 'did something', fr: 'a fait quelque chose' },
+
+  'backups.title': { en: 'Backups', fr: 'Sauvegardes' },
+  'backups.subtitle': {
+    en: 'Snapshots of this server’s files, stored on the dedicated disk. Up to {max} per server — the oldest is pruned automatically.',
+    fr: "Snapshots des fichiers de ce serveur, stockés sur le disque dédié. Maximum {max} par serveur — la plus ancienne est supprimée automatiquement.",
+  },
+  'backups.create': { en: 'New backup', fr: 'Nouvelle sauvegarde' },
+  'backups.creating': { en: 'Creating...', fr: 'Création...' },
+  'backups.namePlaceholder': {
+    en: 'Backup name (optional)',
+    fr: 'Nom de la sauvegarde (optionnel)',
+  },
+  'backups.empty': {
+    en: 'No backups yet. Create one to capture the current state.',
+    fr: "Aucune sauvegarde pour l'instant. Créez-en une pour capturer l'état actuel.",
+  },
+  'backups.colName': { en: 'Name', fr: 'Nom' },
+  'backups.colSize': { en: 'Size', fr: 'Taille' },
+  'backups.colCreated': { en: 'Created', fr: 'Créée' },
+  'backups.colActions': { en: 'Actions', fr: 'Actions' },
+  'backups.download': { en: 'Download', fr: 'Télécharger' },
+  'backups.restore': { en: 'Restore', fr: 'Restaurer' },
+  'backups.delete': { en: 'Delete', fr: 'Supprimer' },
+  'backups.restoreConfirm': {
+    en: 'Restore this backup? The current server files will be replaced.',
+    fr: 'Restaurer cette sauvegarde ? Les fichiers actuels du serveur seront remplacés.',
+  },
+  'backups.deleteConfirm': {
+    en: 'Delete this backup? The archive file will be removed from disk.',
+    fr: 'Supprimer cette sauvegarde ? Le fichier sera effacé du disque.',
+  },
+  'backups.restoreBlocked': {
+    en: 'Stop the server before restoring a backup.',
+    fr: 'Arrêtez le serveur avant de restaurer une sauvegarde.',
+  },
+  'backups.loadError': {
+    en: 'Unable to load the backups.',
+    fr: 'Impossible de charger les sauvegardes.',
+  },
+  'backups.diskFull': {
+    en: 'Not enough free disk space. Delete some backups or unused servers and try again.',
+    fr: "Pas assez d'espace disque libre. Supprimez des sauvegardes ou des serveurs inutilisés et réessayez.",
+  },
+
+  'disk.title': { en: 'Disk usage', fr: 'Utilisation du disque' },
+  'disk.used': { en: 'Used', fr: 'Utilisé' },
+  'disk.free': { en: 'Free', fr: 'Libre' },
+  'disk.reserved': { en: 'Reserved', fr: 'Réservé' },
+  'disk.reservedHint': {
+    en: 'Peregrine keeps a safety margin so a runaway server never fills the disk completely.',
+    fr: 'Peregrine garde une marge de sécurité pour qu’un serveur emballé ne remplisse jamais le disque complètement.',
+  },
 } as const;
 
 /** A valid translation key (any key declared in `translations`). */
