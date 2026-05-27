@@ -34,6 +34,26 @@ export interface ApiServer {
   createdAt: string;
 }
 
+/** A game server as seen from the admin view (includes the owner). */
+export interface ApiAdminServer extends ApiServer {
+  owner: { id: string; username: string };
+}
+
+/** Summary of a pending invitation, included in admin user listings. */
+export interface ApiPendingInvite {
+  expiresAt: string;
+}
+
+/** A user account as seen from the admin view. */
+export interface ApiAdminUser {
+  id: string;
+  username: string;
+  email: string;
+  role: 'USER' | 'ADMIN';
+  createdAt: string;
+  pendingInvite: ApiPendingInvite | null;
+}
+
 /** One entry in a server's file list. */
 export interface ApiFileEntry {
   name: string;
@@ -80,9 +100,21 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return data as T;
 }
 
-interface Credentials {
+interface LoginCredentials {
+  username: string;
+  password: string;
+}
+
+interface SetupCredentials {
+  username: string;
   email: string;
   password: string;
+}
+
+interface CreateUserInput {
+  username: string;
+  email: string;
+  role: 'USER' | 'ADMIN';
 }
 
 interface CreateServerInput {
@@ -100,19 +132,57 @@ export const api = {
 
   me: () => request<{ user: ApiUser }>('/api/auth/me'),
 
-  setup: (body: Credentials & { username: string }) =>
+  setup: (body: SetupCredentials) =>
     request<{ user: ApiUser }>('/api/auth/setup', {
       method: 'POST',
       body: JSON.stringify(body),
     }),
 
-  login: (body: Credentials) =>
+  login: (body: LoginCredentials) =>
     request<{ user: ApiUser }>('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify(body),
     }),
 
   logout: () => request<{ ok: boolean }>('/api/auth/logout', { method: 'POST' }),
+
+  // --- Invitation flow (for accounts created by an administrator) ---
+
+  getInvite: (token: string) =>
+    request<{ username: string }>(`/api/auth/invite/${token}`),
+
+  acceptInvite: (token: string, password: string) =>
+    request<{ user: ApiUser }>(`/api/auth/invite/${token}`, {
+      method: 'POST',
+      body: JSON.stringify({ password }),
+    }),
+
+  // --- Admin (mounted under /api/admin, ADMIN role required) ---
+
+  listAdminUsers: () =>
+    request<{ users: ApiAdminUser[] }>('/api/admin/users'),
+
+  createAdminUser: (body: CreateUserInput) =>
+    request<{ user: ApiAdminUser; inviteUrl: string }>('/api/admin/users', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  regenerateInvite: (userId: string) =>
+    request<{ user: ApiAdminUser; inviteUrl: string }>(
+      `/api/admin/users/${userId}/invite`,
+      { method: 'POST' },
+    ),
+
+  deleteAdminUser: (userId: string) =>
+    request<{ ok: boolean }>(`/api/admin/users/${userId}`, {
+      method: 'DELETE',
+    }),
+
+  listAdminServers: () =>
+    request<{ servers: ApiAdminServer[] }>('/api/admin/servers'),
+
+  // --- Game servers (mounted under /api) ---
 
   listTemplates: () =>
     request<{ templates: ApiTemplate[] }>('/api/templates'),

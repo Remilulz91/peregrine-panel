@@ -50,6 +50,7 @@ export function setupConsole(
     try {
       const payload = app.jwt.verify(token) as { sub: string; role: string };
       socket.data.userId = payload.sub;
+      socket.data.role = payload.role;
       next();
     } catch {
       next(new Error('unauthorized'));
@@ -58,19 +59,22 @@ export function setupConsole(
 
   io.on('connection', (socket: Socket) => {
     const userId = socket.data.userId as string;
+    const role = socket.data.role as string;
     let detach: (() => void) | null = null;
 
-    // Returns the container id only if the server exists, belongs to the
-    // current user, and has been provisioned.
+    // Returns the container id only if the user is allowed to act on this
+    // server (their own, or any if they are an admin) and it has been
+    // provisioned.
     function resolveContainer(serverId: unknown): string | null {
       if (typeof serverId !== 'string') {
         return null;
       }
       const server = getServer(serverId);
-      if (!server || server.ownerId !== userId || !server.containerId) {
+      if (!server || !server.containerId) {
         return null;
       }
-      return server.containerId;
+      const allowed = role === 'ADMIN' || server.ownerId === userId;
+      return allowed ? server.containerId : null;
     }
 
     socket.on('console:subscribe', async (serverId: unknown) => {

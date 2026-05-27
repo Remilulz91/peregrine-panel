@@ -68,15 +68,121 @@ const translations = {
     en: 'Sign in to your Peregrine panel.',
     fr: 'Connectez-vous à votre panel Peregrine.',
   },
-  'login.emailLabel': { en: 'Email address', fr: 'Adresse email' },
+  'login.usernameLabel': { en: 'Username', fr: "Nom d'utilisateur" },
   'login.passwordLabel': { en: 'Password', fr: 'Mot de passe' },
   'login.submit': { en: 'Sign in', fr: 'Se connecter' },
   'login.errorInvalid': {
-    en: 'Invalid email or password.',
-    fr: 'Email ou mot de passe incorrect.',
+    en: 'Invalid username or password.',
+    fr: "Nom d'utilisateur ou mot de passe incorrect.",
+  },
+
+  'invite.title': { en: 'Set your password', fr: 'Définissez votre mot de passe' },
+  'invite.welcome': {
+    en: 'Welcome to Peregrine, {username}. Choose a password to finish setting up your account.',
+    fr: 'Bienvenue sur Peregrine, {username}. Choisissez un mot de passe pour finaliser votre compte.',
+  },
+  'invite.passwordLabel': { en: 'Password', fr: 'Mot de passe' },
+  'invite.confirmLabel': {
+    en: 'Confirm password',
+    fr: 'Confirmer le mot de passe',
+  },
+  'invite.submit': { en: 'Activate my account', fr: 'Activer mon compte' },
+  'invite.errorShort': {
+    en: 'The password must be at least 8 characters long.',
+    fr: 'Le mot de passe doit contenir au moins 8 caractères.',
+  },
+  'invite.errorMismatch': {
+    en: 'The two passwords do not match.',
+    fr: 'Les deux mots de passe ne correspondent pas.',
+  },
+  'invite.errorInvalid': {
+    en: 'This invitation link is invalid or has expired. Ask your administrator for a new one.',
+    fr: "Ce lien d'invitation est invalide ou a expiré. Demandez-en un nouveau à votre administrateur.",
+  },
+  'invite.checking': {
+    en: 'Checking your invitation...',
+    fr: 'Vérification de votre invitation...',
   },
 
   'dashboard.logout': { en: 'Log out', fr: 'Déconnexion' },
+  'dashboard.viewServers': { en: 'Servers', fr: 'Serveurs' },
+  'dashboard.viewAdmin': { en: 'Admin', fr: 'Admin' },
+
+  'admin.title': { en: 'Administration', fr: 'Administration' },
+  'admin.subtitle': {
+    en: 'Manage user accounts and inspect every server on the panel.',
+    fr: 'Gérez les comptes utilisateurs et inspectez tous les serveurs du panel.',
+  },
+  'admin.tabUsers': { en: 'Users', fr: 'Utilisateurs' },
+  'admin.tabServers': { en: 'All servers', fr: 'Tous les serveurs' },
+  'admin.users.title': { en: 'User accounts', fr: 'Comptes utilisateurs' },
+  'admin.users.create': { en: 'Create user', fr: 'Créer un utilisateur' },
+  'admin.users.empty': {
+    en: 'No accounts yet.',
+    fr: 'Aucun compte pour le moment.',
+  },
+  'admin.users.colUsername': { en: 'Username', fr: "Nom d'utilisateur" },
+  'admin.users.colEmail': { en: 'Email', fr: 'Email' },
+  'admin.users.colRole': { en: 'Role', fr: 'Rôle' },
+  'admin.users.colStatus': { en: 'Status', fr: 'Statut' },
+  'admin.users.colActions': { en: 'Actions', fr: 'Actions' },
+  'admin.users.statusActive': { en: 'Active', fr: 'Actif' },
+  'admin.users.statusPending': {
+    en: 'Invitation pending',
+    fr: 'Invitation en attente',
+  },
+  'admin.users.regenerate': {
+    en: 'Regenerate invite',
+    fr: "Régénérer l'invitation",
+  },
+  'admin.users.delete': { en: 'Delete', fr: 'Supprimer' },
+  'admin.users.deleteConfirm': {
+    en: 'Delete this account? All of their servers (containers and files) will also be removed.',
+    fr: 'Supprimer ce compte ? Tous ses serveurs (conteneurs et fichiers) seront également supprimés.',
+  },
+  'admin.users.loadError': {
+    en: 'Unable to load the accounts.',
+    fr: 'Impossible de charger les comptes.',
+  },
+  'admin.role.USER': { en: 'User', fr: 'Utilisateur' },
+  'admin.role.ADMIN': { en: 'Administrator', fr: 'Administrateur' },
+
+  'admin.create.title': { en: 'Create a user', fr: 'Créer un utilisateur' },
+  'admin.create.subtitle': {
+    en: 'The user will receive a one-time link to set their own password.',
+    fr: "L'utilisateur recevra un lien à usage unique pour définir son propre mot de passe.",
+  },
+  'admin.create.usernameLabel': { en: 'Username', fr: "Nom d'utilisateur" },
+  'admin.create.emailLabel': { en: 'Email address', fr: 'Adresse email' },
+  'admin.create.roleLabel': { en: 'Role', fr: 'Rôle' },
+  'admin.create.submit': {
+    en: 'Create and generate link',
+    fr: 'Créer et générer le lien',
+  },
+  'admin.invite.ready': {
+    en: 'Invitation link ready — share it with the user. The link is valid for 7 days and can be used only once.',
+    fr: "Lien d'invitation prêt — partagez-le avec l'utilisateur. Le lien est valable 7 jours et utilisable une seule fois.",
+  },
+  'admin.invite.copy': { en: 'Copy link', fr: 'Copier le lien' },
+  'admin.invite.copied': { en: 'Copied!', fr: 'Copié !' },
+
+  'admin.servers.title': {
+    en: 'All game servers',
+    fr: 'Tous les serveurs de jeu',
+  },
+  'admin.servers.subtitle': {
+    en: 'Every server on the panel, regardless of owner. Use this list to help users troubleshoot their servers.',
+    fr: 'Tous les serveurs du panel, peu importe le propriétaire. Utilisez cette liste pour aider les utilisateurs à dépanner leurs serveurs.',
+  },
+  'admin.servers.ownerLabel': { en: 'Owner', fr: 'Propriétaire' },
+  'admin.servers.empty': {
+    en: 'No servers on the panel yet.',
+    fr: 'Aucun serveur sur le panel pour le moment.',
+  },
+  'admin.servers.loadError': {
+    en: 'Unable to load the servers.',
+    fr: 'Impossible de charger les serveurs.',
+  },
 
   'servers.title': { en: 'Your game servers', fr: 'Vos serveurs de jeu' },
   'servers.subtitle': {

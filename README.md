@@ -7,12 +7,18 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.1.0** — the first release of the MVP. See the changelog in
-> [`CHANGELOG.md`](CHANGELOG.md).
+> **Version 0.2.0** — multi-user release: the administrator can create
+> accounts and send each user a one-time invitation link. See the
+> changelog in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features
 
 - User accounts, with an administrator account created on first launch
+- The administrator can create more accounts (User or Administrator) and
+  share a single-use invitation link so each person picks their own
+  password
+- Server isolation: each account only sees its own game servers (the
+  administrator gets a separate view with every server, to troubleshoot)
 - Create Minecraft servers (Java and Bedrock) in a few clicks
 - Start, stop and restart servers
 - Live console
@@ -108,10 +114,10 @@ peregrine-panel/
 - [x] **Phase 5** — File manager
 - [x] **Phase 6** — Resource limits & Minecraft Bedrock
 - [x] **Phase 7** — Polish & first release (`v0.1.0`)
+- [x] **Phase 8** — User management & invitations (`v0.2.0`)
 
-Ideas for after v0.1.0: multi-machine support, user management with an
-administration page, automatic backups, more games. Full details in
-[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+Ideas for after v0.2.0: multi-machine support, automatic backups, more
+games. Full details in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## License
 

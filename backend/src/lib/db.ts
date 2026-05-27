@@ -47,6 +47,18 @@ const MIGRATIONS: string[] = [
    ALTER TABLE game_templates ADD COLUMN internal_port INTEGER NOT NULL DEFAULT 25565;
    ALTER TABLE game_templates ADD COLUMN port_protocol TEXT NOT NULL DEFAULT 'tcp';
    ALTER TABLE servers ADD COLUMN cpu_limit REAL NOT NULL DEFAULT 2;`,
+
+  // Migration 4 - username login (case-insensitive unique) + invite tokens.
+  // The expression index makes "alice" and "ALICE" collide, so usernames
+  // can be compared without surprises across cases.
+  `CREATE UNIQUE INDEX users_username_unique ON users(LOWER(username));
+   CREATE TABLE user_invites (
+     id         TEXT PRIMARY KEY,
+     user_id    TEXT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+     token      TEXT NOT NULL UNIQUE,
+     expires_at TEXT NOT NULL,
+     created_at TEXT NOT NULL DEFAULT (datetime('now'))
+   );`,
 ];
 
 /** Applies any migrations that have not been run on this database yet. */

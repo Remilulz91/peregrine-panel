@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import AdminPanel from '../components/AdminPanel';
 import FalconMark from '../components/FalconMark';
 import LanguageToggle from '../components/LanguageToggle';
 import ServerCard from '../components/ServerCard';
@@ -19,6 +20,10 @@ import { useTranslation } from '../lib/i18n';
  * The protected screen shown once a user is signed in: the list of their
  * game servers, with controls to create, start, stop and delete them, open
  * their live console, and manage their files.
+ *
+ * Administrators get an extra "Admin" toggle in the header that swaps the
+ * main area for the administration view (user accounts + every server on
+ * the panel, with full controls for troubleshooting).
  */
 export default function Dashboard() {
   const { t } = useTranslation();
@@ -29,6 +34,11 @@ export default function Dashboard() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [consoleServer, setConsoleServer] = useState<ApiServer | null>(null);
   const [filesServer, setFilesServer] = useState<ApiServer | null>(null);
+
+  // Admins can switch between their own dashboard ("servers") and the
+  // administration view ("admin"). Regular users only ever see "servers".
+  const [view, setView] = useState<'servers' | 'admin'>('servers');
+  const isAdmin = user?.role === 'ADMIN';
 
   const loadServers = useCallback(async () => {
     try {
@@ -100,6 +110,32 @@ export default function Dashboard() {
           PEREGRINE
         </span>
         <div className="flex-1" />
+        {isAdmin && (
+          <div className="flex gap-1 rounded-lg border border-peregrine-700 p-0.5">
+            <button
+              type="button"
+              onClick={() => setView('servers')}
+              className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                view === 'servers'
+                  ? 'bg-falcon text-peregrine-950'
+                  : 'text-peregrine-300 hover:bg-peregrine-800'
+              }`}
+            >
+              {t('dashboard.viewServers')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setView('admin')}
+              className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                view === 'admin'
+                  ? 'bg-falcon text-peregrine-950'
+                  : 'text-peregrine-300 hover:bg-peregrine-800'
+              }`}
+            >
+              {t('dashboard.viewAdmin')}
+            </button>
+          </div>
+        )}
         <LanguageToggle />
         {user && (
           <span className="hidden text-sm text-peregrine-400 sm:inline">
@@ -116,46 +152,54 @@ export default function Dashboard() {
       </header>
 
       <main className="mx-auto max-w-4xl px-6 py-10">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold text-white">
-              {t('servers.title')}
-            </h1>
-            <p className="mt-1 max-w-lg text-sm text-peregrine-400">
-              {t('servers.subtitle')}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setDialogOpen(true)}
-            className="shrink-0 rounded-lg bg-falcon px-4 py-2 text-sm font-semibold text-peregrine-950 transition-colors hover:bg-falcon-bright"
-          >
-            {t('servers.create')}
-          </button>
-        </div>
-
-        {loadError && (
-          <p className="mt-6 text-sm text-rose-400">{t('servers.loadError')}</p>
-        )}
-
-        {servers.length === 0 && !loadError ? (
-          <div className="mt-8 rounded-2xl border border-dashed border-peregrine-700 p-10 text-center text-sm text-peregrine-400">
-            {t('servers.empty')}
-          </div>
+        {isAdmin && view === 'admin' ? (
+          <AdminPanel templates={templates} />
         ) : (
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            {servers.map((server) => (
-              <ServerCard
-                key={server.id}
-                server={server}
-                templateName={templateName(server.templateId)}
-                onAction={handleAction}
-                onConsole={setConsoleServer}
-                onFiles={setFilesServer}
-                onDelete={handleDelete}
-              />
-            ))}
-          </div>
+          <>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-semibold text-white">
+                  {t('servers.title')}
+                </h1>
+                <p className="mt-1 max-w-lg text-sm text-peregrine-400">
+                  {t('servers.subtitle')}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDialogOpen(true)}
+                className="shrink-0 rounded-lg bg-falcon px-4 py-2 text-sm font-semibold text-peregrine-950 transition-colors hover:bg-falcon-bright"
+              >
+                {t('servers.create')}
+              </button>
+            </div>
+
+            {loadError && (
+              <p className="mt-6 text-sm text-rose-400">
+                {t('servers.loadError')}
+              </p>
+            )}
+
+            {servers.length === 0 && !loadError ? (
+              <div className="mt-8 rounded-2xl border border-dashed border-peregrine-700 p-10 text-center text-sm text-peregrine-400">
+                {t('servers.empty')}
+              </div>
+            ) : (
+              <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                {servers.map((server) => (
+                  <ServerCard
+                    key={server.id}
+                    server={server}
+                    templateName={templateName(server.templateId)}
+                    onAction={handleAction}
+                    onConsole={setConsoleServer}
+                    onFiles={setFilesServer}
+                    onDelete={handleDelete}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         )}
       </main>
 

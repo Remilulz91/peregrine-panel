@@ -105,6 +105,14 @@ export function listServersByOwner(ownerId: string): ServerRecord[] {
   return rows.map(toRecord);
 }
 
+/** Lists every server in the database, newest first (admin view). */
+export function listAllServers(): ServerRecord[] {
+  const rows = db
+    .prepare('SELECT * FROM servers ORDER BY created_at DESC')
+    .all() as unknown as ServerRow[];
+  return rows.map(toRecord);
+}
+
 /** Finds a server by id, or returns null. */
 export function getServer(id: string): ServerRecord | null {
   const row = db.prepare('SELECT * FROM servers WHERE id = ?').get(id) as

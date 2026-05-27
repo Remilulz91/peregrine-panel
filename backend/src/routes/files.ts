@@ -30,15 +30,19 @@ interface WriteBody {
 export async function fileRoutes(app: FastifyInstance): Promise<void> {
   app.addHook('preHandler', authenticate);
 
-  // Returns the server id if it exists and belongs to the user; otherwise
-  // sends a 404 and returns null.
+  // Returns the server id if the request's user is allowed to access it;
+  // otherwise sends a 404 and returns null. Administrators may access any
+  // server (to help with troubleshooting).
   function ownedServerId(
     request: FastifyRequest,
     reply: FastifyReply,
   ): string | null {
     const { id } = request.params as { id: string };
     const server = getServer(id);
-    if (!server || server.ownerId !== request.user.sub) {
+    const allowed =
+      server &&
+      (request.user.role === 'ADMIN' || server.ownerId === request.user.sub);
+    if (!server || !allowed) {
       reply.code(404).send({ error: 'Server not found.' });
       return null;
     }

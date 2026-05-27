@@ -40,11 +40,27 @@ export function countUsers(): number {
   return row.count;
 }
 
+/** Counts how many administrator accounts exist. */
+export function countAdmins(): number {
+  const row = db
+    .prepare("SELECT COUNT(*) AS count FROM users WHERE role = 'ADMIN'")
+    .get() as { count: number };
+  return row.count;
+}
+
 /** Finds a user by email address, or returns null. */
 export function findUserByEmail(email: string): UserRecord | null {
   const row = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as
     | UserRow
     | undefined;
+  return row ? toRecord(row) : null;
+}
+
+/** Finds a user by username (case-insensitive), or returns null. */
+export function findUserByUsername(username: string): UserRecord | null {
+  const row = db
+    .prepare('SELECT * FROM users WHERE LOWER(username) = LOWER(?)')
+    .get(username) as UserRow | undefined;
   return row ? toRecord(row) : null;
 }
 
@@ -54,6 +70,14 @@ export function findUserById(id: string): UserRecord | null {
     | UserRow
     | undefined;
   return row ? toRecord(row) : null;
+}
+
+/** Lists every user, newest first. */
+export function listAllUsers(): UserRecord[] {
+  const rows = db
+    .prepare('SELECT * FROM users ORDER BY created_at DESC')
+    .all() as unknown as UserRow[];
+  return rows.map(toRecord);
 }
 
 /** Creates a new user account and returns the stored record. */
@@ -74,4 +98,17 @@ export function createUser(input: {
     throw new Error('Failed to create the user.');
   }
   return created;
+}
+
+/** Updates a user's password hash. */
+export function setUserPassword(userId: string, passwordHash: string): void {
+  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(
+    passwordHash,
+    userId,
+  );
+}
+
+/** Removes a user row. The caller must delete dependent servers first. */
+export function deleteUserById(userId: string): void {
+  db.prepare('DELETE FROM users WHERE id = ?').run(userId);
 }

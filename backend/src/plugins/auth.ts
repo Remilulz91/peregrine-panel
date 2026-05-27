@@ -31,6 +31,25 @@ export async function authenticate(
   }
 }
 
+/**
+ * Route guard: like `authenticate`, but also rejects non-admin users with
+ * 403. Use it on routes that should only be reachable by administrators.
+ */
+export async function authenticateAdmin(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<void> {
+  try {
+    await request.jwtVerify();
+  } catch {
+    await reply.code(401).send({ error: 'Unauthorized' });
+    return;
+  }
+  if (request.user.role !== 'ADMIN') {
+    await reply.code(403).send({ error: 'Forbidden' });
+  }
+}
+
 /** Signs a token for the given user and stores it in an httpOnly cookie. */
 export function setAuthCookie(
   app: FastifyInstance,

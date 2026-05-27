@@ -11,6 +11,7 @@ import { healthRoutes } from './routes/health';
 import { authRoutes } from './routes/auth';
 import { serverRoutes } from './routes/servers';
 import { fileRoutes } from './routes/files';
+import { adminRoutes } from './routes/admin';
 import { AUTH_COOKIE } from './plugins/auth';
 import { setupConsole } from './realtime/console';
 
@@ -45,6 +46,7 @@ export async function buildServer() {
   await app.register(authRoutes, { prefix: '/api/auth' });
   await app.register(serverRoutes, { prefix: '/api' });
   await app.register(fileRoutes, { prefix: '/api' });
+  await app.register(adminRoutes, { prefix: '/api/admin' });
 
   // --- Real-time console (Socket.IO, shares the HTTP server) ---
   setupConsole(app, app.server);

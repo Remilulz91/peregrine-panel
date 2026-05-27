@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { authenticate } from '../plugins/auth';
 import { getTemplate, listTemplates } from '../lib/templates';
 import {
@@ -56,10 +56,23 @@ async function publicServer(server: ServerRecord) {
   };
 }
 
-/** Returns the server only if it exists and belongs to the given user. */
-function ownedServer(userId: string, id: string): ServerRecord | null {
+/**
+ * Returns the server only if the request's user is allowed to act on it.
+ * A regular user can only reach their own servers; an administrator can
+ * reach any server (to help with troubleshooting).
+ */
+function accessibleServer(
+  request: FastifyRequest,
+  id: string,
+): ServerRecord | null {
   const server = getServer(id);
-  return server && server.ownerId === userId ? server : null;
+  if (!server) {
+    return null;
+  }
+  if (request.user.role === 'ADMIN' || server.ownerId === request.user.sub) {
+    return server;
+  }
+  return null;
 }
 
 /**
@@ -135,7 +148,7 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
 
   app.delete('/servers/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
-    const server = ownedServer(request.user.sub, id);
+    const server = accessibleServer(request, id);
     if (!server) {
       return reply.code(404).send({ error: 'Server not found.' });
     }
@@ -146,7 +159,7 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
 
   app.post('/servers/:id/start', async (request, reply) => {
     const { id } = request.params as { id: string };
-    const server = ownedServer(request.user.sub, id);
+    const server = accessibleServer(request, id);
     if (!server) {
       return reply.code(404).send({ error: 'Server not found.' });
     }
@@ -163,7 +176,7 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
 
   app.post('/servers/:id/stop', async (request, reply) => {
     const { id } = request.params as { id: string };
-    const server = ownedServer(request.user.sub, id);
+    const server = accessibleServer(request, id);
     if (!server) {
       return reply.code(404).send({ error: 'Server not found.' });
     }
@@ -180,7 +193,7 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
 
   app.post('/servers/:id/restart', async (request, reply) => {
     const { id } = request.params as { id: string };
-    const server = ownedServer(request.user.sub, id);
+    const server = accessibleServer(request, id);
     if (!server) {
       return reply.code(404).send({ error: 'Server not found.' });
     }
