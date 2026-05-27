@@ -88,6 +88,21 @@ const MIGRATIONS: string[] = [
      created_at  TEXT NOT NULL DEFAULT (datetime('now'))
    );
    CREATE INDEX server_backups_by_server ON server_backups(server_id, created_at DESC);`,
+
+  // Migration 7 - per-server subusers. Lets the owner grant another
+  // existing account access to one of their servers, with a granular
+  // permission set (JSON array of strings). UNIQUE(server_id, user_id)
+  // means each account appears at most once per server. Both cascades
+  // are intentional: removing a user (or a server) tidies up the link.
+  `CREATE TABLE server_subusers (
+     id          TEXT PRIMARY KEY,
+     server_id   TEXT NOT NULL REFERENCES servers(id) ON DELETE CASCADE,
+     user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+     permissions TEXT NOT NULL DEFAULT '[]',
+     created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+     UNIQUE(server_id, user_id)
+   );
+   CREATE INDEX server_subusers_by_user ON server_subusers(user_id);`,
 ];
 
 /** Applies any migrations that have not been run on this database yet. */

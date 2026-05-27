@@ -13,16 +13,16 @@ import { serverRoutes } from './routes/servers';
 import { fileRoutes } from './routes/files';
 import { adminRoutes } from './routes/admin';
 import { backupRoutes } from './routes/backups';
+import { subuserRoutes } from './routes/subusers';
 import { AUTH_COOKIE } from './plugins/auth';
 import { setupConsole } from './realtime/console';
 
 /**
  * Builds and configures the Peregrine HTTP server.
  *
- * Beyond authentication, Docker server management, the live console and
- * the file manager, the server exposes per-server backups stored on the
- * dedicated disk, with a safety reserve to keep running servers alive
- * even when many backups exist.
+ * Beyond authentication, Docker server management, the live console,
+ * the file manager and backups, the server now lets owners share access
+ * to a server with another account via a subuser permission set.
  */
 export async function buildServer() {
   const app = Fastify({
@@ -51,20 +51,17 @@ export async function buildServer() {
   await app.register(fileRoutes, { prefix: '/api' });
   await app.register(adminRoutes, { prefix: '/api/admin' });
   await app.register(backupRoutes, { prefix: '/api' });
+  await app.register(subuserRoutes, { prefix: '/api' });
 
   // --- Real-time console (Socket.IO, shares the HTTP server) ---
   setupConsole(app, app.server);
 
   // --- Web interface (static files) ---
-  // In production, the compiled React interface sits next to the backend.
   const frontendDir = path.resolve(__dirname, '../../frontend/dist');
   const indexHtml = path.join(frontendDir, 'index.html');
 
   if (fs.existsSync(indexHtml)) {
     await app.register(fastifyStatic, { root: frontendDir });
-
-    // Single-page-app fallback: any non-API route returns index.html
-    // so that React's routing can handle it.
     app.setNotFoundHandler((request, reply) => {
       if (request.url.startsWith('/api')) {
         reply.code(404).send({ error: 'Not Found' });
@@ -73,8 +70,6 @@ export async function buildServer() {
       return reply.sendFile('index.html');
     });
   } else {
-    // The interface has not been built yet (typically in development,
-    // where the frontend runs on its own server via "npm run dev:frontend").
     app.get('/', async () => ({
       name: 'Peregrine',
       message:

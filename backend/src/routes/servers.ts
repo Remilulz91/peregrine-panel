@@ -1,4 +1,4 @@
-import type { FastifyInstance, FastifyRequest } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { authenticate } from '../plugins/auth';
 import { getTemplate, listTemplates } from '../lib/templates';
 import {
@@ -6,10 +6,18 @@ import {
   createServer,
   deleteServer,
   getServer,
-  listServersByOwner,
+  listServersVisibleTo,
   renameServer,
   type ServerRecord,
 } from '../lib/servers';
+import { findUserById } from '../lib/users';
+import { effectivePermissions } from '../lib/subusers';
+import { PERMISSION } from '../lib/permissions';
+import {
+  accessibleServer,
+  requireOwner,
+  requirePermission,
+} from '../lib/acl';
 import {
   getContainerState,
   restartContainer,
@@ -50,8 +58,13 @@ async function effectiveStatus(server: ServerRecord): Promise<string> {
   return state === 'running' ? 'RUNNING' : 'OFFLINE';
 }
 
-/** Shapes a server for the API response, including its live status. */
-async function publicServer(server: ServerRecord) {
+/**
+ * Shapes a server for the API response, from the perspective of a given
+ * viewer. Includes the owner's username plus `isOwner`, so the dashboard
+ * can tag servers shared with the viewer.
+ */
+async function publicServer(server: ServerRecord, viewerId: string) {
+  const owner = findUserById(server.ownerId);
   return {
     id: server.id,
     name: server.name,
@@ -62,26 +75,9 @@ async function publicServer(server: ServerRecord) {
     cpuLimit: server.cpuLimit,
     port: server.port,
     createdAt: server.createdAt,
+    isOwner: server.ownerId === viewerId,
+    ownerUsername: owner?.username ?? '?',
   };
-}
-
-/**
- * Returns the server only if the request's user is allowed to act on it.
- * A regular user can only reach their own servers; an administrator can
- * reach any server (to help with troubleshooting).
- */
-function accessibleServer(
-  request: FastifyRequest,
-  id: string,
-): ServerRecord | null {
-  const server = getServer(id);
-  if (!server) {
-    return null;
-  }
-  if (request.user.role === 'ADMIN' || server.ownerId === request.user.sub) {
-    return server;
-  }
-  return null;
 }
 
 /**
@@ -96,19 +92,31 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.get('/servers', async (request) => {
-    const servers = listServersByOwner(request.user.sub);
-    const result = await Promise.all(servers.map(publicServer));
+    const servers = listServersVisibleTo(request.user.sub);
+    const result = await Promise.all(
+      servers.map((s) => publicServer(s, request.user.sub)),
+    );
     return { servers: result };
   });
 
-  // Single-server endpoint — used by the detail page header.
+  // Single-server endpoint — also returns `myPermissions` so the UI
+  // knows which buttons to hide.
   app.get('/servers/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
     const server = accessibleServer(request, id);
     if (!server) {
       return reply.code(404).send({ error: 'Server not found.' });
     }
-    return { server: await publicServer(server) };
+    const myPermissions = effectivePermissions({
+      serverId: server.id,
+      userId: request.user.sub,
+      role: request.user.role,
+      ownerId: server.ownerId,
+    });
+    return {
+      server: await publicServer(server, request.user.sub),
+      myPermissions,
+    };
   });
 
   app.post(
@@ -137,10 +145,6 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
         return reply.code(400).send({ error: 'Unknown game template.' });
       }
 
-      // Preflight: refuse if creating this server would push the
-      // dedicated disk below the safety reserve. A freshly provisioned
-      // Minecraft server typically uses a couple of GiB once worlds are
-      // generated, so we budget conservatively.
       try {
         await assertEnoughFreeSpace(config.serversPath, 2 * 1024 * 1024 * 1024);
       } catch (err) {
@@ -180,15 +184,14 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
         kind: 'server.create',
       });
 
-      // Pull the image and create the container in the background, so the
-      // request returns immediately. The frontend polls for the status.
       void provisionServer(server, template);
 
-      return reply.code(201).send({ server: await publicServer(server) });
+      return reply
+        .code(201)
+        .send({ server: await publicServer(server, request.user.sub) });
     },
   );
 
-  // Rename — does not touch the container, just the human-readable name.
   app.patch(
     '/servers/:id',
     {
@@ -209,6 +212,7 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
       if (!server) {
         return reply.code(404).send({ error: 'Server not found.' });
       }
+      if (!requirePermission(request, reply, server, PERMISSION.SETTINGS_RENAME)) return;
       const { name } = request.body as RenameServerBody;
       const newName = name.trim();
       if (newName.length === 0) {
@@ -224,7 +228,9 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
         });
       }
       const updated = getServer(server.id);
-      return { server: updated && (await publicServer(updated)) };
+      return {
+        server: updated && (await publicServer(updated, request.user.sub)),
+      };
     },
   );
 
@@ -234,9 +240,7 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
     if (!server) {
       return reply.code(404).send({ error: 'Server not found.' });
     }
-    // Refuse to delete a server that is currently running — the user
-    // (or admin) must stop it first. Prevents accidental container kill
-    // mid-game.
+    if (!requireOwner(request, reply, server)) return;
     if (server.containerId) {
       const state = await getContainerState(server.containerId);
       if (state === 'running') {
@@ -252,8 +256,6 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
       details: server.name,
     });
     await deprovisionServer(server);
-    // Drop the backup archives too; the DB rows cascade away when the
-    // server row is removed.
     deleteAllBackupsForServer(server.id);
     deleteServer(server.id);
     return { ok: true };
@@ -265,6 +267,7 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
     if (!server) {
       return reply.code(404).send({ error: 'Server not found.' });
     }
+    if (!requirePermission(request, reply, server, PERMISSION.CONTROL_START)) return;
     if (!server.containerId) {
       return reply.code(409).send({ error: 'Server is not ready yet.' });
     }
@@ -287,6 +290,7 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
     if (!server) {
       return reply.code(404).send({ error: 'Server not found.' });
     }
+    if (!requirePermission(request, reply, server, PERMISSION.CONTROL_STOP)) return;
     if (!server.containerId) {
       return reply.code(409).send({ error: 'Server is not ready yet.' });
     }
@@ -309,6 +313,7 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
     if (!server) {
       return reply.code(404).send({ error: 'Server not found.' });
     }
+    if (!requirePermission(request, reply, server, PERMISSION.CONTROL_RESTART)) return;
     if (!server.containerId) {
       return reply.code(409).send({ error: 'Server is not ready yet.' });
     }
@@ -325,7 +330,6 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
     return { ok: true };
   });
 
-  // Activity feed (latest events first, capped server-side).
   app.get('/servers/:id/activity', async (request, reply) => {
     const { id } = request.params as { id: string };
     const server = accessibleServer(request, id);

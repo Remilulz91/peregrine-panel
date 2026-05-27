@@ -4,6 +4,8 @@ import type { FastifyInstance } from 'fastify';
 import { AUTH_COOKIE } from '../plugins/auth';
 import { getServer } from '../lib/servers';
 import { attachConsole, sendConsoleCommand } from '../lib/docker';
+import { effectivePermissions, getSubuser } from '../lib/subusers';
+import { PERMISSION } from '../lib/permissions';
 
 /** Extracts the Peregrine authentication token from a Cookie header. */
 function tokenFromCookieHeader(header: string | undefined): string | null {
@@ -31,8 +33,9 @@ interface CommandPayload {
  * Sets up the real-time console over Socket.IO.
  *
  * Clients authenticate with the same cookie as the REST API. Once
- * connected, a client subscribes to one of its own servers to receive its
- * live console output, and can send commands back to it.
+ * connected, a client subscribes to one of its accessible servers to
+ * receive its live console output, and (if they have the
+ * `console.send` permission) can send commands back to it.
  */
 export function setupConsole(
   app: FastifyInstance,
@@ -62,9 +65,8 @@ export function setupConsole(
     const role = socket.data.role as string;
     let detach: (() => void) | null = null;
 
-    // Returns the container id only if the user is allowed to act on this
-    // server (their own, or any if they are an admin) and it has been
-    // provisioned.
+    // Returns the container id if the user can see this server (owner,
+    // admin, or subuser — regardless of which permissions they hold).
     function resolveContainer(serverId: unknown): string | null {
       if (typeof serverId !== 'string') {
         return null;
@@ -73,8 +75,13 @@ export function setupConsole(
       if (!server || !server.containerId) {
         return null;
       }
-      const allowed = role === 'ADMIN' || server.ownerId === userId;
-      return allowed ? server.containerId : null;
+      const isOwner = server.ownerId === userId;
+      const isAdmin = role === 'ADMIN';
+      const isSubuser = !isOwner && !isAdmin && getSubuser(server.id, userId) !== null;
+      if (!isOwner && !isAdmin && !isSubuser) {
+        return null;
+      }
+      return server.containerId;
     }
 
     socket.on('console:subscribe', async (serverId: unknown) => {
@@ -99,6 +106,20 @@ export function setupConsole(
       const command =
         typeof payload?.command === 'string' ? payload.command.trim() : '';
       if (!containerId || command.length === 0) {
+        return;
+      }
+      // Sending commands requires the console.send permission. Owners
+      // and admins implicitly have it via effectivePermissions.
+      const server = getServer(payload.serverId as string);
+      if (!server) return;
+      const granted = effectivePermissions({
+        serverId: server.id,
+        userId,
+        role,
+        ownerId: server.ownerId,
+      });
+      if (!granted.includes(PERMISSION.CONSOLE_SEND)) {
+        socket.emit('console:error', 'forbidden');
         return;
       }
       try {

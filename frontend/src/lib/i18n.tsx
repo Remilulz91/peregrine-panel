@@ -36,6 +36,7 @@ const translations = {
   },
   'common.cancel': { en: 'Cancel', fr: 'Annuler' },
   'common.close': { en: 'Close', fr: 'Fermer' },
+  'common.save': { en: 'Save', fr: 'Enregistrer' },
   'language.label': { en: 'Language', fr: 'Langue' },
 
   'setup.title': {
@@ -49,10 +50,7 @@ const translations = {
   'setup.usernameLabel': { en: 'Username', fr: "Nom d'utilisateur" },
   'setup.emailLabel': { en: 'Email address', fr: 'Adresse email' },
   'setup.passwordLabel': { en: 'Password', fr: 'Mot de passe' },
-  'setup.confirmLabel': {
-    en: 'Confirm password',
-    fr: 'Confirmer le mot de passe',
-  },
+  'setup.confirmLabel': { en: 'Confirm password', fr: 'Confirmer le mot de passe' },
   'setup.submit': { en: 'Create account', fr: 'Créer le compte' },
   'setup.errorShort': {
     en: 'The password must be at least 8 characters long.',
@@ -82,10 +80,7 @@ const translations = {
     fr: 'Bienvenue sur Peregrine, {username}. Choisissez un mot de passe pour finaliser votre compte.',
   },
   'invite.passwordLabel': { en: 'Password', fr: 'Mot de passe' },
-  'invite.confirmLabel': {
-    en: 'Confirm password',
-    fr: 'Confirmer le mot de passe',
-  },
+  'invite.confirmLabel': { en: 'Confirm password', fr: 'Confirmer le mot de passe' },
   'invite.submit': { en: 'Activate my account', fr: 'Activer mon compte' },
   'invite.errorShort': {
     en: 'The password must be at least 8 characters long.',
@@ -107,6 +102,7 @@ const translations = {
   'dashboard.logout': { en: 'Log out', fr: 'Déconnexion' },
   'dashboard.viewServers': { en: 'Servers', fr: 'Serveurs' },
   'dashboard.viewAdmin': { en: 'Admin', fr: 'Admin' },
+  'dashboard.sharedBy': { en: 'shared by', fr: 'partagé par' },
 
   'admin.title': { en: 'Administration', fr: 'Administration' },
   'admin.subtitle': {
@@ -117,24 +113,15 @@ const translations = {
   'admin.tabServers': { en: 'All servers', fr: 'Tous les serveurs' },
   'admin.users.title': { en: 'User accounts', fr: 'Comptes utilisateurs' },
   'admin.users.create': { en: 'Create user', fr: 'Créer un utilisateur' },
-  'admin.users.empty': {
-    en: 'No accounts yet.',
-    fr: 'Aucun compte pour le moment.',
-  },
+  'admin.users.empty': { en: 'No accounts yet.', fr: 'Aucun compte pour le moment.' },
   'admin.users.colUsername': { en: 'Username', fr: "Nom d'utilisateur" },
   'admin.users.colEmail': { en: 'Email', fr: 'Email' },
   'admin.users.colRole': { en: 'Role', fr: 'Rôle' },
   'admin.users.colStatus': { en: 'Status', fr: 'Statut' },
   'admin.users.colActions': { en: 'Actions', fr: 'Actions' },
   'admin.users.statusActive': { en: 'Active', fr: 'Actif' },
-  'admin.users.statusPending': {
-    en: 'Invitation pending',
-    fr: 'Invitation en attente',
-  },
-  'admin.users.regenerate': {
-    en: 'Regenerate invite',
-    fr: "Régénérer l'invitation",
-  },
+  'admin.users.statusPending': { en: 'Invitation pending', fr: 'Invitation en attente' },
+  'admin.users.regenerate': { en: 'Regenerate invite', fr: "Régénérer l'invitation" },
   'admin.users.delete': { en: 'Delete', fr: 'Supprimer' },
   'admin.users.deleteConfirm': {
     en: 'Delete this account? All of their servers (containers and files) will also be removed.',
@@ -166,10 +153,7 @@ const translations = {
   'admin.invite.copy': { en: 'Copy link', fr: 'Copier le lien' },
   'admin.invite.copied': { en: 'Copied!', fr: 'Copié !' },
 
-  'admin.servers.title': {
-    en: 'All game servers',
-    fr: 'Tous les serveurs de jeu',
-  },
+  'admin.servers.title': { en: 'All game servers', fr: 'Tous les serveurs de jeu' },
   'admin.servers.subtitle': {
     en: 'Every server on the panel, regardless of owner. Use this list to help users troubleshoot their servers.',
     fr: 'Tous les serveurs du panel, peu importe le propriétaire. Utilisez cette liste pour aider les utilisateurs à dépanner leurs serveurs.',
@@ -216,10 +200,7 @@ const translations = {
 
   'status.INSTALLING': { en: 'Installing', fr: 'Installation' },
   'status.OFFLINE': { en: 'Offline', fr: 'Hors ligne' },
-  'status.INSTALL_FAILED': {
-    en: 'Installation failed',
-    fr: "Échec de l'installation",
-  },
+  'status.INSTALL_FAILED': { en: 'Installation failed', fr: "Échec de l'installation" },
   'status.STARTING': { en: 'Starting', fr: 'Démarrage' },
   'status.RUNNING': { en: 'Running', fr: 'En ligne' },
   'status.STOPPING': { en: 'Stopping', fr: 'Arrêt' },
@@ -257,6 +238,10 @@ const translations = {
     en: 'Sending commands is not available for Bedrock servers — the console is view-only.',
     fr: "L'envoi de commandes n'est pas disponible pour les serveurs Bedrock — la console est en lecture seule.",
   },
+  'console.noSendPermission': {
+    en: 'You do not have permission to send commands on this server.',
+    fr: "Vous n'avez pas la permission d'envoyer des commandes sur ce serveur.",
+  },
 
   'files.loadError': {
     en: 'Cannot load the files.',
@@ -272,6 +257,10 @@ const translations = {
     en: 'Delete this item permanently?',
     fr: 'Supprimer cet élément définitivement ?',
   },
+  'files.readOnly': {
+    en: 'You have read-only access to these files.',
+    fr: 'Vous avez un accès en lecture seule à ces fichiers.',
+  },
 
   'detail.back': { en: 'Back to servers', fr: 'Retour aux serveurs' },
   'detail.loadError': {
@@ -282,6 +271,7 @@ const translations = {
   'detail.tab.files': { en: 'Files', fr: 'Fichiers' },
   'detail.tab.network': { en: 'Network', fr: 'Réseau' },
   'detail.tab.backups': { en: 'Backups', fr: 'Sauvegardes' },
+  'detail.tab.subusers': { en: 'Users', fr: 'Utilisateurs' },
   'detail.tab.settings': { en: 'Settings', fr: 'Paramètres' },
   'detail.tab.activity': { en: 'Activity', fr: 'Activité' },
 
@@ -293,10 +283,7 @@ const translations = {
   'network.address': { en: 'Address', fr: 'Adresse' },
   'network.port': { en: 'Port', fr: 'Port' },
   'network.protocol': { en: 'Protocol', fr: 'Protocole' },
-  'network.connectionString': {
-    en: 'Connection string',
-    fr: 'Chaîne de connexion',
-  },
+  'network.connectionString': { en: 'Connection string', fr: 'Chaîne de connexion' },
   'network.copy': { en: 'Copy', fr: 'Copier' },
   'network.copied': { en: 'Copied!', fr: 'Copié !' },
 
@@ -314,6 +301,14 @@ const translations = {
     en: 'Stop the server before deleting it.',
     fr: 'Arrêtez le serveur avant de le supprimer.',
   },
+  'settings.deleteOwnerOnly': {
+    en: 'Only the owner can delete this server.',
+    fr: 'Seul le propriétaire peut supprimer ce serveur.',
+  },
+  'settings.renameNoPermission': {
+    en: 'You do not have permission to rename this server.',
+    fr: 'Vous n’avez pas la permission de renommer ce serveur.',
+  },
 
   'activity.title': { en: 'Activity log', fr: "Journal d'activité" },
   'activity.subtitle': {
@@ -322,54 +317,21 @@ const translations = {
   },
   'activity.empty': { en: 'No activity yet.', fr: "Aucune activité pour l'instant." },
   'activity.system': { en: 'system', fr: 'système' },
-  'activity.kind.server.create': {
-    en: 'created the server',
-    fr: 'a créé le serveur',
-  },
-  'activity.kind.server.start': {
-    en: 'started the server',
-    fr: 'a démarré le serveur',
-  },
-  'activity.kind.server.stop': {
-    en: 'stopped the server',
-    fr: 'a arrêté le serveur',
-  },
-  'activity.kind.server.restart': {
-    en: 'restarted the server',
-    fr: 'a redémarré le serveur',
-  },
-  'activity.kind.server.rename': {
-    en: 'renamed the server',
-    fr: 'a renommé le serveur',
-  },
-  'activity.kind.server.delete': {
-    en: 'deleted the server',
-    fr: 'a supprimé le serveur',
-  },
-  'activity.kind.files.write': {
-    en: 'edited a file',
-    fr: 'a modifié un fichier',
-  },
-  'activity.kind.files.delete': {
-    en: 'deleted a file',
-    fr: 'a supprimé un fichier',
-  },
-  'activity.kind.files.upload': {
-    en: 'uploaded a file',
-    fr: 'a téléversé un fichier',
-  },
-  'activity.kind.backup.create': {
-    en: 'created a backup',
-    fr: 'a créé une sauvegarde',
-  },
-  'activity.kind.backup.restore': {
-    en: 'restored a backup',
-    fr: 'a restauré une sauvegarde',
-  },
-  'activity.kind.backup.delete': {
-    en: 'deleted a backup',
-    fr: 'a supprimé une sauvegarde',
-  },
+  'activity.kind.server.create': { en: 'created the server', fr: 'a créé le serveur' },
+  'activity.kind.server.start': { en: 'started the server', fr: 'a démarré le serveur' },
+  'activity.kind.server.stop': { en: 'stopped the server', fr: 'a arrêté le serveur' },
+  'activity.kind.server.restart': { en: 'restarted the server', fr: 'a redémarré le serveur' },
+  'activity.kind.server.rename': { en: 'renamed the server', fr: 'a renommé le serveur' },
+  'activity.kind.server.delete': { en: 'deleted the server', fr: 'a supprimé le serveur' },
+  'activity.kind.files.write': { en: 'edited a file', fr: 'a modifié un fichier' },
+  'activity.kind.files.delete': { en: 'deleted a file', fr: 'a supprimé un fichier' },
+  'activity.kind.files.upload': { en: 'uploaded a file', fr: 'a téléversé un fichier' },
+  'activity.kind.backup.create': { en: 'created a backup', fr: 'a créé une sauvegarde' },
+  'activity.kind.backup.restore': { en: 'restored a backup', fr: 'a restauré une sauvegarde' },
+  'activity.kind.backup.delete': { en: 'deleted a backup', fr: 'a supprimé une sauvegarde' },
+  'activity.kind.subuser.add': { en: 'added a subuser', fr: 'a ajouté un sous-utilisateur' },
+  'activity.kind.subuser.update': { en: 'updated subuser permissions', fr: "a mis à jour les permissions d'un sous-utilisateur" },
+  'activity.kind.subuser.remove': { en: 'removed a subuser', fr: 'a retiré un sous-utilisateur' },
   'activity.kind.unknown': { en: 'did something', fr: 'a fait quelque chose' },
 
   'backups.title': { en: 'Backups', fr: 'Sauvegardes' },
@@ -414,6 +376,10 @@ const translations = {
     en: 'Not enough free disk space. Delete some backups or unused servers and try again.',
     fr: "Pas assez d'espace disque libre. Supprimez des sauvegardes ou des serveurs inutilisés et réessayez.",
   },
+  'backups.noCreatePerm': {
+    en: 'You do not have permission to create backups.',
+    fr: 'Vous n’avez pas la permission de créer des sauvegardes.',
+  },
 
   'disk.title': { en: 'Disk usage', fr: 'Utilisation du disque' },
   'disk.used': { en: 'Used', fr: 'Utilisé' },
@@ -423,6 +389,97 @@ const translations = {
     en: 'Peregrine keeps a safety margin so a runaway server never fills the disk completely.',
     fr: 'Peregrine garde une marge de sécurité pour qu’un serveur emballé ne remplisse jamais le disque complètement.',
   },
+
+  'subusers.title': { en: 'Server users', fr: 'Utilisateurs du serveur' },
+  'subusers.subtitle': {
+    en: 'Grant another existing account access to this server with a custom permission set. Only the owner can manage this list.',
+    fr: "Accorder à un autre compte existant l'accès à ce serveur avec un jeu de permissions personnalisé. Seul le propriétaire peut gérer cette liste.",
+  },
+  'subusers.empty': {
+    en: 'No one else has been granted access to this server.',
+    fr: "Aucune autre personne n'a accès à ce serveur.",
+  },
+  'subusers.invite': { en: 'Add a user', fr: 'Ajouter un utilisateur' },
+  'subusers.colUser': { en: 'User', fr: 'Utilisateur' },
+  'subusers.colPermissions': { en: 'Permissions', fr: 'Permissions' },
+  'subusers.colActions': { en: 'Actions', fr: 'Actions' },
+  'subusers.edit': { en: 'Edit', fr: 'Modifier' },
+  'subusers.remove': { en: 'Remove', fr: 'Retirer' },
+  'subusers.removeConfirm': {
+    en: 'Remove this user from the server? They will lose access immediately.',
+    fr: "Retirer cet utilisateur du serveur ? Il perdra l'accès immédiatement.",
+  },
+  'subusers.permCount': {
+    en: '{count} permission(s)',
+    fr: '{count} permission(s)',
+  },
+  'subusers.invite.title': { en: 'Add a user', fr: 'Ajouter un utilisateur' },
+  'subusers.invite.subtitle': {
+    en: 'Enter the email of an existing account. They will see this server in their dashboard immediately.',
+    fr: "Saisissez l'email d'un compte existant. Le serveur apparaîtra dans son tableau de bord immédiatement.",
+  },
+  'subusers.invite.emailLabel': { en: 'User email', fr: 'Email de l’utilisateur' },
+  'subusers.invite.submit': { en: 'Add', fr: 'Ajouter' },
+  'subusers.edit.title': { en: 'Edit permissions', fr: 'Modifier les permissions' },
+  'subusers.permissions.label': { en: 'Permissions', fr: 'Permissions' },
+  'subusers.permissions.selectAll': { en: 'Select all', fr: 'Tout cocher' },
+  'subusers.loadError': {
+    en: 'Unable to load the users.',
+    fr: 'Impossible de charger les utilisateurs.',
+  },
+
+  // Permission group headings
+  'perm.group.control': { en: 'Power', fr: 'Alimentation' },
+  'perm.group.console': { en: 'Console', fr: 'Console' },
+  'perm.group.files': { en: 'Files', fr: 'Fichiers' },
+  'perm.group.backups': { en: 'Backups', fr: 'Sauvegardes' },
+  'perm.group.settings': { en: 'Settings', fr: 'Paramètres' },
+
+  // Per-permission labels (shown in the permission picker and the list)
+  'perm.control.start': {
+    en: 'Start the server',
+    fr: 'Démarrer le serveur',
+  },
+  'perm.control.stop': {
+    en: 'Stop the server',
+    fr: 'Arrêter le serveur',
+  },
+  'perm.control.restart': {
+    en: 'Restart the server',
+    fr: 'Redémarrer le serveur',
+  },
+  'perm.console.send': {
+    en: 'Send commands via the console',
+    fr: 'Envoyer des commandes via la console',
+  },
+  'perm.files.write': {
+    en: 'Create, edit and upload files',
+    fr: 'Créer, modifier et téléverser des fichiers',
+  },
+  'perm.files.delete': {
+    en: 'Delete files',
+    fr: 'Supprimer des fichiers',
+  },
+  'perm.backups.create': {
+    en: 'Create backups',
+    fr: 'Créer des sauvegardes',
+  },
+  'perm.backups.restore': {
+    en: 'Restore a backup',
+    fr: 'Restaurer une sauvegarde',
+  },
+  'perm.backups.delete': {
+    en: 'Delete backups',
+    fr: 'Supprimer des sauvegardes',
+  },
+  'perm.backups.download': {
+    en: 'Download backups',
+    fr: 'Télécharger des sauvegardes',
+  },
+  'perm.settings.rename': {
+    en: 'Rename the server',
+    fr: 'Renommer le serveur',
+  },
 } as const;
 
 /** A valid translation key (any key declared in `translations`). */
@@ -430,7 +487,6 @@ export type TranslationKey = keyof typeof translations;
 
 const STORAGE_KEY = 'peregrine.language';
 
-/** Picks the initial language: saved choice, else browser, else English. */
 function detectInitialLanguage(): Language {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved === 'en' || saved === 'fr') {
@@ -447,15 +503,10 @@ interface LanguageContextValue {
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 
-/**
- * Provides the current language and the translation function to the whole
- * application. Wrap the app with this provider (see App.tsx).
- */
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] =
     useState<Language>(detectInitialLanguage);
 
-  // Keeps the <html lang="..."> attribute in sync, for accessibility.
   useEffect(() => {
     document.documentElement.lang = language;
   }, [language]);
@@ -482,7 +533,6 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   );
 }
 
-/** Hook to read the current language and translate UI text. */
 export function useTranslation(): LanguageContextValue {
   const context = useContext(LanguageContext);
   if (!context) {

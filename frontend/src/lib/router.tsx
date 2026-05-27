@@ -1,13 +1,7 @@
 import { useSyncExternalStore } from 'react';
 
 /**
- * Tiny path-based router.
- *
- * Why hand-rolled and not react-router? The whole panel only needs a few
- * routes (home, server detail, invite acceptance), and pulling in a real
- * router would add hundreds of KB of dependency for almost no gain. This
- * file is ~80 lines and handles back/forward, programmatic navigation,
- * and React re-renders on URL change.
+ * Tiny path-based router. See pages/ServerDetail.tsx for the tab story.
  */
 
 /** Every screen the URL can resolve to. */
@@ -23,6 +17,7 @@ export type ServerTab =
   | 'files'
   | 'network'
   | 'backups'
+  | 'subusers'
   | 'settings'
   | 'activity';
 
@@ -31,12 +26,12 @@ const SERVER_TABS: readonly ServerTab[] = [
   'files',
   'network',
   'backups',
+  'subusers',
   'settings',
   'activity',
 ];
 
-const SERVER_PATH =
-  /^\/servers\/([A-Za-z0-9-]+)(?:\/([a-z]+))?\/?$/;
+const SERVER_PATH = /^\/servers\/([A-Za-z0-9-]+)(?:\/([a-z]+))?\/?$/;
 const INVITE_PATH = /^\/invite\/([A-Za-z0-9._-]+)\/?$/;
 
 function asServerTab(value: string | undefined): ServerTab {
@@ -62,8 +57,6 @@ export function parseRoute(pathname: string): Route {
   return { name: 'unknown' };
 }
 
-// Custom event used to notify subscribers about programmatic navigation
-// (popstate covers back/forward, but not history.pushState calls).
 const NAVIGATION_EVENT = 'peregrine:navigate';
 
 function subscribe(callback: () => void): () => void {
@@ -85,11 +78,7 @@ export function useRoute(): Route {
   return parseRoute(pathname);
 }
 
-/**
- * Navigates to the given path. Updates the URL with pushState (so the
- * browser back button works), then notifies subscribers so React renders
- * the new route.
- */
+/** Navigates to the given path, updates the URL with pushState. */
 export function navigate(to: string): void {
   if (window.location.pathname === to) {
     return;

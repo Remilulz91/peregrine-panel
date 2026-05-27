@@ -4,6 +4,8 @@ import LanguageToggle from '../components/LanguageToggle';
 import {
   api,
   ApiError,
+  hasPermission,
+  PERM,
   type ApiServer,
   type ApiTemplate,
   type ServerAction,
@@ -22,6 +24,7 @@ import ConsolePage from './server/Console';
 import FilesPage from './server/Files';
 import NetworkPage from './server/Network';
 import BackupsPage from './server/Backups';
+import SubusersPage from './server/Subusers';
 import SettingsPage from './server/Settings';
 import ActivityPage from './server/Activity';
 
@@ -30,7 +33,6 @@ interface ServerDetailProps {
   tab: ServerTab;
 }
 
-// Status colours, reused from the list row so the badge looks consistent.
 const STATUS_BADGE: Record<string, string> = {
   INSTALLING: 'bg-falcon/15 text-falcon',
   OFFLINE: 'bg-peregrine-700 text-peregrine-200',
@@ -49,25 +51,27 @@ const STATUS_KEY: Record<string, TranslationKey> = {
   STOPPING: 'status.STOPPING',
 };
 
-// The tabs in display order, plus their translation key.
+// Tabs in display order, plus the translation key. The 'subusers' tab
+// is filtered out at render time for non-owners.
 const TABS: { id: ServerTab; key: TranslationKey }[] = [
   { id: 'console', key: 'detail.tab.console' },
   { id: 'files', key: 'detail.tab.files' },
   { id: 'network', key: 'detail.tab.network' },
   { id: 'backups', key: 'detail.tab.backups' },
+  { id: 'subusers', key: 'detail.tab.subusers' },
   { id: 'settings', key: 'detail.tab.settings' },
   { id: 'activity', key: 'detail.tab.activity' },
 ];
 
 /**
- * The server-detail page: header (back / name / status / power actions),
- * tab bar, and the currently selected tab content. Polls the server
- * record every 4 s so the status badge stays in sync with the container.
+ * The server-detail page. Fetches the server (and the viewer's
+ * permission set) every 4 s so the badge and ACL gates stay in sync.
  */
 export default function ServerDetail({ id, tab }: ServerDetailProps) {
   const { t } = useTranslation();
   const { user, signOut } = useAuth();
   const [server, setServer] = useState<ApiServer | null>(null);
+  const [myPermissions, setMyPermissions] = useState<string[]>([]);
   const [templates, setTemplates] = useState<ApiTemplate[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
@@ -77,6 +81,7 @@ export default function ServerDetail({ id, tab }: ServerDetailProps) {
     try {
       const result = await api.getServer(id);
       setServer(result.server);
+      setMyPermissions(result.myPermissions);
       setError(false);
     } catch {
       setError(true);
@@ -114,12 +119,17 @@ export default function ServerDetail({ id, tab }: ServerDetailProps) {
     }
   }
 
-  // The matching template for this server, used by the Network tab and
-  // to decide whether commands can be sent on the console.
   const template = server
     ? templates.find((tpl) => tpl.id === server.templateId) ?? null
     : null;
-  const commandsEnabled = template?.kind !== 'bedrock';
+  const isBedrock = template?.kind === 'bedrock';
+
+  // Owner/admin → see every tab. Subuser → no 'subusers' tab.
+  const showSubusersTab = server?.isOwner || user?.role === 'ADMIN';
+  const visibleTabs = TABS.filter((entry) => {
+    if (entry.id === 'subusers') return showSubusersTab;
+    return true;
+  });
 
   const statusKey = server
     ? STATUS_KEY[server.status] ?? 'status.UNKNOWN'
@@ -128,23 +138,38 @@ export default function ServerDetail({ id, tab }: ServerDetailProps) {
     ? STATUS_BADGE[server.status] ?? 'bg-peregrine-700 text-peregrine-200'
     : 'bg-peregrine-700 text-peregrine-200';
 
-  // Renders the active tab. Switching tabs unmounts the previous one —
-  // that's intentional: it stops the console websocket and discards any
-  // unsaved file editor state.
+  // Render the active tab. If the viewer follows a deep link to a tab
+  // they cannot see (e.g. /subusers as a subuser), fall back to Console.
   function renderTab(active: ApiServer): ReactNode {
-    switch (tab) {
+    const safeTab =
+      visibleTabs.find((entry) => entry.id === tab)?.id ?? 'console';
+    switch (safeTab) {
       case 'console':
         return (
-          <ConsolePage server={active} commandsEnabled={commandsEnabled} />
+          <ConsolePage
+            server={active}
+            commandsEnabled={!isBedrock}
+            myPermissions={myPermissions}
+          />
         );
       case 'files':
-        return <FilesPage server={active} />;
+        return <FilesPage server={active} myPermissions={myPermissions} />;
       case 'network':
         return <NetworkPage server={active} template={template} />;
       case 'backups':
-        return <BackupsPage server={active} />;
+        return (
+          <BackupsPage server={active} myPermissions={myPermissions} />
+        );
+      case 'subusers':
+        return <SubusersPage server={active} />;
       case 'settings':
-        return <SettingsPage server={active} onRenamed={setServer} />;
+        return (
+          <SettingsPage
+            server={active}
+            myPermissions={myPermissions}
+            onRenamed={setServer}
+          />
+        );
       case 'activity':
         return <ActivityPage server={active} />;
     }
@@ -157,6 +182,11 @@ export default function ServerDetail({ id, tab }: ServerDetailProps) {
       ? `${base} border-falcon text-white`
       : `${base} border-transparent text-peregrine-400 hover:text-peregrine-200`;
   }
+
+  const canStart = server && hasPermission(myPermissions, PERM.CONTROL_START);
+  const canStop = server && hasPermission(myPermissions, PERM.CONTROL_STOP);
+  const canRestart =
+    server && hasPermission(myPermissions, PERM.CONTROL_RESTART);
 
   return (
     <div className="min-h-full bg-peregrine-950 text-peregrine-200">
@@ -205,9 +235,17 @@ export default function ServerDetail({ id, tab }: ServerDetailProps) {
               >
                 {t(statusKey)}
               </span>
+              {!server.isOwner && (
+                <span className="text-xs text-peregrine-500">
+                  {t('dashboard.sharedBy')}{' '}
+                  <span className="text-peregrine-300">
+                    {server.ownerUsername}
+                  </span>
+                </span>
+              )}
               <div className="flex-1" />
               <div className="flex flex-wrap gap-2">
-                {server.status === 'OFFLINE' && (
+                {server.status === 'OFFLINE' && canStart && (
                   <button
                     type="button"
                     disabled={busyAction}
@@ -219,29 +257,33 @@ export default function ServerDetail({ id, tab }: ServerDetailProps) {
                 )}
                 {server.status === 'RUNNING' && (
                   <>
-                    <button
-                      type="button"
-                      disabled={busyAction}
-                      onClick={() => void handleAction('restart')}
-                      className="rounded-lg border border-peregrine-700 px-3 py-1.5 text-xs font-medium text-peregrine-200 transition-colors hover:bg-peregrine-800 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {t('server.restart')}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busyAction}
-                      onClick={() => void handleAction('stop')}
-                      className="rounded-lg border border-rose-500/50 px-3 py-1.5 text-xs font-medium text-rose-300 transition-colors hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {t('server.stop')}
-                    </button>
+                    {canRestart && (
+                      <button
+                        type="button"
+                        disabled={busyAction}
+                        onClick={() => void handleAction('restart')}
+                        className="rounded-lg border border-peregrine-700 px-3 py-1.5 text-xs font-medium text-peregrine-200 transition-colors hover:bg-peregrine-800 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {t('server.restart')}
+                      </button>
+                    )}
+                    {canStop && (
+                      <button
+                        type="button"
+                        disabled={busyAction}
+                        onClick={() => void handleAction('stop')}
+                        className="rounded-lg border border-rose-500/50 px-3 py-1.5 text-xs font-medium text-rose-300 transition-colors hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {t('server.stop')}
+                      </button>
+                    )}
                   </>
                 )}
               </div>
             </div>
 
             <div className="mt-6 flex flex-wrap border-b border-peregrine-800">
-              {TABS.map((entry) => (
+              {visibleTabs.map((entry) => (
                 <button
                   key={entry.id}
                   type="button"

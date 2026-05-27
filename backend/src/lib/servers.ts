@@ -113,6 +113,25 @@ export function listAllServers(): ServerRecord[] {
   return rows.map(toRecord);
 }
 
+/**
+ * Lists every server visible to a user: the ones they own AND the ones
+ * they have been added to as a subuser. Returns them newest first,
+ * with no duplicates (a user can't be both owner and subuser on the
+ * same server thanks to the UNIQUE constraint, but we de-dup anyway
+ * for safety).
+ */
+export function listServersVisibleTo(userId: string): ServerRecord[] {
+  const rows = db
+    .prepare(
+      `SELECT DISTINCT s.* FROM servers s
+       LEFT JOIN server_subusers sub ON sub.server_id = s.id
+       WHERE s.owner_id = ? OR sub.user_id = ?
+       ORDER BY s.created_at DESC`,
+    )
+    .all(userId, userId) as unknown as ServerRow[];
+  return rows.map(toRecord);
+}
+
 /** Finds a server by id, or returns null. */
 export function getServer(id: string): ServerRecord | null {
   const row = db.prepare('SELECT * FROM servers WHERE id = ?').get(id) as

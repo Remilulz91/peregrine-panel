@@ -8,6 +8,8 @@ import {
 import {
   api,
   ApiError,
+  hasPermission,
+  PERM,
   type ApiFileEntry,
   type ApiServer,
 } from '../../lib/api';
@@ -15,6 +17,7 @@ import { useTranslation } from '../../lib/i18n';
 
 interface FilesPageProps {
   server: ApiServer;
+  myPermissions: string[];
 }
 
 interface EditingFile {
@@ -22,19 +25,16 @@ interface EditingFile {
   content: string;
 }
 
-/** Joins a directory and an entry name into a path. */
 function joinPath(dir: string, name: string): string {
   return dir === '/' ? `/${name}` : `${dir}/${name}`;
 }
 
-/** Returns the parent directory of a path. */
 function parentOf(dir: string): string {
   const trimmed = dir.replace(/\/+$/, '');
   const index = trimmed.lastIndexOf('/');
   return index <= 0 ? '/' : trimmed.slice(0, index);
 }
 
-/** Formats a byte count into a short human-readable size. */
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -42,12 +42,12 @@ function formatSize(bytes: number): string {
 }
 
 /**
- * File manager for one server, displayed as the "Files" tab of the
- * server-detail page. Browse directories, edit text files in-place,
- * upload and delete entries — protected on the backend against
- * path-traversal attacks.
+ * File manager for one server. Read access is implicit (anyone with
+ * server access can browse); the Upload button and per-row Delete are
+ * hidden when the viewer lacks the matching permission. The text
+ * editor's Save button is also gated.
  */
-export default function FilesPage({ server }: FilesPageProps) {
+export default function FilesPage({ server, myPermissions }: FilesPageProps) {
   const { t } = useTranslation();
   const [currentPath, setCurrentPath] = useState('/');
   const [entries, setEntries] = useState<ApiFileEntry[]>([]);
@@ -55,6 +55,10 @@ export default function FilesPage({ server }: FilesPageProps) {
   const [editing, setEditing] = useState<EditingFile | null>(null);
   const [busy, setBusy] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const canWrite = hasPermission(myPermissions, PERM.FILES_WRITE);
+  const canDelete = hasPermission(myPermissions, PERM.FILES_DELETE);
+  const readOnly = !canWrite && !canDelete;
 
   const loadDir = useCallback(
     async (dirPath: string) => {
@@ -91,7 +95,7 @@ export default function FilesPage({ server }: FilesPageProps) {
   }
 
   async function handleSave(): Promise<void> {
-    if (!editing) return;
+    if (!editing || !canWrite) return;
     setBusy(true);
     try {
       await api.writeFile(server.id, editing.path, editing.content);
@@ -105,6 +109,7 @@ export default function FilesPage({ server }: FilesPageProps) {
   }
 
   async function handleDelete(entry: ApiFileEntry): Promise<void> {
+    if (!canDelete) return;
     if (!window.confirm(t('files.deleteConfirm'))) return;
     try {
       await api.deleteFile(server.id, joinPath(currentPath, entry.name));
@@ -117,6 +122,7 @@ export default function FilesPage({ server }: FilesPageProps) {
   async function handleUpload(
     event: ChangeEvent<HTMLInputElement>,
   ): Promise<void> {
+    if (!canWrite) return;
     const file = event.target.files?.[0];
     if (!file) return;
     setBusy(true);
@@ -148,22 +154,25 @@ export default function FilesPage({ server }: FilesPageProps) {
         </div>
         <textarea
           value={editing.content}
+          readOnly={!canWrite}
           onChange={(e) =>
             setEditing({ path: editing.path, content: e.target.value })
           }
           spellCheck={false}
           className="m-0 flex-1 resize-none bg-peregrine-950 px-4 py-3 font-mono text-xs leading-relaxed text-peregrine-200 outline-none"
         />
-        <div className="flex justify-end border-t border-peregrine-800 p-3">
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void handleSave()}
-            className="rounded-lg bg-falcon px-4 py-2 text-sm font-semibold text-peregrine-950 transition-colors hover:bg-falcon-bright disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {busy ? t('common.pleaseWait') : t('files.save')}
-          </button>
-        </div>
+        {canWrite && (
+          <div className="flex justify-end border-t border-peregrine-800 p-3">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void handleSave()}
+              className="rounded-lg bg-falcon px-4 py-2 text-sm font-semibold text-peregrine-950 transition-colors hover:bg-falcon-bright disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {busy ? t('common.pleaseWait') : t('files.save')}
+            </button>
+          </div>
+        )}
       </div>
     );
   }
@@ -174,17 +183,25 @@ export default function FilesPage({ server }: FilesPageProps) {
         <p className="truncate font-mono text-xs text-peregrine-300">
           {currentPath}
         </p>
-        <label className="cursor-pointer rounded-lg border border-peregrine-700 px-3 py-1.5 text-xs font-medium text-peregrine-200 transition-colors hover:bg-peregrine-800">
-          {busy ? t('files.uploading') : t('files.upload')}
-          <input
-            ref={fileInputRef}
-            type="file"
-            className="hidden"
-            disabled={busy}
-            onChange={(e) => void handleUpload(e)}
-          />
-        </label>
+        {canWrite && (
+          <label className="cursor-pointer rounded-lg border border-peregrine-700 px-3 py-1.5 text-xs font-medium text-peregrine-200 transition-colors hover:bg-peregrine-800">
+            {busy ? t('files.uploading') : t('files.upload')}
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              disabled={busy}
+              onChange={(e) => void handleUpload(e)}
+            />
+          </label>
+        )}
       </div>
+
+      {readOnly && (
+        <p className="border-b border-peregrine-800 bg-peregrine-950 px-5 py-2 text-xs text-peregrine-500">
+          {t('files.readOnly')}
+        </p>
+      )}
 
       <div className="flex-1 overflow-auto">
         {currentPath !== '/' && (
@@ -231,13 +248,15 @@ export default function FilesPage({ server }: FilesPageProps) {
                 </span>
               )}
             </button>
-            <button
-              type="button"
-              onClick={() => void handleDelete(entry)}
-              className="shrink-0 text-xs font-medium text-rose-400 transition-colors hover:text-rose-300"
-            >
-              {t('server.delete')}
-            </button>
+            {canDelete && (
+              <button
+                type="button"
+                onClick={() => void handleDelete(entry)}
+                className="shrink-0 text-xs font-medium text-rose-400 transition-colors hover:text-rose-300"
+              >
+                {t('server.delete')}
+              </button>
+            )}
           </div>
         ))}
       </div>

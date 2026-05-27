@@ -1,7 +1,8 @@
 import fs from 'node:fs';
-import type { FastifyInstance, FastifyRequest } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { authenticate } from '../plugins/auth';
-import { getServer, type ServerRecord } from '../lib/servers';
+import { accessibleServer, requirePermission } from '../lib/acl';
+import { PERMISSION } from '../lib/permissions';
 import { getContainerState } from '../lib/docker';
 import { logActivity } from '../lib/activity';
 import { getDiskUsage } from '../lib/disk';
@@ -23,19 +24,6 @@ interface CreateBackupBody {
   name?: string;
 }
 
-/** Returns the server only if the request's user is allowed to act on it. */
-function accessibleServer(
-  request: FastifyRequest,
-  id: string,
-): ServerRecord | null {
-  const server = getServer(id);
-  if (!server) return null;
-  if (request.user.role === 'ADMIN' || server.ownerId === request.user.sub) {
-    return server;
-  }
-  return null;
-}
-
 /** Shapes a backup record for the API response (file path stays internal). */
 function publicBackup(backup: BackupRecord) {
   return {
@@ -48,7 +36,7 @@ function publicBackup(backup: BackupRecord) {
   };
 }
 
-/** Shapes a disk usage payload, only exposing the bytes (not filesystem details). */
+/** Shapes a disk usage payload, only exposing the bytes. */
 function publicDiskUsage(path: string) {
   return getDiskUsage(path).then((usage) => ({
     totalBytes: usage.totalBytes,
@@ -60,20 +48,17 @@ function publicDiskUsage(path: string) {
 
 /**
  * Per-server backup routes and the global disk-usage endpoint.
- *   GET    /api/disk                              - current usage of the backups disk
- *   GET    /api/servers/:id/backups               - list backups for a server
- *   POST   /api/servers/:id/backups               - create a fresh backup
- *   DELETE /api/servers/:id/backups/:backupId     - delete a backup
- *   POST   /api/servers/:id/backups/:backupId/restore  - restore a backup
- *   GET    /api/servers/:id/backups/:backupId/download - stream the .tar.gz
+ *   GET    /api/disk                                  - disk usage
+ *   GET    /api/servers/:id/backups                   - list (visibility only)
+ *   POST   /api/servers/:id/backups                   - create (backups.create)
+ *   DELETE /api/servers/:id/backups/:backupId         - delete (backups.delete)
+ *   POST   /api/servers/:id/backups/:backupId/restore - restore (backups.restore)
+ *   GET    /api/servers/:id/backups/:backupId/download - download (backups.download)
  */
 export async function backupRoutes(app: FastifyInstance): Promise<void> {
   app.addHook('preHandler', authenticate);
 
   app.get('/disk', async () => {
-    // The backups disk is the one we care about most, but it shares the
-    // mount with the servers disk on the default setup, so reporting on
-    // backupsPath is enough.
     return { usage: await publicDiskUsage(config.backupsPath) };
   });
 
@@ -104,6 +89,7 @@ export async function backupRoutes(app: FastifyInstance): Promise<void> {
       const { id } = request.params as { id: string };
       const server = accessibleServer(request, id);
       if (!server) return reply.code(404).send({ error: 'Server not found.' });
+      if (!requirePermission(request, reply, server, PERMISSION.BACKUPS_CREATE)) return;
 
       const body = (request.body ?? {}) as CreateBackupBody;
       const name = body.name?.trim() || defaultBackupName();
@@ -145,6 +131,7 @@ export async function backupRoutes(app: FastifyInstance): Promise<void> {
       };
       const server = accessibleServer(request, id);
       if (!server) return reply.code(404).send({ error: 'Server not found.' });
+      if (!requirePermission(request, reply, server, PERMISSION.BACKUPS_DELETE)) return;
       const backup = getBackupForServer(backupId, server.id);
       if (!backup) {
         return reply.code(404).send({ error: 'Backup not found.' });
@@ -169,12 +156,11 @@ export async function backupRoutes(app: FastifyInstance): Promise<void> {
       };
       const server = accessibleServer(request, id);
       if (!server) return reply.code(404).send({ error: 'Server not found.' });
+      if (!requirePermission(request, reply, server, PERMISSION.BACKUPS_RESTORE)) return;
       const backup = getBackupForServer(backupId, server.id);
       if (!backup) {
         return reply.code(404).send({ error: 'Backup not found.' });
       }
-      // Refuse if the container is running — restore overwrites files
-      // the live process is holding open, which would corrupt it.
       if (server.containerId) {
         const state = await getContainerState(server.containerId);
         if (state === 'running') {
@@ -215,6 +201,7 @@ export async function backupRoutes(app: FastifyInstance): Promise<void> {
       };
       const server = accessibleServer(request, id);
       if (!server) return reply.code(404).send({ error: 'Server not found.' });
+      if (!requirePermission(request, reply, server, PERMISSION.BACKUPS_DOWNLOAD)) return;
       const backup = getBackupForServer(backupId, server.id);
       if (!backup) {
         return reply.code(404).send({ error: 'Backup not found.' });

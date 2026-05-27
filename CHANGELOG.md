@@ -2,6 +2,67 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.5.0 — 2026-05-27
+
+Subusers: grant another existing account access to one of your servers,
+with a granular permission set. The UI hides every action the viewer
+cannot perform, and the backend enforces the same rules with proper
+ACL gates.
+
+### Added
+
+- **Server subusers** — owners can add an existing account to one of
+  their servers by email, with a custom permission set. A new "Users"
+  tab in the server detail page lets you add, edit, and remove them.
+  Subusers see the server in their dashboard immediately; no email or
+  invite link is needed (the account must already exist).
+- **Granular permission model** (11 permissions, grouped by category):
+  - Power: `control.start`, `control.stop`, `control.restart`
+  - Console: `console.send`
+  - Files: `files.write`, `files.delete`
+  - Backups: `backups.create`, `backups.restore`, `backups.delete`,
+    `backups.download`
+  - Settings: `settings.rename`
+- **Server deletion stays owner-only** — it cannot be granted through
+  the subuser system, ever. Same for managing the subuser list itself
+  (no privilege escalation).
+- **UI mirrors the permissions** — buttons, forms, command input and
+  upload zones the viewer cannot use are hidden (or disabled with a
+  tooltip) rather than failing with a 403 after the click. Sees the
+  Subusers tab only as the owner / an admin.
+- **Dashboard "shared by" hint** — servers that aren't yours are tagged
+  with the owner's username in the list subtitle.
+- **Activity log** records `subuser.add`, `subuser.update`,
+  `subuser.remove`.
+- **New REST endpoints** (owner-only):
+  - `GET /api/servers/:id/subusers` — list + available permissions
+  - `POST /api/servers/:id/subusers` — add by email + permissions
+  - `PATCH /api/servers/:id/subusers/:subId` — update permissions
+  - `DELETE /api/servers/:id/subusers/:subId` — remove
+
+### Changed
+
+- **`GET /api/servers/:id` now returns `myPermissions`** — the array
+  of permissions the viewer holds on the server, used by the UI to
+  decide which controls to render.
+- **`GET /api/servers`** now also lists servers shared with the
+  viewer (previously only owned servers were returned). Each row
+  carries `isOwner` and `ownerUsername` so the dashboard can tag
+  shared rows.
+- **The console socket** checks `console.send` before relaying a
+  command, on top of the visibility check.
+- The shared `lib/acl.ts` factors the visibility and permission checks
+  used across the server, files, backups and console routes.
+
+### Notes
+
+- Subusers cannot manage other subusers — that requires being the
+  server's owner (or an administrator). This is enforced both on the
+  routes and in the UI (the tab is hidden).
+- Migration 7 adds the `server_subusers` table with a UNIQUE
+  (server_id, user_id) constraint and cascading deletes, so removing
+  a user or a server tidies up automatically.
+
 ## v0.4.0 — 2026-05-27
 
 Backups: take, restore, download and delete snapshots of a server's

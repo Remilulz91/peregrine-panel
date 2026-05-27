@@ -1,6 +1,8 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { authenticate } from '../plugins/auth';
-import { getServer } from '../lib/servers';
+import { accessibleServer, requirePermission } from '../lib/acl';
+import { PERMISSION } from '../lib/permissions';
+import type { ServerRecord } from '../lib/servers';
 import {
   deleteEntry,
   listDirectory,
@@ -21,55 +23,53 @@ interface WriteBody {
 
 /**
  * File-manager routes (mounted under /api). Every route requires a
- * logged-in user and only operates on servers that user owns.
+ * logged-in user. Reads are gated by visibility only (anyone with
+ * access to the server can browse and view files); writes and deletes
+ * require the matching files.* permission.
  *   GET    /servers/:id/files  - list a directory
  *   GET    /servers/:id/file   - read a text file
- *   PUT    /servers/:id/file   - write a text file
- *   DELETE /servers/:id/file   - delete a file or directory
- *   POST   /servers/:id/files  - upload a file
+ *   PUT    /servers/:id/file   - write a text file   (files.write)
+ *   DELETE /servers/:id/file   - delete an entry     (files.delete)
+ *   POST   /servers/:id/files  - upload a file       (files.write)
  */
 export async function fileRoutes(app: FastifyInstance): Promise<void> {
   app.addHook('preHandler', authenticate);
 
-  // Returns the server id if the request's user is allowed to access it;
-  // otherwise sends a 404 and returns null. Administrators may access any
-  // server (to help with troubleshooting).
-  function ownedServerId(
+  // Returns the server if the request's user has visibility; otherwise
+  // sends 404 and returns null. Permission checks happen at each route.
+  function resolveServer(
     request: FastifyRequest,
     reply: FastifyReply,
-  ): string | null {
+  ): ServerRecord | null {
     const { id } = request.params as { id: string };
-    const server = getServer(id);
-    const allowed =
-      server &&
-      (request.user.role === 'ADMIN' || server.ownerId === request.user.sub);
-    if (!server || !allowed) {
+    const server = accessibleServer(request, id);
+    if (!server) {
       reply.code(404).send({ error: 'Server not found.' });
       return null;
     }
-    return server.id;
+    return server;
   }
 
   app.get('/servers/:id/files', async (request, reply) => {
-    const id = ownedServerId(request, reply);
-    if (!id) return reply;
+    const server = resolveServer(request, reply);
+    if (!server) return reply;
     const dirPath = (request.query as PathQuery).path ?? '/';
     try {
-      return { path: dirPath, entries: listDirectory(id, dirPath) };
+      return { path: dirPath, entries: listDirectory(server.id, dirPath) };
     } catch {
       return reply.code(400).send({ error: 'Cannot read this directory.' });
     }
   });
 
   app.get('/servers/:id/file', async (request, reply) => {
-    const id = ownedServerId(request, reply);
-    if (!id) return reply;
+    const server = resolveServer(request, reply);
+    if (!server) return reply;
     const filePath = (request.query as PathQuery).path;
     if (!filePath) {
       return reply.code(400).send({ error: 'Missing file path.' });
     }
     try {
-      return { path: filePath, content: readTextFile(id, filePath) };
+      return { path: filePath, content: readTextFile(server.id, filePath) };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Cannot read file.';
       return reply.code(400).send({ error: message });
@@ -92,13 +92,14 @@ export async function fileRoutes(app: FastifyInstance): Promise<void> {
       },
     },
     async (request, reply) => {
-      const id = ownedServerId(request, reply);
-      if (!id) return reply;
+      const server = resolveServer(request, reply);
+      if (!server) return reply;
+      if (!requirePermission(request, reply, server, PERMISSION.FILES_WRITE)) return;
       const { path: filePath, content } = request.body as WriteBody;
       try {
-        writeTextFile(id, filePath, content);
+        writeTextFile(server.id, filePath, content);
         logActivity({
-          serverId: id,
+          serverId: server.id,
           actorId: request.user.sub,
           kind: 'files.write',
           details: filePath,
@@ -111,16 +112,17 @@ export async function fileRoutes(app: FastifyInstance): Promise<void> {
   );
 
   app.delete('/servers/:id/file', async (request, reply) => {
-    const id = ownedServerId(request, reply);
-    if (!id) return reply;
+    const server = resolveServer(request, reply);
+    if (!server) return reply;
+    if (!requirePermission(request, reply, server, PERMISSION.FILES_DELETE)) return;
     const target = (request.query as PathQuery).path;
     if (!target) {
       return reply.code(400).send({ error: 'Missing path.' });
     }
     try {
-      deleteEntry(id, target);
+      deleteEntry(server.id, target);
       logActivity({
-        serverId: id,
+        serverId: server.id,
         actorId: request.user.sub,
         kind: 'files.delete',
         details: target,
@@ -132,8 +134,9 @@ export async function fileRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.post('/servers/:id/files', async (request, reply) => {
-    const id = ownedServerId(request, reply);
-    if (!id) return reply;
+    const server = resolveServer(request, reply);
+    if (!server) return reply;
+    if (!requirePermission(request, reply, server, PERMISSION.FILES_WRITE)) return;
     const dirPath = (request.query as PathQuery).path ?? '/';
     const uploaded = await request.file();
     if (!uploaded) {
@@ -141,9 +144,9 @@ export async function fileRoutes(app: FastifyInstance): Promise<void> {
     }
     try {
       const data = await uploaded.toBuffer();
-      saveUploadedFile(id, dirPath, uploaded.filename, data);
+      saveUploadedFile(server.id, dirPath, uploaded.filename, data);
       logActivity({
-        serverId: id,
+        serverId: server.id,
         actorId: request.user.sub,
         kind: 'files.upload',
         details: `${dirPath.replace(/\/+$/, '')}/${uploaded.filename}`,

@@ -32,6 +32,10 @@ export interface ApiServer {
   cpuLimit: number;
   port: number;
   createdAt: string;
+  /** True when the viewer is the server's owner. */
+  isOwner: boolean;
+  /** Username of the owner — useful when the viewer is a subuser. */
+  ownerUsername: string;
 }
 
 /** A game server as seen from the admin view (includes the owner). */
@@ -62,9 +66,7 @@ export interface ApiAdminUser {
   email: string;
   role: 'USER' | 'ADMIN';
   createdAt: string;
-  /** True until the account holder accepts their invitation. */
   needsActivation: boolean;
-  /** Present only while a still-valid invitation token exists. */
   pendingInvite: ApiPendingInvite | null;
 }
 
@@ -93,6 +95,17 @@ export interface ApiDiskUsage {
   reservedBytes: number;
 }
 
+/** One subuser on a server, as returned by the API. */
+export interface ApiSubuser {
+  id: string;
+  serverId: string;
+  userId: string;
+  username: string;
+  email: string;
+  permissions: string[];
+  createdAt: string;
+}
+
 /** A power action that can be applied to a server. */
 export type ServerAction = 'start' | 'stop' | 'restart';
 
@@ -109,21 +122,15 @@ export class ApiError extends Error {
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers = new Headers(options.headers);
-  // Declare a JSON body only for string (JSON) bodies. A bodyless request
-  // must not send "Content-Type: application/json"; a FormData upload must
-  // let the browser set its own multipart content type.
   if (typeof options.body === 'string' && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
-
   const response = await fetch(path, {
     ...options,
     credentials: 'include',
     headers,
   });
-
   const data: unknown = await response.json().catch(() => ({}));
-
   if (!response.ok) {
     const message =
       (data as { error?: string }).error ?? `Request failed (${response.status})`;
@@ -161,151 +168,145 @@ interface CreateServerInput {
 export const api = {
   setupRequired: () =>
     request<{ setupRequired: boolean }>('/api/auth/setup-required'),
-
   me: () => request<{ user: ApiUser }>('/api/auth/me'),
-
   setup: (body: SetupCredentials) =>
     request<{ user: ApiUser }>('/api/auth/setup', {
       method: 'POST',
       body: JSON.stringify(body),
     }),
-
   login: (body: LoginCredentials) =>
     request<{ user: ApiUser }>('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify(body),
     }),
-
   logout: () => request<{ ok: boolean }>('/api/auth/logout', { method: 'POST' }),
 
-  // --- Invitation flow (for accounts created by an administrator) ---
-
+  // --- Invitation flow (admin-created accounts) ---
   getInvite: (token: string) =>
     request<{ username: string }>(`/api/auth/invite/${token}`),
-
   acceptInvite: (token: string, password: string) =>
     request<{ user: ApiUser }>(`/api/auth/invite/${token}`, {
       method: 'POST',
       body: JSON.stringify({ password }),
     }),
 
-  // --- Admin (mounted under /api/admin, ADMIN role required) ---
-
+  // --- Admin ---
   listAdminUsers: () =>
     request<{ users: ApiAdminUser[] }>('/api/admin/users'),
-
   createAdminUser: (body: CreateUserInput) =>
     request<{ user: ApiAdminUser; inviteUrl: string }>('/api/admin/users', {
       method: 'POST',
       body: JSON.stringify(body),
     }),
-
   regenerateInvite: (userId: string) =>
     request<{ user: ApiAdminUser; inviteUrl: string }>(
       `/api/admin/users/${userId}/invite`,
       { method: 'POST' },
     ),
-
   deleteAdminUser: (userId: string) =>
     request<{ ok: boolean }>(`/api/admin/users/${userId}`, {
       method: 'DELETE',
     }),
-
   listAdminServers: () =>
     request<{ servers: ApiAdminServer[] }>('/api/admin/servers'),
 
-  // --- Game servers (mounted under /api) ---
-
+  // --- Game servers ---
   listTemplates: () =>
     request<{ templates: ApiTemplate[] }>('/api/templates'),
-
   listServers: () => request<{ servers: ApiServer[] }>('/api/servers'),
-
   getServer: (id: string) =>
-    request<{ server: ApiServer }>(`/api/servers/${id}`),
-
+    request<{ server: ApiServer; myPermissions: string[] }>(
+      `/api/servers/${id}`,
+    ),
   createServer: (body: CreateServerInput) =>
     request<{ server: ApiServer }>('/api/servers', {
       method: 'POST',
       body: JSON.stringify(body),
     }),
-
   renameServer: (id: string, name: string) =>
     request<{ server: ApiServer }>(`/api/servers/${id}`, {
       method: 'PATCH',
       body: JSON.stringify({ name }),
     }),
-
   deleteServer: (id: string) =>
     request<{ ok: boolean }>(`/api/servers/${id}`, { method: 'DELETE' }),
-
-  /** Starts, stops or restarts a server. */
   serverAction: (id: string, action: ServerAction) =>
     request<{ ok: boolean }>(`/api/servers/${id}/${action}`, {
       method: 'POST',
     }),
-
-  /** Latest activity entries for a server (newest first, capped server-side). */
   listActivity: (id: string) =>
     request<{ entries: ApiActivityEntry[] }>(
       `/api/servers/${id}/activity`,
     ),
 
-  // --- Backups & disk ----------------------------------------------------
+  // --- Subusers (owner-only) ---
+  listSubusers: (serverId: string) =>
+    request<{ subusers: ApiSubuser[]; availablePermissions: string[] }>(
+      `/api/servers/${serverId}/subusers`,
+    ),
+  addSubuser: (serverId: string, email: string, permissions: string[]) =>
+    request<{ subuser: ApiSubuser }>(`/api/servers/${serverId}/subusers`, {
+      method: 'POST',
+      body: JSON.stringify({ email, permissions }),
+    }),
+  updateSubuser: (
+    serverId: string,
+    subId: string,
+    permissions: string[],
+  ) =>
+    request<{ subuser: ApiSubuser }>(
+      `/api/servers/${serverId}/subusers/${subId}`,
+      { method: 'PATCH', body: JSON.stringify({ permissions }) },
+    ),
+  removeSubuser: (serverId: string, subId: string) =>
+    request<{ ok: boolean }>(
+      `/api/servers/${serverId}/subusers/${subId}`,
+      { method: 'DELETE' },
+    ),
 
+  // --- Backups & disk ---
   diskUsage: () => request<{ usage: ApiDiskUsage }>('/api/disk'),
-
   listBackups: (serverId: string) =>
     request<{ backups: ApiBackup[]; max: number }>(
       `/api/servers/${serverId}/backups`,
     ),
-
   createBackup: (serverId: string, name: string) =>
     request<{ backup: ApiBackup }>(`/api/servers/${serverId}/backups`, {
       method: 'POST',
       body: JSON.stringify({ name }),
     }),
-
   deleteBackup: (serverId: string, backupId: string) =>
     request<{ ok: boolean }>(
       `/api/servers/${serverId}/backups/${backupId}`,
       { method: 'DELETE' },
     ),
-
   restoreBackup: (serverId: string, backupId: string) =>
     request<{ ok: boolean }>(
       `/api/servers/${serverId}/backups/${backupId}/restore`,
       { method: 'POST' },
     ),
-
-  /** Direct URL the browser can hit to download a backup .tar.gz. */
   backupDownloadUrl: (serverId: string, backupId: string) =>
     `/api/servers/${serverId}/backups/${backupId}/download`,
 
-  // --- File manager ------------------------------------------------------
-
+  // --- File manager ---
   listFiles: (serverId: string, dirPath: string) =>
     request<{ path: string; entries: ApiFileEntry[] }>(
       `/api/servers/${serverId}/files?path=${encodeURIComponent(dirPath)}`,
     ),
-
   readFile: (serverId: string, filePath: string) =>
     request<{ path: string; content: string }>(
       `/api/servers/${serverId}/file?path=${encodeURIComponent(filePath)}`,
     ),
-
   writeFile: (serverId: string, filePath: string, content: string) =>
     request<{ ok: boolean }>(`/api/servers/${serverId}/file`, {
       method: 'PUT',
       body: JSON.stringify({ path: filePath, content }),
     }),
-
   deleteFile: (serverId: string, filePath: string) =>
     request<{ ok: boolean }>(
       `/api/servers/${serverId}/file?path=${encodeURIComponent(filePath)}`,
       { method: 'DELETE' },
     ),
-
   uploadFile: (serverId: string, dirPath: string, file: File) => {
     const form = new FormData();
     form.append('file', file);
@@ -315,3 +316,27 @@ export const api = {
     );
   },
 };
+
+// --- Shared permission constants (must mirror backend lib/permissions.ts) ---
+
+export const PERM = {
+  CONTROL_START: 'control.start',
+  CONTROL_STOP: 'control.stop',
+  CONTROL_RESTART: 'control.restart',
+  CONSOLE_SEND: 'console.send',
+  FILES_WRITE: 'files.write',
+  FILES_DELETE: 'files.delete',
+  BACKUPS_CREATE: 'backups.create',
+  BACKUPS_RESTORE: 'backups.restore',
+  BACKUPS_DELETE: 'backups.delete',
+  BACKUPS_DOWNLOAD: 'backups.download',
+  SETTINGS_RENAME: 'settings.rename',
+} as const;
+
+/** Convenience: does the viewer have a given permission on this server? */
+export function hasPermission(
+  myPermissions: string[],
+  permission: string,
+): boolean {
+  return myPermissions.includes(permission);
+}

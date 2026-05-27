@@ -1,25 +1,27 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { io, type Socket } from 'socket.io-client';
-import type { ApiServer } from '../../lib/api';
+import { hasPermission, PERM, type ApiServer } from '../../lib/api';
 import { useTranslation } from '../../lib/i18n';
 
-// Keeps the console output from growing without bound.
 const MAX_OUTPUT_CHARS = 60000;
 
 interface ConsolePageProps {
   server: ApiServer;
-  /** Whether the user can send commands (false for Bedrock servers). */
+  /** Whether the underlying template supports commands (false for Bedrock). */
   commandsEnabled: boolean;
+  /** What the viewer can do on this server. */
+  myPermissions: string[];
 }
 
 /**
- * Live console for one server, displayed as the "Console" tab of the
- * server-detail page. Streams stdout/stderr over Socket.IO; for Java
- * servers (RCON), also lets the user type commands.
+ * Live console for one server. The command input is hidden when:
+ *   - the template does not support commands (Bedrock), OR
+ *   - the viewer does not hold the `console.send` permission.
  */
 export default function ConsolePage({
   server,
   commandsEnabled,
+  myPermissions,
 }: ConsolePageProps) {
   const { t } = useTranslation();
   const [output, setOutput] = useState('');
@@ -28,7 +30,8 @@ export default function ConsolePage({
   const socketRef = useRef<Socket | null>(null);
   const outputRef = useRef<HTMLPreElement | null>(null);
 
-  // Open the websocket, subscribe to this server's console, and stream it.
+  const canSend = commandsEnabled && hasPermission(myPermissions, PERM.CONSOLE_SEND);
+
   useEffect(() => {
     const socket = io();
     socketRef.current = socket;
@@ -51,7 +54,6 @@ export default function ConsolePage({
     };
   }, [server.id, t]);
 
-  // Keep the output scrolled to the bottom as new lines arrive.
   useEffect(() => {
     const el = outputRef.current;
     if (el) {
@@ -62,9 +64,7 @@ export default function ConsolePage({
   function handleSubmit(event: FormEvent): void {
     event.preventDefault();
     const cmd = command.trim();
-    if (!cmd || !socketRef.current) {
-      return;
-    }
+    if (!cmd || !socketRef.current) return;
     socketRef.current.emit('console:command', {
       serverId: server.id,
       command: cmd,
@@ -72,6 +72,12 @@ export default function ConsolePage({
     setOutput((prev) => prev + `\n> ${cmd}\n`);
     setCommand('');
   }
+
+  // Footer message: explain WHY commands are unavailable, when they are.
+  let footer: 'commands' | 'viewOnly' | 'noPerm';
+  if (canSend) footer = 'commands';
+  else if (!commandsEnabled) footer = 'viewOnly';
+  else footer = 'noPerm';
 
   return (
     <div className="flex h-[70vh] flex-col overflow-hidden rounded-2xl border border-peregrine-700 bg-peregrine-900">
@@ -88,7 +94,7 @@ export default function ConsolePage({
         {output || t('console.waiting')}
       </pre>
 
-      {commandsEnabled ? (
+      {footer === 'commands' && (
         <form
           onSubmit={handleSubmit}
           className="flex gap-2 border-t border-peregrine-800 p-3"
@@ -107,9 +113,17 @@ export default function ConsolePage({
             {t('console.send')}
           </button>
         </form>
-      ) : (
+      )}
+
+      {footer === 'viewOnly' && (
         <p className="border-t border-peregrine-800 p-3 text-center text-xs text-peregrine-500">
           {t('console.viewOnly')}
+        </p>
+      )}
+
+      {footer === 'noPerm' && (
+        <p className="border-t border-peregrine-800 p-3 text-center text-xs text-peregrine-500">
+          {t('console.noSendPermission')}
         </p>
       )}
     </div>
