@@ -156,7 +156,7 @@ export default function Dashboard() {
         </button>
       </header>
 
-      <main className="mx-auto max-w-4xl px-6 py-10">
+      <main className="mx-auto max-w-5xl px-6 py-10">
         {isAdmin && view === 'admin' ? (
           <AdminPanel templates={templates} />
         ) : (
@@ -193,7 +193,7 @@ export default function Dashboard() {
                 {t('servers.empty')}
               </div>
             ) : (
-              <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <div className="mt-6 space-y-3">
                 {servers.map((server) => (
                   <ServerCard
                     key={server.id}

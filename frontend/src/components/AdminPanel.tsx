@@ -308,24 +308,18 @@ export default function AdminPanel({ templates }: AdminPanelProps) {
               {t('admin.servers.empty')}
             </div>
           ) : (
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div className="mt-4 space-y-3">
               {servers.map((server) => (
-                <div key={server.id} className="space-y-1">
-                  <p className="text-xs text-peregrine-400">
-                    {t('admin.servers.ownerLabel')} :{' '}
-                    <span className="font-medium text-peregrine-200">
-                      {server.owner.username}
-                    </span>
-                  </p>
-                  <ServerCard
-                    server={server}
-                    templateName={templateName(server.templateId)}
-                    onAction={handleServerAction}
-                    onConsole={setConsoleServer}
-                    onFiles={setFilesServer}
-                    onDelete={handleServerDelete}
-                  />
-                </div>
+                <ServerCard
+                  key={server.id}
+                  server={server}
+                  templateName={templateName(server.templateId)}
+                  ownerName={server.owner.username}
+                  onAction={handleServerAction}
+                  onConsole={setConsoleServer}
+                  onFiles={setFilesServer}
+                  onDelete={handleServerDelete}
+                />
               ))}
             </div>
           )}
