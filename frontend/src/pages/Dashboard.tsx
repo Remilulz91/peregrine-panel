@@ -6,30 +6,23 @@ import ServerCard from '../components/ServerCard';
 import CreateServerDialog from '../components/CreateServerDialog';
 import { api, type ApiServer, type ApiTemplate } from '../lib/api';
 import { useAuth } from '../lib/auth';
+import { navigate } from '../lib/router';
 import { useTranslation } from '../lib/i18n';
 
 /**
  * The protected screen shown once a user is signed in: the list of their
  * game servers. Clicking a server row opens its detail page where all
  * actions (console, files, settings, start/stop/...) live.
- *
- * Administrators get an extra "Admin" toggle in the header that swaps
- * the main area for the administration view (user accounts + every
- * server on the panel, for troubleshooting).
  */
 export default function Dashboard() {
   const { t } = useTranslation();
   const { user, signOut } = useAuth();
   const [servers, setServers] = useState<ApiServer[]>([]);
-  // Distinguishes "list still loading" from "list loaded and empty", so
-  // the empty-state card does not flash on every page refresh.
   const [serversLoaded, setServersLoaded] = useState(false);
   const [templates, setTemplates] = useState<ApiTemplate[]>([]);
   const [loadError, setLoadError] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  // Admins can switch between their own dashboard ("servers") and the
-  // administration view ("admin"). Regular users only ever see "servers".
   const [view, setView] = useState<'servers' | 'admin'>('servers');
   const isAdmin = user?.role === 'ADMIN';
 
@@ -45,15 +38,12 @@ export default function Dashboard() {
     }
   }, []);
 
-  // Load the servers and templates, then poll the servers so that status
-  // changes (installing, running, ...) appear without a manual refresh.
   useEffect(() => {
     void loadServers();
     api
       .listTemplates()
       .then((result) => setTemplates(result.templates))
       .catch(() => undefined);
-
     const interval = setInterval(() => void loadServers(), 4000);
     return () => clearInterval(interval);
   }, [loadServers]);
@@ -98,9 +88,15 @@ export default function Dashboard() {
         )}
         <LanguageToggle />
         {user && (
-          <span className="hidden text-sm text-peregrine-400 sm:inline">
+          /* Clicking the username opens the account / security page. */
+          <button
+            type="button"
+            onClick={() => navigate('/account')}
+            title={t('dashboard.account')}
+            className="hidden text-sm text-peregrine-400 transition-colors hover:text-peregrine-200 sm:inline"
+          >
             {user.username}
-          </span>
+          </button>
         )}
         <button
           type="button"
@@ -140,9 +136,6 @@ export default function Dashboard() {
               </p>
             )}
 
-            {/* Render the empty-state ONLY once the first load has actually
-                completed; otherwise the page flashes "no servers yet" on
-                every refresh while waiting for the API. */}
             {!serversLoaded ? null : servers.length === 0 && !loadError ? (
               <div className="mt-8 rounded-2xl border border-dashed border-peregrine-700 p-10 text-center text-sm text-peregrine-400">
                 {t('servers.empty')}

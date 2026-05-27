@@ -92,12 +92,7 @@ const MIGRATIONS: string[] = [
    );
    CREATE INDEX server_subusers_by_user ON server_subusers(user_id);`,
 
-  // Migration 8 - per-server schedules (recurring tasks). Currently the
-  // only supported action is "backup.create", but the schema is open so
-  // we can extend it later without another migration. Parameters are
-  // stored directly (frequency / hour / minute / day_of_week) rather
-  // than as a cron string — much friendlier for the UI to render and
-  // explain. `next_run_at` is recomputed each tick by the worker.
+  // Migration 8 - per-server recurring schedules (currently backup-only).
   `CREATE TABLE server_schedules (
      id          TEXT PRIMARY KEY,
      server_id   TEXT NOT NULL REFERENCES servers(id) ON DELETE CASCADE,
@@ -115,6 +110,15 @@ const MIGRATIONS: string[] = [
    );
    CREATE INDEX server_schedules_by_next_run
      ON server_schedules(next_run_at) WHERE enabled = 1;`,
+
+  // Migration 9 - per-user TOTP MFA + recovery codes.
+  // mfa_secret is the base32-encoded TOTP secret (NULL when MFA is off);
+  // mfa_recovery_codes is a JSON array of Argon2 hashes (each code is
+  // one-time-use — when consumed, the array shortens). We keep the secret
+  // in plain text because TOTP is inherently symmetric and the SQLite
+  // file lives on the panel host (same trust boundary as JWT_SECRET).
+  `ALTER TABLE users ADD COLUMN mfa_secret TEXT;
+   ALTER TABLE users ADD COLUMN mfa_recovery_codes TEXT;`,
 ];
 
 /** Applies any migrations that have not been run on this database yet. */

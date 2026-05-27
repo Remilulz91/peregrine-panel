@@ -12,7 +12,28 @@ import {
   deleteInviteByToken,
   findInviteByToken,
 } from '../lib/invites';
-import { authenticate, setAuthCookie, clearAuthCookie } from '../plugins/auth';
+import {
+  authenticate,
+  clearAuthCookie,
+  clearMfaPendingCookie,
+  readMfaPendingUserId,
+  setAuthCookie,
+  setMfaPendingCookie,
+} from '../plugins/auth';
+import {
+  buildOtpAuthUri,
+  generateSecret,
+  verifyTotp,
+} from '../lib/totp';
+import {
+  consumeRecoveryCode,
+  disableMfa,
+  generateRecoveryCodes,
+  hashRecoveryCodes,
+  persistMfa,
+  remainingRecoveryCodes,
+  userHasMfa,
+} from '../lib/mfa';
 
 interface SetupBody {
   username: string;
@@ -29,6 +50,20 @@ interface AcceptInviteBody {
   password: string;
 }
 
+interface MfaEnableBody {
+  secret: string;
+  code: string;
+}
+
+interface MfaDisableBody {
+  password: string;
+}
+
+interface MfaVerifyBody {
+  code?: string;
+  recoveryCode?: string;
+}
+
 /** Shapes a user for the API response — never exposes the password hash. */
 function publicUser(user: UserRecord) {
   return {
@@ -37,23 +72,27 @@ function publicUser(user: UserRecord) {
     email: user.email,
     role: user.role,
     createdAt: user.createdAt,
+    mfaEnabled: userHasMfa(user),
+    mfaRecoveryRemaining: remainingRecoveryCodes(user),
   };
 }
 
-// A simple email check — avoids depending on JSON-schema format extensions.
 const EMAIL_PATTERN = '^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$';
-// Usernames stay in the printable ASCII range that is safe for logins.
 const USERNAME_PATTERN = '^[A-Za-z0-9._-]+$';
 
 /**
  * Authentication routes (mounted under /api/auth):
  *   GET  /setup-required     - is the first-run setup still needed?
  *   POST /setup              - create the first account (the administrator)
- *   POST /login              - log in with username + password
+ *   POST /login              - log in with username + password (may require MFA)
  *   POST /logout             - log out
  *   GET  /me                 - the currently logged-in user (protected)
  *   GET  /invite/:token      - check an invitation and return the username
  *   POST /invite/:token      - set the password and log in (single-use)
+ *   POST /mfa/setup          - get a fresh TOTP secret + QR URI (protected)
+ *   POST /mfa/enable         - persist the secret after the user enters a code
+ *   POST /mfa/disable        - turn MFA off (re-asks for the password)
+ *   POST /mfa/verify         - finishes a 2-step login with a TOTP / recovery code
  */
 export async function authRoutes(app: FastifyInstance): Promise<void> {
   app.get('/setup-required', async () => {
@@ -82,7 +121,6 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       },
     },
     async (request, reply) => {
-      // The setup route only works while no account exists yet.
       if (countUsers() > 0) {
         return reply
           .code(409)
@@ -123,6 +161,13 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
           .code(401)
           .send({ error: 'Invalid username or password.' });
       }
+      // If MFA is enabled on this account, the password alone is not
+      // enough. Hand out an MFA-pending cookie so the next /mfa/verify
+      // call can complete the login.
+      if (userHasMfa(user)) {
+        setMfaPendingCookie(app, reply, user);
+        return reply.send({ requiresMfa: true });
+      }
       setAuthCookie(app, reply, user);
       return { user: publicUser(user) };
     },
@@ -130,6 +175,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
 
   app.post('/logout', async (_request, reply) => {
     clearAuthCookie(reply);
+    clearMfaPendingCookie(reply);
     return { ok: true };
   });
 
@@ -141,7 +187,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     return { user: publicUser(user) };
   });
 
-  // --- Invitation flow (used by accounts created by an administrator) ---
+  // --- Invitation flow (unchanged from v0.2.0) ---
 
   app.get('/invite/:token', async (request, reply) => {
     const { token } = request.params as { token: string };
@@ -182,10 +228,155 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       }
       const { password } = request.body as AcceptInviteBody;
       setUserPassword(user.id, await hashPassword(password));
-      // Single-use: the link is destroyed as soon as it has been used.
       deleteInviteByToken(token);
       setAuthCookie(app, reply, user);
       return { user: publicUser(user) };
+    },
+  );
+
+  // --- MFA flow ------------------------------------------------------
+
+  // Generates a fresh TOTP secret + the otpauth URI for QR rendering.
+  // Nothing is persisted yet: the secret travels back to the frontend,
+  // and `/mfa/enable` stores it only after the user proves their phone
+  // app accepted it.
+  app.post('/mfa/setup', { preHandler: authenticate }, async (request, reply) => {
+    const user = findUserById(request.user.sub);
+    if (!user) return reply.code(401).send({ error: 'Unauthorized' });
+    if (userHasMfa(user)) {
+      return reply.code(409).send({ error: 'MFA is already enabled.' });
+    }
+    const secret = generateSecret();
+    const otpAuthUri = buildOtpAuthUri({
+      secret,
+      username: user.username,
+      issuer: 'Peregrine',
+    });
+    return { secret, otpAuthUri };
+  });
+
+  // Verifies the user's first TOTP code, then persists the secret and
+  // returns the freshly minted recovery codes — shown once, never
+  // again (only Argon2 hashes are stored).
+  app.post(
+    '/mfa/enable',
+    {
+      preHandler: authenticate,
+      schema: {
+        body: {
+          type: 'object',
+          required: ['secret', 'code'],
+          additionalProperties: false,
+          properties: {
+            secret: { type: 'string', minLength: 16, maxLength: 64 },
+            code: { type: 'string', minLength: 6, maxLength: 8 },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const user = findUserById(request.user.sub);
+      if (!user) return reply.code(401).send({ error: 'Unauthorized' });
+      if (userHasMfa(user)) {
+        return reply.code(409).send({ error: 'MFA is already enabled.' });
+      }
+      const body = request.body as MfaEnableBody;
+      if (!verifyTotp(body.secret, body.code)) {
+        return reply.code(400).send({
+          error:
+            'The code did not match. Make sure your phone clock is correct and try again.',
+        });
+      }
+      const recoveryCodes = generateRecoveryCodes();
+      const hashed = await hashRecoveryCodes(recoveryCodes);
+      persistMfa({
+        userId: user.id,
+        secret: body.secret,
+        hashedRecoveryCodes: hashed,
+      });
+      return { recoveryCodes };
+    },
+  );
+
+  // Turning MFA off requires the current password — defence in depth
+  // against someone hijacking an unattended browser session.
+  app.post(
+    '/mfa/disable',
+    {
+      preHandler: authenticate,
+      schema: {
+        body: {
+          type: 'object',
+          required: ['password'],
+          additionalProperties: false,
+          properties: {
+            password: { type: 'string', minLength: 1, maxLength: 128 },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const user = findUserById(request.user.sub);
+      if (!user) return reply.code(401).send({ error: 'Unauthorized' });
+      if (!userHasMfa(user)) {
+        return reply.code(409).send({ error: 'MFA is not enabled.' });
+      }
+      const body = request.body as MfaDisableBody;
+      if (!(await verifyPassword(user.passwordHash, body.password))) {
+        return reply.code(401).send({ error: 'Incorrect password.' });
+      }
+      disableMfa(user.id);
+      return { ok: true };
+    },
+  );
+
+  // Step 2 of the login flow: the user has already presented their
+  // password (which gave them an MFA-pending cookie); now they prove
+  // possession of their second factor.
+  app.post(
+    '/mfa/verify',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            code: { type: 'string', minLength: 6, maxLength: 8 },
+            recoveryCode: { type: 'string', minLength: 8, maxLength: 32 },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const pendingUserId = readMfaPendingUserId(app, request);
+      if (!pendingUserId) {
+        return reply.code(401).send({ error: 'No pending login. Sign in again.' });
+      }
+      const user = findUserById(pendingUserId);
+      if (!user || !user.mfaSecret) {
+        clearMfaPendingCookie(reply);
+        return reply.code(401).send({ error: 'No pending login. Sign in again.' });
+      }
+      const body = request.body as MfaVerifyBody;
+
+      let ok = false;
+      if (body.code) {
+        ok = verifyTotp(user.mfaSecret, body.code);
+      } else if (body.recoveryCode) {
+        ok = await consumeRecoveryCode(user.id, body.recoveryCode);
+      } else {
+        return reply
+          .code(400)
+          .send({ error: 'Provide either a code or a recovery code.' });
+      }
+      if (!ok) {
+        return reply.code(401).send({ error: 'Invalid code.' });
+      }
+      clearMfaPendingCookie(reply);
+      setAuthCookie(app, reply, user);
+      // Re-read so `mfaRecoveryRemaining` reflects the possibly-consumed code.
+      const fresh = findUserById(user.id)!;
+      return { user: publicUser(fresh) };
     },
   );
 }

@@ -17,15 +17,6 @@ interface AdminPanelProps {
 
 type Tab = 'users' | 'servers';
 
-/**
- * Administration view, accessible only to users with the ADMIN role.
- *
- * Two tabs:
- *   * Users    — list, create, regenerate invite, delete accounts.
- *   * Servers  — every server on the panel (regardless of owner). The
- *                rows are clickable just like the regular dashboard and
- *                open the server-detail page where every action lives.
- */
 export default function AdminPanel({ templates }: AdminPanelProps) {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -35,8 +26,6 @@ export default function AdminPanel({ templates }: AdminPanelProps) {
   // --- Users ----------------------------------------------------------------
 
   const [users, setUsers] = useState<ApiAdminUser[]>([]);
-  // Tracks whether the first load has completed: the empty-state card
-  // should only ever appear after we know the list is truly empty.
   const [usersLoaded, setUsersLoaded] = useState(false);
   const [usersError, setUsersError] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -74,7 +63,6 @@ export default function AdminPanel({ templates }: AdminPanelProps) {
   useEffect(() => {
     void loadUsers();
     void loadServers();
-    // Poll servers like the regular dashboard so status changes show up.
     const interval = setInterval(() => void loadServers(), 4000);
     return () => clearInterval(interval);
   }, [loadUsers, loadServers]);
@@ -94,8 +82,6 @@ export default function AdminPanel({ templates }: AdminPanelProps) {
   async function regenerateInvite(target: ApiAdminUser): Promise<void> {
     try {
       const result = await api.regenerateInvite(target.id);
-      // Show the admin the fresh link in a tiny prompt: prompt() is the
-      // simplest way to give them a copyable string without another modal.
       window.prompt(t('admin.invite.ready'), result.inviteUrl);
       void loadUsers();
     } catch (err) {
@@ -109,6 +95,16 @@ export default function AdminPanel({ templates }: AdminPanelProps) {
       await api.deleteAdminUser(target.id);
       void loadUsers();
       void loadServers();
+    } catch (err) {
+      reportError(err);
+    }
+  }
+
+  async function resetMfa(target: ApiAdminUser): Promise<void> {
+    if (!window.confirm(t('admin.users.resetMfaConfirm'))) return;
+    try {
+      await api.resetUserMfa(target.id);
+      void loadUsers();
     } catch (err) {
       reportError(err);
     }
@@ -175,8 +171,6 @@ export default function AdminPanel({ templates }: AdminPanelProps) {
             </p>
           )}
 
-          {/* Wait for the first load before deciding between "empty" and
-              "list of users", to avoid a flash of the empty state. */}
           {!usersLoaded ? null : users.length === 0 && !usersError ? (
             <div className="mt-6 rounded-2xl border border-dashed border-peregrine-700 p-8 text-center text-sm text-peregrine-400">
               {t('admin.users.empty')}
@@ -203,7 +197,17 @@ export default function AdminPanel({ templates }: AdminPanelProps) {
                     return (
                       <tr key={row.id}>
                         <td className="px-4 py-2 font-medium text-white">
-                          {row.username}
+                          <div className="flex items-center gap-2">
+                            <span>{row.username}</span>
+                            {row.mfaEnabled && (
+                              <span
+                                title="2FA"
+                                className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-400"
+                              >
+                                {t('admin.users.mfaBadge')}
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-4 py-2 text-peregrine-300">
                           {row.email}
@@ -229,6 +233,15 @@ export default function AdminPanel({ templates }: AdminPanelProps) {
                                 className="rounded-lg border border-peregrine-700 px-2.5 py-1 text-xs font-medium text-peregrine-200 transition-colors hover:bg-peregrine-800"
                               >
                                 {t('admin.users.regenerate')}
+                              </button>
+                            )}
+                            {row.mfaEnabled && (
+                              <button
+                                type="button"
+                                onClick={() => void resetMfa(row)}
+                                className="rounded-lg border border-peregrine-700 px-2.5 py-1 text-xs font-medium text-peregrine-200 transition-colors hover:bg-peregrine-800"
+                              >
+                                {t('admin.users.resetMfa')}
                               </button>
                             )}
                             <button
@@ -266,8 +279,6 @@ export default function AdminPanel({ templates }: AdminPanelProps) {
             </p>
           )}
 
-          {/* Same trick on the all-servers list: wait for the first load
-              before showing the empty-state. */}
           {!serversLoaded ? null : servers.length === 0 && !serversError ? (
             <div className="mt-6 rounded-2xl border border-dashed border-peregrine-700 p-8 text-center text-sm text-peregrine-400">
               {t('admin.servers.empty')}

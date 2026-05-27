@@ -1,13 +1,12 @@
 import { useSyncExternalStore } from 'react';
 
-/**
- * Tiny path-based router. See pages/ServerDetail.tsx for the tab story.
- */
+/** Tiny path-based router. See pages/ServerDetail.tsx for the tab story. */
 
 /** Every screen the URL can resolve to. */
 export type Route =
   | { name: 'home' }
   | { name: 'server'; id: string; tab: ServerTab }
+  | { name: 'account' }
   | { name: 'invite'; token: string }
   | { name: 'unknown' };
 
@@ -35,6 +34,7 @@ const SERVER_TABS: readonly ServerTab[] = [
 
 const SERVER_PATH = /^\/servers\/([A-Za-z0-9-]+)(?:\/([a-z]+))?\/?$/;
 const INVITE_PATH = /^\/invite\/([A-Za-z0-9._-]+)\/?$/;
+const ACCOUNT_PATH = /^\/account\/?$/;
 
 function asServerTab(value: string | undefined): ServerTab {
   if (value && (SERVER_TABS as readonly string[]).includes(value)) {
@@ -47,6 +47,9 @@ function asServerTab(value: string | undefined): ServerTab {
 export function parseRoute(pathname: string): Route {
   if (pathname === '/' || pathname === '') {
     return { name: 'home' };
+  }
+  if (ACCOUNT_PATH.test(pathname)) {
+    return { name: 'account' };
   }
   const invite = INVITE_PATH.exec(pathname);
   if (invite) {
