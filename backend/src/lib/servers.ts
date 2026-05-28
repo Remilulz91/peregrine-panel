@@ -1,6 +1,21 @@
 import { randomUUID } from 'node:crypto';
 import { db } from './db';
 
+/** Supported Minecraft loader types (Java side). Bedrock is always 'vanilla'. */
+export type ServerLoader = 'vanilla' | 'paper' | 'fabric' | 'forge';
+
+const LOADER_SET: ReadonlySet<string> = new Set([
+  'vanilla',
+  'paper',
+  'fabric',
+  'forge',
+]);
+
+/** True if the given value is one of the supported loaders. */
+export function isLoader(value: string): value is ServerLoader {
+  return LOADER_SET.has(value);
+}
+
 /** A game server, as used inside the backend. */
 export interface ServerRecord {
   id: string;
@@ -10,6 +25,8 @@ export interface ServerRecord {
   status: string;
   containerId: string | null;
   minecraftVersion: string;
+  /** Loader passed as TYPE to the itzg image (vanilla / paper / fabric / forge). */
+  loader: ServerLoader;
   memoryMb: number;
   cpuLimit: number;
   port: number;
@@ -24,6 +41,7 @@ interface ServerRow {
   status: string;
   container_id: string | null;
   minecraft_version: string;
+  loader: string;
   memory_mb: number;
   cpu_limit: number;
   port: number;
@@ -39,6 +57,7 @@ function toRecord(row: ServerRow): ServerRecord {
     status: row.status,
     containerId: row.container_id,
     minecraftVersion: row.minecraft_version,
+    loader: isLoader(row.loader) ? row.loader : 'vanilla',
     memoryMb: row.memory_mb,
     cpuLimit: row.cpu_limit,
     port: row.port,
@@ -46,7 +65,6 @@ function toRecord(row: ServerRow): ServerRecord {
   };
 }
 
-// Range of host ports Peregrine hands out to game servers.
 const PORT_RANGE_START = 25565;
 const PORT_RANGE_END = 25664;
 
@@ -70,6 +88,7 @@ export function createServer(input: {
   templateId: string;
   name: string;
   minecraftVersion: string;
+  loader: ServerLoader;
   memoryMb: number;
   cpuLimit: number;
   port: number;
@@ -77,15 +96,16 @@ export function createServer(input: {
   const id = randomUUID();
   db.prepare(
     `INSERT INTO servers
-       (id, owner_id, template_id, name, minecraft_version,
+       (id, owner_id, template_id, name, minecraft_version, loader,
         memory_mb, cpu_limit, port)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     id,
     input.ownerId,
     input.templateId,
     input.name,
     input.minecraftVersion,
+    input.loader,
     input.memoryMb,
     input.cpuLimit,
     input.port,
@@ -113,13 +133,7 @@ export function listAllServers(): ServerRecord[] {
   return rows.map(toRecord);
 }
 
-/**
- * Lists every server visible to a user: the ones they own AND the ones
- * they have been added to as a subuser. Returns them newest first,
- * with no duplicates (a user can't be both owner and subuser on the
- * same server thanks to the UNIQUE constraint, but we de-dup anyway
- * for safety).
- */
+/** Lists every server visible to a user (owned + subuser shares). */
 export function listServersVisibleTo(userId: string): ServerRecord[] {
   const rows = db
     .prepare(

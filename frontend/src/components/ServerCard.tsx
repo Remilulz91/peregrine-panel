@@ -61,9 +61,7 @@ function Stat({ label, value, mono }: StatProps) {
       <span className="text-[10px] uppercase tracking-wider text-peregrine-500">
         {label}
       </span>
-      <span
-        className={`text-xs text-peregrine-200 ${mono ? 'font-mono' : ''}`}
-      >
+      <span className={`text-xs text-peregrine-200 ${mono ? 'font-mono' : ''}`}>
         {value}
       </span>
     </div>
@@ -98,9 +96,13 @@ export default function ServerCard({
     STATUS_BADGE[server.status] ?? 'bg-peregrine-700 text-peregrine-200';
   const stripeStyle = STATUS_STRIPE[server.status] ?? 'bg-peregrine-600';
 
-  // Subtitle composition: "Template • Version [• shared by alice]".
+  // Subtitle composition: "Template · [Loader ·] Version [· shared by X]"
   const sharedHint =
     ownerName ?? (!server.isOwner ? server.ownerUsername : null);
+  const showLoader = server.loader && server.loader !== 'vanilla';
+  const loaderLabel = showLoader
+    ? server.loader.charAt(0).toUpperCase() + server.loader.slice(1)
+    : null;
 
   return (
     <button
@@ -120,7 +122,16 @@ export default function ServerCard({
             {server.name}
           </h3>
           <p className="mt-0.5 truncate text-xs text-peregrine-400">
-            {templateName}{' '}
+            {templateName}
+            {/* Loader chip: only shown for non-vanilla setups, kept in
+                falcon (amber) so it pops as a visual hint. */}
+            {loaderLabel && (
+              <>
+                {' '}
+                <span className="text-peregrine-600">•</span>{' '}
+                <span className="text-falcon">{loaderLabel}</span>
+              </>
+            )}{' '}
             <span className="text-peregrine-600">•</span>{' '}
             {server.minecraftVersion}
             {sharedHint && (

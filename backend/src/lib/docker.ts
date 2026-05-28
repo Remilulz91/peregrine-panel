@@ -1,6 +1,7 @@
 import { PassThrough, type Readable } from 'node:stream';
 import Docker from 'dockerode';
 import { config } from '../config';
+import type { ServerLoader } from './servers';
 
 // Connection to the local Docker daemon, used to manage game-server
 // containers. Talking to this socket is equivalent to root on the host,
@@ -65,6 +66,8 @@ interface CreateContainerInput {
   image: string;
   /** "java" or "bedrock" — drives the environment variables. */
   kind: string;
+  /** "vanilla", "paper", "fabric", "forge" — passed to itzg as TYPE. */
+  loader: ServerLoader;
   version: string;
   /** RAM limit, in MB. */
   memoryMb: number;
@@ -80,6 +83,21 @@ interface CreateContainerInput {
   dataDir: string;
 }
 
+/** Maps Peregrine's loader names to the values itzg's image expects. */
+function itzgTypeFor(loader: ServerLoader): string {
+  switch (loader) {
+    case 'paper':
+      return 'PAPER';
+    case 'fabric':
+      return 'FABRIC';
+    case 'forge':
+      return 'FORGE';
+    case 'vanilla':
+    default:
+      return 'VANILLA';
+  }
+}
+
 /**
  * Creates (without starting) the Docker container for a game server, with
  * CPU and RAM limits applied, and returns its container id.
@@ -92,6 +110,9 @@ export async function createServerContainer(
   // Environment variables understood by the itzg Minecraft images.
   const env = ['EULA=TRUE', `VERSION=${input.version}`];
   if (input.kind === 'java') {
+    // The TYPE env tells itzg which server flavour to download and run.
+    // Bedrock has no loader concept, so we only set TYPE for Java.
+    env.push(`TYPE=${itzgTypeFor(input.loader)}`);
     // Leave headroom below the container limit for the JVM's non-heap memory.
     const heapMb = Math.max(input.memoryMb - 512, 512);
     env.push(`MEMORY=${heapMb}M`);
@@ -162,9 +183,6 @@ export async function getContainerState(
 
 /**
  * Streams a container's console output (the recent history, then live).
- *
- * `onData` is called with each chunk of cleaned text. The returned function
- * stops the stream and must be called when the listener goes away.
  */
 export async function attachConsole(
   containerId: string,
@@ -196,7 +214,7 @@ export async function attachConsole(
 }
 
 /**
- * Sends a console command to a running game server, via the RCON client
+ * Sends a console command to a running game server via the RCON client
  * bundled in the itzg/minecraft-server image, and returns its output.
  */
 export async function sendConsoleCommand(

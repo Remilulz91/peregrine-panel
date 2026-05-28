@@ -2,6 +2,9 @@
 // The authentication token lives in an httpOnly cookie, which the browser
 // sends automatically thanks to `credentials: 'include'`.
 
+/** Supported Minecraft loader types (Java side). Bedrock is always 'vanilla'. */
+export type ServerLoader = 'vanilla' | 'paper' | 'fabric' | 'forge';
+
 /** A user account, as returned by the API. */
 export interface ApiUser {
   id: string;
@@ -9,9 +12,7 @@ export interface ApiUser {
   email: string;
   role: string;
   createdAt: string;
-  /** True when this account has TOTP MFA active. */
   mfaEnabled?: boolean;
-  /** How many unused recovery codes the account has left. */
   mfaRecoveryRemaining?: number;
 }
 
@@ -29,6 +30,8 @@ export interface ApiServer {
   status: string;
   templateId: string;
   minecraftVersion: string;
+  /** Server flavour: vanilla / paper / fabric / forge. */
+  loader: ServerLoader;
   memoryMb: number;
   cpuLimit: number;
   port: number;
@@ -62,7 +65,6 @@ export interface ApiAdminUser {
   role: 'USER' | 'ADMIN';
   createdAt: string;
   needsActivation: boolean;
-  /** True if this account has MFA active. Admins can reset it. */
   mfaEnabled: boolean;
   pendingInvite: ApiPendingInvite | null;
 }
@@ -114,12 +116,10 @@ export interface ApiSchedule {
   createdAt: string;
 }
 
-/** What POST /api/auth/login returns when MFA is enabled on the account. */
 export interface ApiMfaChallenge {
   requiresMfa: true;
 }
 
-/** Payload returned by POST /api/auth/mfa/setup. */
 export interface ApiMfaSetup {
   secret: string;
   otpAuthUri: string;
@@ -176,6 +176,8 @@ interface CreateServerInput {
   name: string;
   templateId: string;
   minecraftVersion?: string;
+  /** Optional loader override. Bedrock servers ignore this; Java defaults to vanilla. */
+  loader?: ServerLoader;
   memoryMb: number;
   cpuLimit: number;
 }
@@ -189,7 +191,6 @@ export interface ScheduleInput {
   enabled: boolean;
 }
 
-/** Login response: either the user (no MFA) or a challenge (MFA required). */
 export type LoginResponse =
   | { user: ApiUser; requiresMfa?: undefined }
   | ApiMfaChallenge;
@@ -210,7 +211,6 @@ export const api = {
     }),
   logout: () => request<{ ok: boolean }>('/api/auth/logout', { method: 'POST' }),
 
-  // --- MFA ---
   mfaSetup: () =>
     request<ApiMfaSetup>('/api/auth/mfa/setup', { method: 'POST' }),
   mfaEnable: (secret: string, code: string) =>
@@ -229,7 +229,6 @@ export const api = {
       body: JSON.stringify(input),
     }),
 
-  // --- Invitations ---
   getInvite: (token: string) =>
     request<{ username: string }>(`/api/auth/invite/${token}`),
   acceptInvite: (token: string, password: string) =>
@@ -238,7 +237,6 @@ export const api = {
       body: JSON.stringify({ password }),
     }),
 
-  // --- Admin ---
   listAdminUsers: () =>
     request<{ users: ApiAdminUser[] }>('/api/admin/users'),
   createAdminUser: (body: CreateUserInput) =>
@@ -263,7 +261,6 @@ export const api = {
   listAdminServers: () =>
     request<{ servers: ApiAdminServer[] }>('/api/admin/servers'),
 
-  // --- Game servers ---
   listTemplates: () =>
     request<{ templates: ApiTemplate[] }>('/api/templates'),
   listServers: () => request<{ servers: ApiServer[] }>('/api/servers'),
@@ -292,7 +289,6 @@ export const api = {
       `/api/servers/${id}/activity`,
     ),
 
-  // --- Subusers ---
   listSubusers: (serverId: string) =>
     request<{ subusers: ApiSubuser[]; availablePermissions: string[] }>(
       `/api/servers/${serverId}/subusers`,
@@ -317,7 +313,6 @@ export const api = {
       { method: 'DELETE' },
     ),
 
-  // --- Schedules ---
   listSchedules: (serverId: string) =>
     request<{ schedules: ApiSchedule[] }>(
       `/api/servers/${serverId}/schedules`,
@@ -347,7 +342,6 @@ export const api = {
       { method: 'POST' },
     ),
 
-  // --- Backups & disk ---
   diskUsage: () => request<{ usage: ApiDiskUsage }>('/api/disk'),
   listBackups: (serverId: string) =>
     request<{ backups: ApiBackup[]; max: number }>(
@@ -371,7 +365,6 @@ export const api = {
   backupDownloadUrl: (serverId: string, backupId: string) =>
     `/api/servers/${serverId}/backups/${backupId}/download`,
 
-  // --- File manager ---
   listFiles: (serverId: string, dirPath: string) =>
     request<{ path: string; entries: ApiFileEntry[] }>(
       `/api/servers/${serverId}/files?path=${encodeURIComponent(dirPath)}`,
@@ -420,3 +413,42 @@ export function hasPermission(
 ): boolean {
   return myPermissions.includes(permission);
 }
+
+// --- Server creation constants -------------------------------------------
+
+/** Loader options offered to the user when creating a Java server. */
+export const JAVA_LOADERS: ServerLoader[] = [
+  'vanilla',
+  'paper',
+  'fabric',
+  'forge',
+];
+
+/**
+ * Curated Minecraft Java versions exposed in the create-server dropdown.
+ * "LATEST" always works (itzg picks the newest stable release). The rest
+ * are widely-used breakpoints — Forge / Fabric may not exist for every
+ * one of them, in which case the container fails to install (status
+ * INSTALL_FAILED). Add or remove freely; this is purely UI shaping.
+ */
+export const JAVA_MC_VERSIONS: string[] = [
+  'LATEST',
+  '1.21.1',
+  '1.21',
+  '1.20.6',
+  '1.20.4',
+  '1.20.1',
+  '1.19.4',
+  '1.19.2',
+  '1.18.2',
+  '1.17.1',
+  '1.16.5',
+  '1.12.2',
+  '1.8.9',
+];
+
+/**
+ * Bedrock numbering is awkward (e.g. 1.21.50.10), so we just expose
+ * LATEST. itzg keeps the image up to date with Mojang's releases.
+ */
+export const BEDROCK_MC_VERSIONS: string[] = ['LATEST'];

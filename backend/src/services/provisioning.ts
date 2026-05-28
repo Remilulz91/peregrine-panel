@@ -20,7 +20,8 @@ export function serverDataDir(serverId: string): string {
  *
  * This runs in the background, because pulling an image can take a while.
  * It updates the server's status to OFFLINE on success, or to
- * INSTALL_FAILED if anything goes wrong (for example, Docker unreachable).
+ * INSTALL_FAILED if anything goes wrong (for example, Docker unreachable
+ * or the chosen loader / version combination is not supported).
  */
 export async function provisionServer(
   server: ServerRecord,
@@ -35,6 +36,7 @@ export async function provisionServer(
       serverId: server.id,
       image: template.dockerImage,
       kind: template.kind,
+      loader: server.loader,
       version: server.minecraftVersion,
       memoryMb: server.memoryMb,
       cpuLimit: server.cpuLimit,

@@ -1,7 +1,14 @@
-import { useState, type FormEvent } from 'react';
+import { useMemo, useState, type FormEvent } from 'react';
 import Field from './Field';
-import { api, type ApiTemplate } from '../lib/api';
-import { useTranslation } from '../lib/i18n';
+import {
+  api,
+  BEDROCK_MC_VERSIONS,
+  JAVA_LOADERS,
+  JAVA_MC_VERSIONS,
+  type ApiTemplate,
+  type ServerLoader,
+} from '../lib/api';
+import { useTranslation, type TranslationKey } from '../lib/i18n';
 
 // Memory amounts (in MB) offered when creating a server.
 const MEMORY_OPTIONS = [1024, 2048, 4096, 8192];
@@ -18,7 +25,14 @@ interface CreateServerDialogProps {
   onCreated: () => void;
 }
 
-/** Modal dialog for creating a new game server. */
+/**
+ * Modal dialog for creating a new game server. The flow:
+ *   1. Name
+ *   2. Game (template) → drives whether the Loader picker appears
+ *   3. Loader (Java only): Vanilla / Paper / Fabric / Forge
+ *   4. Minecraft version (dropdown, list varies by game)
+ *   5. Memory & CPU
+ */
 export default function CreateServerDialog({
   templates,
   onClose,
@@ -27,11 +41,28 @@ export default function CreateServerDialog({
   const { t } = useTranslation();
   const [name, setName] = useState('');
   const [templateId, setTemplateId] = useState(templates[0]?.id ?? '');
+  const [loader, setLoader] = useState<ServerLoader>('vanilla');
   const [version, setVersion] = useState('LATEST');
   const [memoryMb, setMemoryMb] = useState(2048);
   const [cpuLimit, setCpuLimit] = useState(2);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // Re-derive the per-template options whenever the user changes the
+  // game. Bedrock has no loader concept and a much shorter version list.
+  const selectedTemplate = useMemo(
+    () => templates.find((tpl) => tpl.id === templateId) ?? null,
+    [templates, templateId],
+  );
+  const isJava = selectedTemplate?.kind === 'java';
+  const versionOptions = isJava ? JAVA_MC_VERSIONS : BEDROCK_MC_VERSIONS;
+
+  // If the chosen version is not in the new game's list (e.g. user
+  // picked Bedrock after picking a Java-only version), snap back to the
+  // first valid option to avoid sending nonsense to the backend.
+  if (!versionOptions.includes(version)) {
+    setVersion(versionOptions[0]);
+  }
 
   async function handleSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
@@ -42,6 +73,10 @@ export default function CreateServerDialog({
         name,
         templateId,
         minecraftVersion: version,
+        // The backend ignores the loader on Bedrock, but we send it
+        // explicitly when the game is Java to keep the wire payload
+        // predictable.
+        loader: isJava ? loader : 'vanilla',
         memoryMb,
         cpuLimit,
       });
@@ -95,18 +130,52 @@ export default function CreateServerDialog({
             </select>
           </div>
 
+          {/* Loader is Java-only — Bedrock has no fork ecosystem. */}
+          {isJava && (
+            <div>
+              <label
+                htmlFor="srv-loader"
+                className="mb-1 block text-xs font-medium text-peregrine-400"
+              >
+                {t('create.loaderLabel')}
+              </label>
+              <select
+                id="srv-loader"
+                value={loader}
+                onChange={(e) => setLoader(e.target.value as ServerLoader)}
+                className={SELECT_CLASS}
+              >
+                {JAVA_LOADERS.map((l) => (
+                  <option key={l} value={l}>
+                    {t((`loader.${l}` as TranslationKey))}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-peregrine-600">
+                {t('create.loaderHint')}
+              </p>
+            </div>
+          )}
+
           <div>
-            <Field
+            <label
+              htmlFor="srv-version"
+              className="mb-1 block text-xs font-medium text-peregrine-400"
+            >
+              {t('create.versionLabel')}
+            </label>
+            <select
               id="srv-version"
-              label={t('create.versionLabel')}
-              type="text"
-              maxLength={32}
               value={version}
               onChange={(e) => setVersion(e.target.value)}
-            />
-            <p className="mt-1 text-xs text-peregrine-600">
-              {t('create.versionHint')}
-            </p>
+              className={SELECT_CLASS}
+            >
+              {versionOptions.map((v) => (
+                <option key={v} value={v}>
+                  {v}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

@@ -243,6 +243,15 @@ const translations = {
     en: 'The server could not be created.',
     fr: "Le serveur n'a pas pu être créé.",
   },
+  'create.loaderLabel': { en: 'Loader', fr: 'Loader' },
+  'create.loaderHint': {
+    en: 'Vanilla = pure Minecraft. Paper is a high-performance fork. Fabric and Forge let you install mods.',
+    fr: 'Vanilla = Minecraft pur. Paper est un fork plus performant. Fabric et Forge permettent d’installer des mods.',
+  },
+  'loader.vanilla': { en: 'Vanilla', fr: 'Vanilla' },
+  'loader.paper': { en: 'Paper', fr: 'Paper' },
+  'loader.fabric': { en: 'Fabric', fr: 'Fabric' },
+  'loader.forge': { en: 'Forge', fr: 'Forge' },
 
   'console.connecting': { en: 'Connecting...', fr: 'Connexion...' },
   'console.connected': { en: 'Connected', fr: 'Connecté' },
@@ -548,7 +557,6 @@ const translations = {
   'schedules.day.5': { en: 'Friday', fr: 'vendredi' },
   'schedules.day.6': { en: 'Saturday', fr: 'samedi' },
 
-  // --- Account page + MFA ---
   'account.title': { en: 'My account', fr: 'Mon compte' },
   'account.back': { en: 'Back to servers', fr: 'Retour aux serveurs' },
   'account.profile.title': { en: 'Profile', fr: 'Profil' },

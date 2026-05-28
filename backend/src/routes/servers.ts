@@ -6,8 +6,10 @@ import {
   createServer,
   deleteServer,
   getServer,
+  isLoader,
   listServersVisibleTo,
   renameServer,
+  type ServerLoader,
   type ServerRecord,
 } from '../lib/servers';
 import { findUserById } from '../lib/users';
@@ -34,6 +36,8 @@ interface CreateServerBody {
   name: string;
   templateId: string;
   minecraftVersion?: string;
+  /** Optional — server flavour for Java (vanilla / paper / fabric / forge). */
+  loader?: string;
   memoryMb: number;
   cpuLimit: number;
 }
@@ -42,11 +46,6 @@ interface RenameServerBody {
   name: string;
 }
 
-/**
- * Computes the status to show the user. While a server is still being
- * installed we trust the database; once installed, we ask Docker for the
- * real container state (running or not).
- */
 async function effectiveStatus(server: ServerRecord): Promise<string> {
   if (server.status === 'INSTALLING' || server.status === 'INSTALL_FAILED') {
     return server.status;
@@ -60,8 +59,8 @@ async function effectiveStatus(server: ServerRecord): Promise<string> {
 
 /**
  * Shapes a server for the API response, from the perspective of a given
- * viewer. Includes the owner's username plus `isOwner`, so the dashboard
- * can tag servers shared with the viewer.
+ * viewer. Includes the owner's username plus `isOwner` and the loader
+ * so the dashboard can tag rows correctly.
  */
 async function publicServer(server: ServerRecord, viewerId: string) {
   const owner = findUserById(server.ownerId);
@@ -71,6 +70,7 @@ async function publicServer(server: ServerRecord, viewerId: string) {
     status: await effectiveStatus(server),
     templateId: server.templateId,
     minecraftVersion: server.minecraftVersion,
+    loader: server.loader,
     memoryMb: server.memoryMb,
     cpuLimit: server.cpuLimit,
     port: server.port,
@@ -80,10 +80,6 @@ async function publicServer(server: ServerRecord, viewerId: string) {
   };
 }
 
-/**
- * Game server routes (mounted under /api). Every route here requires a
- * logged-in user.
- */
 export async function serverRoutes(app: FastifyInstance): Promise<void> {
   app.addHook('preHandler', authenticate);
 
@@ -99,8 +95,6 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
     return { servers: result };
   });
 
-  // Single-server endpoint — also returns `myPermissions` so the UI
-  // knows which buttons to hide.
   app.get('/servers/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
     const server = accessibleServer(request, id);
@@ -131,6 +125,10 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
             name: { type: 'string', minLength: 1, maxLength: 48 },
             templateId: { type: 'string', minLength: 1 },
             minecraftVersion: { type: 'string', maxLength: 32 },
+            loader: {
+              type: 'string',
+              enum: ['vanilla', 'paper', 'fabric', 'forge'],
+            },
             memoryMb: { type: 'integer', minimum: 512, maximum: 16384 },
             cpuLimit: { type: 'number', minimum: 0.5, maximum: 16 },
           },
@@ -167,12 +165,20 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
           .send({ error: 'No free port available on this machine.' });
       }
 
+      // Loader normalisation: Bedrock is always vanilla (no loader concept
+      // exists for it), Java defaults to vanilla if none was specified.
+      let loader: ServerLoader = 'vanilla';
+      if (template.kind === 'java' && body.loader && isLoader(body.loader)) {
+        loader = body.loader;
+      }
+
       const server = createServer({
         ownerId: request.user.sub,
         templateId: template.id,
         name: body.name,
         minecraftVersion:
           body.minecraftVersion?.trim() || template.defaultVersion,
+        loader,
         memoryMb: body.memoryMb,
         cpuLimit: body.cpuLimit,
         port,
