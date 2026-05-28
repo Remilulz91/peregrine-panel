@@ -391,6 +391,14 @@ export const api = {
       { method: 'POST', body: form },
     );
   },
+
+  sftpConfig: () =>
+    request<{
+      enabled: boolean;
+      port: number;
+      username: string;
+      mfaEnabled: boolean;
+    }>('/api/sftp'),
 };
 
 export const PERM = {

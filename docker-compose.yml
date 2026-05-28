@@ -8,6 +8,10 @@ services:
     restart: unless-stopped
     ports:
       - "${PEREGRINE_BIND:-127.0.0.1}:${HOST_PORT:-3000}:3000"
+      # SFTP — exposed on every interface so users can connect from
+      # outside the host. Change the binding via PEREGRINE_SFTP_BIND
+      # (e.g. set it to 127.0.0.1 to keep SFTP local-only).
+      - "${PEREGRINE_SFTP_BIND:-0.0.0.0}:${SFTP_PORT:-2022}:2022"
     env_file:
       - .env
     environment:

@@ -319,6 +319,33 @@ const translations = {
   'network.copy': { en: 'Copy', fr: 'Copier' },
   'network.copied': { en: 'Copied!', fr: 'Copié !' },
 
+  'sftp.title': { en: 'SFTP access', fr: 'Accès SFTP' },
+  'sftp.subtitle': {
+    en: 'Connect with any SFTP client to browse, upload and edit this server’s files directly from your computer.',
+    fr: 'Connectez-vous avec n’importe quel client SFTP pour parcourir, importer et modifier les fichiers de ce serveur depuis votre ordinateur.',
+  },
+  'sftp.host': { en: 'Host', fr: 'Hôte' },
+  'sftp.port': { en: 'Port', fr: 'Port' },
+  'sftp.username': { en: 'Username', fr: 'Nom d’utilisateur' },
+  'sftp.password': { en: 'Password', fr: 'Mot de passe' },
+  'sftp.passwordValue': {
+    en: 'Your panel password',
+    fr: 'Votre mot de passe du panneau',
+  },
+  'sftp.launch': { en: 'Open in SFTP client', fr: 'Ouvrir dans le client SFTP' },
+  'sftp.disabled': {
+    en: 'The administrator has disabled SFTP access on this panel.',
+    fr: 'L’administrateur a désactivé l’accès SFTP sur ce panneau.',
+  },
+  'sftp.mfaWarning': {
+    en: 'Heads up: SFTP only checks your password, even though you have two-factor authentication enabled. Use a strong, unique password.',
+    fr: 'Attention : le SFTP ne vérifie que votre mot de passe, même si la double authentification est activée sur votre compte. Utilisez un mot de passe fort et unique.',
+  },
+  'sftp.hint': {
+    en: 'The username encodes which server you are connecting to.',
+    fr: 'Le nom d’utilisateur encode le serveur auquel vous vous connectez.',
+  },
+
   'settings.title': { en: 'Server settings', fr: 'Paramètres du serveur' },
   'settings.renameTitle': { en: 'Rename', fr: 'Renommer' },
   'settings.renameLabel': { en: 'Server name', fr: 'Nom du serveur' },
@@ -611,59 +638,64 @@ const translations = {
   'account.mfa.disable.confirm': { en: 'Disable', fr: 'Désactiver' },
 } as const;
 
+
 export type TranslationKey = keyof typeof translations;
 
-const STORAGE_KEY = 'peregrine.language';
+const STORAGE_KEY = 'peregrine.lang';
 
 function detectInitialLanguage(): Language {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved === 'en' || saved === 'fr') {
-    return saved;
-  }
-  return navigator.language.toLowerCase().startsWith('fr') ? 'fr' : 'en';
+  if (typeof window === 'undefined') return 'en';
+  const stored = window.localStorage.getItem(STORAGE_KEY);
+  if (stored === 'en' || stored === 'fr') return stored;
+  const nav = window.navigator.language.toLowerCase();
+  return nav.startsWith('fr') ? 'fr' : 'en';
 }
 
-interface LanguageContextValue {
+interface I18nContextValue {
   language: Language;
-  setLanguage: (language: Language) => void;
+  setLanguage: (lang: Language) => void;
   t: (key: TranslationKey) => string;
 }
 
-const LanguageContext = createContext<LanguageContextValue | null>(null);
+const I18nContext = createContext<I18nContextValue | null>(null);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>(detectInitialLanguage);
 
   useEffect(() => {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, language);
+    } catch {
+      // ignore
+    }
     document.documentElement.lang = language;
   }, [language]);
 
-  const setLanguage = useCallback((next: Language) => {
-    setLanguageState(next);
-    localStorage.setItem(STORAGE_KEY, next);
+  const setLanguage = useCallback((lang: Language) => {
+    setLanguageState(lang);
   }, []);
 
   const t = useCallback(
-    (key: TranslationKey) => translations[key][language],
+    (key: TranslationKey): string => {
+      const entry = translations[key];
+      if (!entry) return key;
+      return entry[language] ?? entry.en ?? key;
+    },
     [language],
   );
 
-  const value = useMemo(
+  const value = useMemo<I18nContextValue>(
     () => ({ language, setLanguage, t }),
     [language, setLanguage, t],
   );
 
-  return (
-    <LanguageContext.Provider value={value}>
-      {children}
-    </LanguageContext.Provider>
-  );
+  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
 
-export function useTranslation(): LanguageContextValue {
-  const context = useContext(LanguageContext);
-  if (!context) {
-    throw new Error('useTranslation must be used within a LanguageProvider.');
+export function useTranslation(): I18nContextValue {
+  const ctx = useContext(I18nContext);
+  if (!ctx) {
+    throw new Error('useTranslation must be used inside a LanguageProvider');
   }
-  return context;
+  return ctx;
 }

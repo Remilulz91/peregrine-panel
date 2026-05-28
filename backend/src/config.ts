@@ -49,13 +49,21 @@ export const config = {
    */
   serversPath,
 
-  /**
-   * Host directory that holds every server's .tar.gz backups, grouped in
-   * per-server sub-folders. Defaults to a sibling of SERVERS_PATH so a
-   * single dedicated disk holds both live data and backups.
-   */
+  /** Host directory that holds backup archives. */
   backupsPath:
     process.env.BACKUPS_PATH ?? path.resolve(serversPath, '../backups'),
+
+  /** Port the built-in SFTP server listens on (0 disables it). */
+  sftpPort: readNumber('SFTP_PORT', 2022),
+
+  /**
+   * Where Peregrine persists the SSH host key for its SFTP server. The
+   * file is generated on first launch and reused thereafter so SFTP
+   * clients don't see "host key changed" warnings across restarts.
+   */
+  sftpHostKeyPath:
+    process.env.SFTP_HOST_KEY_PATH ??
+    path.resolve(__dirname, '../../data/sftp_host_key'),
 
   /** True when running the production build. */
   get isProduction(): boolean {

@@ -7,8 +7,9 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.8.0** — easier server creation: loader picker (Vanilla,
-> Paper, Fabric, Forge) and curated Minecraft version dropdown. See the
+> **Version 0.9.0** — built-in SFTP server: connect with any SFTP
+> client (FileZilla, WinSCP, Cyberduck...) using your panel password
+> to browse, upload and edit your servers' files directly. See the
 > changelog in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features
@@ -24,7 +25,8 @@ and Pelican.
 - **Per-server detail page** with tabs:
   - **Console** — live output and command input (Java servers)
   - **Files** — browse, edit, upload, delete
-  - **Network** — host, port, protocol, connection string
+  - **Network** — host, port, protocol, connection string +
+    **SFTP credentials** (host, port, username, copy-paste-ready)
   - **Backups** — manual snapshots stored on the dedicated disk
   - **Schedules** — recurring backups (hourly / daily / weekly)
   - **Users** — grant a fellow account access with a granular
@@ -110,6 +112,7 @@ Database migrations apply automatically on first launch.
 - [x] **Phase 12** — Scheduled tasks (`v0.6.0`)
 - [x] **Phase 13** — Two-factor authentication (`v0.7.0`)
 - [x] **Phase 14** — Loader picker & version dropdown (`v0.8.0`)
+- [x] **Phase 15** — Built-in SFTP server (`v0.9.0`)
 
 Ideas for later: multi-machine support, more games (Terraria, Valheim,
 Palworld), more schedule actions (restart on a schedule, send a console

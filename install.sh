@@ -99,6 +99,8 @@ ufw --force default allow outgoing
 ufw allow OpenSSH
 ufw allow 80/tcp
 ufw allow 443/tcp
+# Peregrine's built-in SFTP server. Adjust if you change SFTP_PORT in .env.
+ufw allow 2022/tcp
 ufw --force enable
 
 # --- fail2ban --------------------------------------------------------------

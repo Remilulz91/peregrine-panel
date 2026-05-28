@@ -15,16 +15,19 @@ import { adminRoutes } from './routes/admin';
 import { backupRoutes } from './routes/backups';
 import { subuserRoutes } from './routes/subusers';
 import { scheduleRoutes } from './routes/schedules';
+import { sftpRoutes } from './routes/sftp';
 import { AUTH_COOKIE } from './plugins/auth';
 import { setupConsole } from './realtime/console';
 import { startScheduleWorker } from './services/scheduleWorker';
+import { startSftpServer } from './services/sftpServer';
 
 /**
  * Builds and configures the Peregrine HTTP server.
  *
  * Beyond authentication, Docker management, the live console, the file
  * manager, backups and subuser ACLs, the server now runs a background
- * worker that fires recurring tasks (currently: scheduled backups).
+ * worker that fires recurring tasks (currently: scheduled backups) and
+ * an in-process SFTP server for direct file access.
  */
 export async function buildServer() {
   const app = Fastify({
@@ -52,6 +55,7 @@ export async function buildServer() {
   await app.register(backupRoutes, { prefix: '/api' });
   await app.register(subuserRoutes, { prefix: '/api' });
   await app.register(scheduleRoutes, { prefix: '/api' });
+  await app.register(sftpRoutes, { prefix: '/api' });
 
   setupConsole(app, app.server);
 
@@ -84,6 +88,17 @@ async function start(): Promise<void> {
   // The schedule worker runs alongside the HTTP server. It's started
   // unconditionally because it does nothing until a schedule is due.
   startScheduleWorker();
+  // The SFTP server runs in-process on its own TCP port. SFTP_PORT=0
+  // disables it (handy for development environments where the port is
+  // already taken).
+  if (config.sftpPort > 0) {
+    try {
+      startSftpServer();
+      app.log.info(`Peregrine SFTP server listening on port ${config.sftpPort}`);
+    } catch (err) {
+      app.log.error({ err }, 'Failed to start the SFTP server');
+    }
+  }
   try {
     await app.listen({ port: config.port, host: config.host });
     app.log.info(`Peregrine started - ${config.appUrl}`);

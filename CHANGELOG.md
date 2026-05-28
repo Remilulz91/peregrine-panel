@@ -2,6 +2,52 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.9.0 — 2026-05-28
+
+SFTP access. Peregrine now runs a built-in SFTP server on its own
+port (`2022` by default), letting every user connect with their
+favourite SFTP client (FileZilla, WinSCP, Cyberduck, lftp...) to
+browse, upload, edit and delete the files of any server they have
+access to — just like Pterodactyl.
+
+### Added
+
+- **Built-in SFTP server** running in-process alongside the HTTP
+  panel. Listens on `0.0.0.0:2022` by default; the port is
+  configurable via `SFTP_PORT` (set to `0` to disable).
+- **Per-server credentials** — the SFTP username is
+  `<panel-username>.<server-id>` and the password is the user's
+  regular panel password (Argon2-verified).
+- **Granular permission gates** — file writes require the
+  `files.write` permission, deletions require `files.delete`. Subusers
+  who lack those permissions get read-only access, exactly like in the
+  web UI.
+- **Chroot per session** — each connection is locked inside the
+  matching server's data directory. Path traversal attempts (`../`)
+  are rejected at every operation.
+- **Activity log entry** (`sftp.connect`) recorded every time a
+  session is accepted.
+- **Network tab section** showing the host, port, SFTP username and
+  password hint, with copy buttons and an `Open in SFTP client`
+  launch link (`sftp://...`).
+
+### Changed
+
+- The Docker host key is generated automatically on first boot
+  (RSA-2048) and persisted to `${SFTP_HOST_KEY_PATH}` (default:
+  `data/sftp_host_key`) so SFTP clients don't see "host key changed"
+  warnings across restarts.
+- `docker-compose.yml` exposes port 2022 (configurable via
+  `PEREGRINE_SFTP_BIND` + `SFTP_PORT`).
+- `install.sh` opens 2022/tcp in UFW.
+
+### Security note
+
+SSH/SFTP has no native concept of a second factor, so accounts with
+MFA enabled can still log in to SFTP with just their panel password
+(same trade-off as Pterodactyl). The Network tab shows a clear
+warning for those users — pick a strong, unique password.
+
 ## v0.8.0 — 2026-05-28
 
 Easier Minecraft server creation: pick the loader and the version from
