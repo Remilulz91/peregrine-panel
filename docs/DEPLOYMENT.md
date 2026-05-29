@@ -32,16 +32,21 @@ HTTPS certificate, so do it first.
 ## 2. Prepare the system
 
 ```bash
-apt update && apt upgrade -y
-apt install -y curl git ca-certificates
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y curl git ca-certificates
 ```
 
 ## 3. Install Docker
 
 ```bash
-curl -fsSL https://get.docker.com | sh
+sudo apt-get install apt-transport-https ca-certificates curl gnupg2
+sudo curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+sudo echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list
+sudo apt-get update
+sudo apt-get install docker-ce docker-ce-cli containerd.io
+sudo systemctl enable docker
+sudo systemctl status docker
 docker --version
-docker compose version
 ```
 
 ## 4. (Optional) Dedicated disk for game server data
@@ -67,8 +72,9 @@ Format the disk, mount it, and make the mount permanent across reboots:
 ```bash
 mkfs.ext4 /dev/sdb
 mkdir -p /srv/peregrine
-UUID=$(blkid -s UUID -o value /dev/sdb)
-echo "UUID=$UUID  /srv/peregrine  ext4  defaults,nofail  0 2" >> /etc/fstab
+sudo blkid | grep sdb
+sudo nano /etc/fstab
+          UUID=<your UUID>  /srv/peregrine  ext4  defaults,nofail  0 2
 mount -a
 df -h /srv/peregrine
 ```
