@@ -2,6 +2,19 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.10.1 — 2026-05-29
+
+### Fixed
+
+- **Live console no longer stays blank** when the user opens the
+  Console tab while the server is stopped and then clicks Start.
+  Console.tsx now (re-)subscribes to the logs stream every time
+  `server.status` changes, instead of only once on mount. The root
+  cause was Docker's `logs --follow` ending immediately on a stopped
+  container, leaving the original stream dead by the time the
+  container actually started. Switching tabs and coming back used to
+  be the workaround; that is no longer necessary.
+
 ## v0.10.0 — 2026-05-29
 
 Editable server resources and a more reliable server creation. RAM

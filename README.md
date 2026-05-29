@@ -7,10 +7,9 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.10.0** — editable RAM/CPU per server (with host-side
-> safety margin) and a much more reliable server creation flow
-> (image pull retried on transient failures, real error reasons in
-> the logs). See the changelog in [`CHANGELOG.md`](CHANGELOG.md).
+> **Version 0.10.1** — patch release: the live console no longer
+> needs a tab switch to start showing output when the server boots.
+> See the changelog in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features
 

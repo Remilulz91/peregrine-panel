@@ -17,6 +17,16 @@ interface ConsolePageProps {
  * Live console for one server. The command input is hidden when:
  *   - the template does not support commands (Bedrock), OR
  *   - the viewer does not hold the `console.send` permission.
+ *
+ * Two effects are deliberately kept separate:
+ *   1. socket lifecycle (open on mount, close on unmount)
+ *   2. (re-)subscribe to the server's logs every time `server.status`
+ *      changes — this fixes the long-standing bug where the live
+ *      output stayed blank when the user opened Console while the
+ *      server was stopped and then clicked Start: Docker's
+ *      `logs --follow` on a stopped container returns and ends right
+ *      away, so the original stream was already dead by the time the
+ *      container actually booted.
  */
 export default function ConsolePage({
   server,
@@ -32,14 +42,12 @@ export default function ConsolePage({
 
   const canSend = commandsEnabled && hasPermission(myPermissions, PERM.CONSOLE_SEND);
 
+  // --- 1. Socket lifecycle ------------------------------------------------
   useEffect(() => {
     const socket = io();
     socketRef.current = socket;
 
-    socket.on('connect', () => {
-      setConnected(true);
-      socket.emit('console:subscribe', server.id);
-    });
+    socket.on('connect', () => setConnected(true));
     socket.on('disconnect', () => setConnected(false));
     socket.on('console:output', (text: string) => {
       setOutput((prev) => (prev + text).slice(-MAX_OUTPUT_CHARS));
@@ -51,9 +59,30 @@ export default function ConsolePage({
 
     return () => {
       socket.disconnect();
+      socketRef.current = null;
     };
-  }, [server.id, t]);
+    // No `t` here: re-mounting the socket on language change would lose
+    // the running output. Translations are read fresh inside the handlers.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
+  // --- 2. (Re-)subscribe to this server's logs ----------------------------
+  //
+  // We subscribe whenever:
+  //   - the socket becomes connected, OR
+  //   - server.id changes (different server picked), OR
+  //   - server.status changes (e.g. user just started the server).
+  //
+  // The backend's `console:subscribe` handler is idempotent: it detaches
+  // any previous attachment for the same socket before opening a new
+  // logs stream, so re-emitting is safe.
+  useEffect(() => {
+    const socket = socketRef.current;
+    if (!socket || !connected) return;
+    socket.emit('console:subscribe', server.id);
+  }, [connected, server.id, server.status]);
+
+  // Autoscroll on new output.
   useEffect(() => {
     const el = outputRef.current;
     if (el) {
