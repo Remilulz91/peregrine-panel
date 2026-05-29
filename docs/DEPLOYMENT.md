@@ -97,12 +97,11 @@ echo 1 > /sys/block/sdb/device/rescan
 
 ## 5. Install Peregrine
 
-The repository is private, so cloning it requires a GitHub personal access
-token (GitHub: Settings -> Developer settings -> Personal access tokens).
+The repository is public, so a regular `git clone` is enough:
 
 ```bash
 cd /opt
-git clone https://github.com/Remilulz_91/peregrine-panel.git
+git clone https://github.com/Remilulz91/peregrine-panel.git
 cd /opt/peregrine-panel
 cp .env.example .env
 ```

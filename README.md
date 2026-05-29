@@ -64,7 +64,7 @@ and Pelican.
 Requirements: a Linux machine with Docker and Docker Compose installed.
 
 ```bash
-git clone <repository-url> peregrine-panel
+git clone https://github.com/Remilulz91/peregrine-panel.git
 cd peregrine-panel
 cp .env.example .env
 # Edit .env (at minimum, change JWT_SECRET)

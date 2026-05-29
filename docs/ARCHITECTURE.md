@@ -328,9 +328,10 @@ is recommended.
 
 Also worth knowing: on a **public** GitHub repository, anyone can view and
 "fork" the code — GitHub's terms allow it regardless of the license. It is the
-license that makes redistribution **illegal**, not a technical lock. For real
-access control, a **private** repository with invitations for testers is
-required.
+license that makes redistribution **illegal**, not a technical lock. Peregrine
+is published as a public repository so that anyone can read the code, report
+bugs, and propose fixes; reselling or repackaging it remains forbidden by the
+license.
 
 ### The repository
 
@@ -358,7 +359,7 @@ required.
 | Deployment | Docker Compose |
 | Games | Minecraft Java + Minecraft Bedrock |
 | License | Custom source-available — "free use, reselling forbidden" |
-| Repository visibility | Private at first, while the MVP is stabilized |
+| Repository visibility | Public on GitHub (source-available license) |
 | UI languages | Bilingual: English / French |
 | First admin account | Created on first launch via a browser-based setup wizard |
 | Visual theme | Dark slate, amber accent (peregrine falcon inspired) |
