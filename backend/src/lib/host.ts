@@ -1,4 +1,5 @@
 import os from 'node:os';
+import { config } from '../config';
 import { listAllServers } from './servers';
 
 /**
@@ -28,10 +29,13 @@ export interface HostResources {
 /**
  * Safety margin kept untouched on the host so the panel itself,
  * Docker, and the OS always have room to breathe. Mirrors the disk
- * reserve concept in lib/disk.ts.
+ * reserve concept in lib/disk.ts. Configurable via the
+ * RESERVED_MEM_MB and RESERVED_CPUS env vars — lower the defaults on
+ * small VPS where the 1 GiB / 1 core reserve eats too much of the
+ * host.
  */
-const RESERVED_MEM_MB = 1024;
-const RESERVED_CPUS = 1;
+const RESERVED_MEM_MB = config.reservedMemMb;
+const RESERVED_CPUS = config.reservedCpus;
 
 /** Returns the host's CPU/RAM and how much is left to allocate. */
 export function getHostResources(): HostResources {

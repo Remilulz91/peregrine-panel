@@ -53,6 +53,20 @@ export const config = {
   backupsPath:
     process.env.BACKUPS_PATH ?? path.resolve(serversPath, '../backups'),
 
+  /**
+   * RAM (in MiB) kept untouched on the host as a safety margin for the
+   * OS, Docker and Peregrine itself. The create / resize endpoints
+   * refuse any allocation that would push usage past `total - reserved`.
+   * Default: 1024 MiB. Lower it on small VPS.
+   */
+  reservedMemMb: readNumber('RESERVED_MEM_MB', 1024),
+
+  /**
+   * CPU cores (can be fractional, e.g. 0.5) kept untouched on the host
+   * as a safety margin. Default: 1 core. Lower it on small VPS.
+   */
+  reservedCpus: readNumber('RESERVED_CPUS', 1),
+
   /** Port the built-in SFTP server listens on (0 disables it). */
   sftpPort: readNumber('SFTP_PORT', 2022),
 

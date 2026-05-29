@@ -243,6 +243,10 @@ const translations = {
     en: 'The server could not be created.',
     fr: "Le serveur n'a pas pu être créé.",
   },
+  'create.errorNotEnoughHost': {
+    en: 'Not enough free RAM or CPU on the host machine. Available: {memMb} MiB RAM, {cpuCount} cores. Lower the requested values, or adjust RESERVED_MEM_MB / RESERVED_CPUS in .env.',
+    fr: "Pas assez de RAM ou de CPU disponibles sur la machine hôte. Disponible : {memMb} Mio de RAM, {cpuCount} cœurs. Baissez les valeurs demandées, ou ajustez RESERVED_MEM_MB / RESERVED_CPUS dans .env.",
+  },
   'create.loaderLabel': { en: 'Loader', fr: 'Loader' },
   'create.loaderHint': {
     en: 'Vanilla = pure Minecraft. Paper is a high-performance fork. Fabric and Forge let you install mods.',

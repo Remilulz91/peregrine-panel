@@ -2,6 +2,31 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.10.2 — 2026-05-29
+
+### Added
+
+- **Configurable host safety margin** via two new env vars:
+  `RESERVED_MEM_MB` (default 1024) and `RESERVED_CPUS` (default 1).
+  Lower the defaults on small VPS where the 1 GiB / 1 core reserve
+  ate too much of the available host. Example for a 2 vCPU / 2 GiB
+  host:
+  ```
+  RESERVED_MEM_MB=512
+  RESERVED_CPUS=0.5
+  ```
+- **Specific error message in the create-server dialog** when the
+  refusal comes from the host-resources preflight (HTTP 507): the
+  user now sees the exact RAM and CPU still allocatable, plus a hint
+  about the new env vars, instead of the generic "Le serveur n'a pas
+  pu être créé."
+
+### Fixed
+
+- Frontend now reads the structured error payload Peregrine attaches
+  to 507 responses, instead of swallowing the error and showing a
+  generic one.
+
 ## v0.10.1 — 2026-05-29
 
 ### Fixed

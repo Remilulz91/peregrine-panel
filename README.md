@@ -7,8 +7,9 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.10.1** — patch release: the live console no longer
-> needs a tab switch to start showing output when the server boots.
+> **Version 0.10.2** — patch release: configurable host safety
+> margin (`RESERVED_MEM_MB`, `RESERVED_CPUS`) and a specific error
+> message when the create-server preflight refuses an allocation.
 > See the changelog in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features

@@ -2,9 +2,11 @@ import { useMemo, useState, type FormEvent } from 'react';
 import Field from './Field';
 import {
   api,
+  ApiError,
   BEDROCK_MC_VERSIONS,
   JAVA_LOADERS,
   JAVA_MC_VERSIONS,
+  type ApiHostResources,
   type ApiTemplate,
   type ServerLoader,
 } from '../lib/api';
@@ -81,8 +83,26 @@ export default function CreateServerDialog({
         cpuLimit,
       });
       onCreated();
-    } catch {
-      setError(t('create.error'));
+    } catch (err) {
+      // The backend attaches the host snapshot on HTTP 507 from the
+      // host-resources preflight; surface the real numbers instead of
+      // a generic "Could not create" message.
+      if (err instanceof ApiError && err.status === 507 && err.payload) {
+        const payload = err.payload as { resources?: ApiHostResources };
+        if (payload.resources) {
+          setError(
+            t('create.errorNotEnoughHost')
+              .replace('{memMb}', String(payload.resources.allocatableMemMb))
+              .replace('{cpuCount}', String(payload.resources.allocatableCpus)),
+          );
+        } else {
+          setError(err.message);
+        }
+      } else if (err instanceof ApiError && err.message) {
+        setError(err.message);
+      } else {
+        setError(t('create.error'));
+      }
       setBusy(false);
     }
   }
