@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import AdminPanel from '../components/AdminPanel';
 import FalconMark from '../components/FalconMark';
 import LanguageToggle from '../components/LanguageToggle';
+import UpdateBadge from '../components/UpdateBadge';
 import ServerCard from '../components/ServerCard';
 import CreateServerDialog from '../components/CreateServerDialog';
 import { api, type ApiServer, type ApiTemplate } from '../lib/api';
@@ -86,6 +87,7 @@ export default function Dashboard() {
             </button>
           </div>
         )}
+        <UpdateBadge />
         <LanguageToggle />
         {user && (
           /* Clicking the username opens the account / security page. */

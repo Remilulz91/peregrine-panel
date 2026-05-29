@@ -7,11 +7,10 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.10.3** — patch release: lowered default host safety
-> margin to a realistic minimum (`512 MiB + 0.5 core`) so small VPS
-> work out of the box, and added a 0.5-core option in the
-> create-server dialog. See the changelog in
-> [`CHANGELOG.md`](CHANGELOG.md).
+> **Version 0.11.0** — the panel now tells the admin when a newer
+> Peregrine release is available on GitHub, with a small badge in
+> the header that links straight to the release notes. See the
+> changelog in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features
 

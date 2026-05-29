@@ -119,6 +119,15 @@ const translations = {
   'dashboard.sharedBy': { en: 'shared by', fr: 'partagé par' },
   'dashboard.account': { en: 'My account', fr: 'Mon compte' },
 
+  'update.available': {
+    en: 'Update available: {version}',
+    fr: 'Mise à jour disponible : {version}',
+  },
+  'update.viewRelease': {
+    en: 'View release notes',
+    fr: 'Voir les notes de version',
+  },
+
   'admin.title': { en: 'Administration', fr: 'Administration' },
   'admin.subtitle': {
     en: 'Manage user accounts and inspect every server on the panel.',

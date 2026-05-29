@@ -2,6 +2,36 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.11.0 — 2026-05-29
+
+A small but useful quality-of-life feature: Peregrine now tells the
+admin when a newer version is available on GitHub.
+
+### Added
+
+- **Update-available badge** in the header (admin-only). The panel
+  checks the GitHub Releases API of the Peregrine repo once an hour
+  and, when a newer tag is found, shows a small amber pill labelled
+  *"Update available: vX.Y.Z"*. Clicking it opens the release notes
+  in a new tab so the admin can review what changed before running
+  `git pull && docker compose up -d --build`.
+- **`GET /api/updates`** endpoint exposing the cached snapshot
+  (`currentVersion`, `latestVersion`, `upToDate`, `releaseUrl`,
+  `publishedAt`).
+- **`backend/src/lib/version.ts`** centralises the running version so
+  `routes/health.ts` and the update checker can't drift.
+
+### Notes
+
+- The check is **fail-quiet**: if GitHub is unreachable or
+  rate-limited (60 req/h unauthenticated), the badge stays hidden
+  rather than showing an error.
+- The badge is **rendered only for admins**, since only admins can
+  apply the update. Regular users see nothing.
+- **No auto-update**: pulling and rebuilding stays a deliberate
+  admin action so a broken release can't take the panel down
+  silently.
+
 ## v0.10.3 — 2026-05-29
 
 ### Changed

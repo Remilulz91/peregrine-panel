@@ -138,6 +138,15 @@ export interface ApiHostResources {
   allocatableMemMb: number;
   allocatableCpus: number;
 }
+
+export interface ApiUpdateInfo {
+  currentVersion: string;
+  /** null when the GitHub check has not succeeded yet (no badge). */
+  latestVersion: string | null;
+  upToDate: boolean;
+  releaseUrl: string | null;
+  publishedAt: string | null;
+}
 export class ApiError extends Error {
   readonly status: number;
   readonly payload: unknown;
@@ -298,6 +307,7 @@ export const api = {
     }),
   hostResources: () =>
     request<{ resources: ApiHostResources }>('/api/host'),
+  updateInfo: () => request<ApiUpdateInfo>('/api/updates'),
   deleteServer: (id: string) =>
     request<{ ok: boolean }>(`/api/servers/${id}`, { method: 'DELETE' }),
   serverAction: (id: string, action: ServerAction) =>

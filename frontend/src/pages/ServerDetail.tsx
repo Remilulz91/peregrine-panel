@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import FalconMark from '../components/FalconMark';
 import LanguageToggle from '../components/LanguageToggle';
+import UpdateBadge from '../components/UpdateBadge';
 import {
   api,
   ApiError,
@@ -190,6 +191,7 @@ export default function ServerDetail({ id, tab }: ServerDetailProps) {
           PEREGRINE
         </span>
         <div className="flex-1" />
+        <UpdateBadge />
         <LanguageToggle />
         {user && (
           /* Clicking the username opens the account / security page. */
