@@ -174,6 +174,17 @@ export function renameServer(id: string, name: string): void {
   db.prepare('UPDATE servers SET name = ? WHERE id = ?').run(name, id);
 }
 
+/** Updates the RAM and CPU limits stored for a server. */
+export function updateServerResources(
+  id: string,
+  memoryMb: number,
+  cpuLimit: number,
+): void {
+  db.prepare(
+    'UPDATE servers SET memory_mb = ?, cpu_limit = ? WHERE id = ?',
+  ).run(memoryMb, cpuLimit, id);
+}
+
 /** Removes a server row from the database. */
 export function deleteServer(id: string): void {
   db.prepare('DELETE FROM servers WHERE id = ?').run(id);

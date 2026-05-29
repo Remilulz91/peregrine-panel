@@ -350,6 +350,33 @@ const translations = {
   'settings.renameTitle': { en: 'Rename', fr: 'Renommer' },
   'settings.renameLabel': { en: 'Server name', fr: 'Nom du serveur' },
   'settings.renameSave': { en: 'Save name', fr: 'Enregistrer' },
+
+  'settings.resourcesTitle': { en: 'Resources', fr: 'Ressources' },
+  'settings.resourcesSubtitle': {
+    en: 'Adjust how much RAM and CPU this server can use. The server must be stopped before changing these values.',
+    fr: 'Ajustez la RAM et le CPU que ce serveur peut utiliser. Le serveur doit être arrêté avant de modifier ces valeurs.',
+  },
+  'settings.resourcesMemLabel': { en: 'RAM (MiB)', fr: 'RAM (Mio)' },
+  'settings.resourcesCpuLabel': { en: 'CPU cores', fr: 'Cœurs CPU' },
+  'settings.resourcesSave': { en: 'Save resources', fr: 'Enregistrer' },
+  'settings.resourcesNeedStop': {
+    en: 'Stop the server before changing its resources.',
+    fr: 'Arrêtez le serveur avant de modifier ses ressources.',
+  },
+  'settings.resourcesSaved': { en: 'Saved.', fr: 'Enregistré.' },
+  'settings.resourcesHostUsage': {
+    en: 'Host usage: {usedMem} / {totalMem} MiB RAM · {usedCpu} / {totalCpu} cores',
+    fr: 'Utilisation hôte : {usedMem} / {totalMem} Mio RAM · {usedCpu} / {totalCpu} cœurs',
+  },
+  'settings.resourcesReserve': {
+    en: 'Peregrine keeps {reservedMem} MiB and {reservedCpu} core reserved for the OS, Docker and the panel itself.',
+    fr: 'Peregrine garde {reservedMem} Mio et {reservedCpu} cœur réservés à l’OS, à Docker et au panel.',
+  },
+  'settings.resourcesNotEnough': {
+    en: 'Not enough free RAM or CPU on the host machine. Available: {memMb} MiB, {cpuCount} cores.',
+    fr: 'Pas assez de RAM ou de CPU disponibles sur la machine hôte. Disponible : {memMb} Mio, {cpuCount} cœurs.',
+  },
+
   'settings.dangerZone': { en: 'Danger zone', fr: 'Zone dangereuse' },
   'settings.delete': { en: 'Delete this server', fr: 'Supprimer ce serveur' },
   'settings.deleteHint': {

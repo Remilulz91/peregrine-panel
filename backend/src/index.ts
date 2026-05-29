@@ -16,6 +16,7 @@ import { backupRoutes } from './routes/backups';
 import { subuserRoutes } from './routes/subusers';
 import { scheduleRoutes } from './routes/schedules';
 import { sftpRoutes } from './routes/sftp';
+import { hostRoutes } from './routes/host';
 import { AUTH_COOKIE } from './plugins/auth';
 import { setupConsole } from './realtime/console';
 import { startScheduleWorker } from './services/scheduleWorker';
@@ -56,6 +57,7 @@ export async function buildServer() {
   await app.register(subuserRoutes, { prefix: '/api' });
   await app.register(scheduleRoutes, { prefix: '/api' });
   await app.register(sftpRoutes, { prefix: '/api' });
+  await app.register(hostRoutes, { prefix: '/api' });
 
   setupConsole(app, app.server);
 

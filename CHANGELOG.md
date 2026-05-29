@@ -2,6 +2,50 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.10.0 — 2026-05-29
+
+Editable server resources and a more reliable server creation. RAM
+and CPU limits can now be changed on a stopped server straight from
+the Settings tab, with a host-side preflight that refuses any
+allocation that would push the machine past its safety margin.
+Server creation also became more robust: image pulls are retried on
+transient errors, and failures now leave a trail in the activity log
+and the panel logs instead of vanishing silently.
+
+### Added
+
+- **Editable Resources section** on the Settings tab — owner-only,
+  with inputs for RAM (MiB) and CPU cores plus a small host
+  "used / total" line. The Save button is disabled while the server
+  runs, with a clear message asking the user to stop it first.
+- **Host preflight** — when creating *or* resizing a server, the
+  backend refuses the allocation if it would push the machine past
+  the safety margin (1 GiB RAM + 1 CPU core kept for the OS,
+  Docker and the panel itself). Returns HTTP 507 with the host
+  resource snapshot so the UI can tell the user exactly what is
+  still free.
+- **`GET /api/host`** endpoint exposing the host's CPU/RAM totals,
+  what is already allocated to existing servers, and what is still
+  available.
+- **Activity log entry** `server.resize` recorded on every change.
+- **Activity log entry** `server.install_failed` recorded when a
+  provisioning attempt fails, with the actual reason saved as
+  details (`pull: …`, `create: …`, etc.).
+
+### Changed
+
+- **Image pulls are retried** up to 3 times with backoff (2 s, 4 s)
+  in `provisionServer`, which absorbs the vast majority of the
+  transient Docker Hub / network failures that used to leave a
+  server stuck in `INSTALL_FAILED` on the first try.
+- The provisioning error is no longer swallowed silently: the real
+  cause (`pull`, `create`, ...) is printed to the panel's logs.
+- `PATCH /api/servers/:id` now accepts `memoryMb` and `cpuLimit`
+  in addition to the existing `name`. Resize requires the server
+  to be **stopped** and is **owner-only**.
+- Docker's container update API is used to push the new limits to
+  the existing container — no need to recreate it.
+
 ## v0.9.0 — 2026-05-28
 
 SFTP access. Peregrine now runs a built-in SFTP server on its own

@@ -142,6 +142,40 @@ export async function removeContainer(containerId: string): Promise<void> {
   await docker.getContainer(containerId).remove({ force: true });
 }
 
+/**
+ * Applies new CPU / RAM limits to an existing container. Docker accepts
+ * resource updates on stopped containers without restart; the new
+ * limits take effect on the next start. If the container is gone (the
+ * user deleted it out-of-band), the call returns silently — the panel
+ * is the source of truth for the new limits anyway.
+ */
+export async function updateContainerResources(
+  containerId: string,
+  memoryMb: number,
+  cpuLimit: number,
+): Promise<void> {
+  try {
+    await docker.getContainer(containerId).update({
+      Memory: memoryMb * 1024 * 1024,
+      // Docker also enforces a sane swap when Memory is set; matching
+      // it avoids the "swap is greater than memory" warning some
+      // engines emit on update.
+      MemorySwap: memoryMb * 1024 * 1024,
+      NanoCpus: Math.round(cpuLimit * 1e9),
+    });
+  } catch (err) {
+    if (
+      typeof err === 'object' &&
+      err !== null &&
+      'statusCode' in err &&
+      (err as { statusCode: number }).statusCode === 404
+    ) {
+      return;
+    }
+    throw err;
+  }
+}
+
 /** Starts a container. Does nothing if it is already running. */
 export async function startContainer(containerId: string): Promise<void> {
   try {

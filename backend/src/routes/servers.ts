@@ -9,9 +9,14 @@ import {
   isLoader,
   listServersVisibleTo,
   renameServer,
+  updateServerResources,
   type ServerLoader,
   type ServerRecord,
 } from '../lib/servers';
+import {
+  assertEnoughHostResources,
+  HostResourcesError,
+} from '../lib/host';
 import { findUserById } from '../lib/users';
 import { effectivePermissions } from '../lib/subusers';
 import { PERMISSION } from '../lib/permissions';
@@ -25,6 +30,7 @@ import {
   restartContainer,
   startContainer,
   stopContainer,
+  updateContainerResources,
 } from '../lib/docker';
 import { deprovisionServer, provisionServer } from '../services/provisioning';
 import { listActivityForServer, logActivity } from '../lib/activity';
@@ -43,7 +49,9 @@ interface CreateServerBody {
 }
 
 interface RenameServerBody {
-  name: string;
+  name?: string;
+  memoryMb?: number;
+  cpuLimit?: number;
 }
 
 async function effectiveStatus(server: ServerRecord): Promise<string> {
@@ -156,6 +164,24 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
         throw err;
       }
 
+      // Refuse the create if RAM or CPU would push the host past its
+      // safety margin (1 GiB RAM + 1 core reserved for the OS / panel).
+      try {
+        assertEnoughHostResources({
+          memoryMb: body.memoryMb,
+          cpuLimit: body.cpuLimit,
+        });
+      } catch (err) {
+        if (err instanceof HostResourcesError) {
+          return reply.code(507).send({
+            error:
+              'Not enough free RAM or CPU on the host machine for this allocation.',
+            resources: err.resources,
+          });
+        }
+        throw err;
+      }
+
       let port: number;
       try {
         port = allocatePort();
@@ -204,10 +230,11 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
       schema: {
         body: {
           type: 'object',
-          required: ['name'],
           additionalProperties: false,
           properties: {
             name: { type: 'string', minLength: 1, maxLength: 48 },
+            memoryMb: { type: 'integer', minimum: 512, maximum: 65536 },
+            cpuLimit: { type: 'number', minimum: 0.5, maximum: 64 },
           },
         },
       },
@@ -218,13 +245,35 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
       if (!server) {
         return reply.code(404).send({ error: 'Server not found.' });
       }
-      if (!requirePermission(request, reply, server, PERMISSION.SETTINGS_RENAME)) return;
-      const { name } = request.body as RenameServerBody;
-      const newName = name.trim();
-      if (newName.length === 0) {
-        return reply.code(400).send({ error: 'Name cannot be empty.' });
+      const body = request.body as RenameServerBody;
+      const wantsRename =
+        typeof body.name === 'string' && body.name.trim() !== server.name;
+      const wantsResize =
+        typeof body.memoryMb === 'number' || typeof body.cpuLimit === 'number';
+
+      if (!wantsRename && !wantsResize) {
+        // Nothing to change — return current state, no permission check.
+        const current = getServer(server.id);
+        return {
+          server: current && (await publicServer(current, request.user.sub)),
+        };
       }
-      if (newName !== server.name) {
+
+      if (wantsRename) {
+        if (
+          !requirePermission(
+            request,
+            reply,
+            server,
+            PERMISSION.SETTINGS_RENAME,
+          )
+        ) {
+          return;
+        }
+        const newName = (body.name ?? '').trim();
+        if (newName.length === 0) {
+          return reply.code(400).send({ error: 'Name cannot be empty.' });
+        }
         renameServer(server.id, newName);
         logActivity({
           serverId: server.id,
@@ -233,6 +282,71 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
           details: `${server.name} → ${newName}`,
         });
       }
+
+      if (wantsResize) {
+        // Resizing changes host-level resource allocation, so we
+        // reserve it for the owner (and admins, via accessibleServer).
+        if (!requireOwner(request, reply, server)) return;
+
+        // The server must be stopped to avoid live-changing the JVM
+        // heap mid-run, which would mostly be ignored anyway.
+        if (server.containerId) {
+          const state = await getContainerState(server.containerId);
+          if (state === 'running') {
+            return reply.code(409).send({
+              error: 'Stop the server before changing its resources.',
+            });
+          }
+        }
+
+        const newMemMb = body.memoryMb ?? server.memoryMb;
+        const newCpu = body.cpuLimit ?? server.cpuLimit;
+
+        try {
+          assertEnoughHostResources({
+            memoryMb: newMemMb,
+            cpuLimit: newCpu,
+            excludeServerId: server.id,
+          });
+        } catch (err) {
+          if (err instanceof HostResourcesError) {
+            return reply.code(507).send({
+              error:
+                'Not enough free RAM or CPU on the host machine for this allocation.',
+              resources: err.resources,
+            });
+          }
+          throw err;
+        }
+
+        updateServerResources(server.id, newMemMb, newCpu);
+
+        if (server.containerId) {
+          try {
+            await updateContainerResources(
+              server.containerId,
+              newMemMb,
+              newCpu,
+            );
+          } catch (err) {
+            // The DB is updated already; Docker can be re-aligned on
+            // next start. Log so we know if a host is misbehaving.
+            // eslint-disable-next-line no-console
+            console.warn(
+              `[servers] Docker update failed for ${server.id}:`,
+              err,
+            );
+          }
+        }
+
+        logActivity({
+          serverId: server.id,
+          actorId: request.user.sub,
+          kind: 'server.resize',
+          details: `mem ${server.memoryMb}→${newMemMb} MiB, cpu ${server.cpuLimit}→${newCpu}`,
+        });
+      }
+
       const updated = getServer(server.id);
       return {
         server: updated && (await publicServer(updated, request.user.sub)),

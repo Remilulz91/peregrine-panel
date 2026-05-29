@@ -127,11 +127,24 @@ export interface ApiMfaSetup {
 
 export type ServerAction = 'start' | 'stop' | 'restart';
 
+
+export interface ApiHostResources {
+  totalMemMb: number;
+  totalCpus: number;
+  reservedMemMb: number;
+  reservedCpus: number;
+  allocatedMemMb: number;
+  allocatedCpus: number;
+  allocatableMemMb: number;
+  allocatableCpus: number;
+}
 export class ApiError extends Error {
   readonly status: number;
-  constructor(status: number, message: string) {
+  readonly payload: unknown;
+  constructor(status: number, message: string, payload: unknown = null) {
     super(message);
     this.status = status;
+    this.payload = payload;
     this.name = 'ApiError';
   }
 }
@@ -150,7 +163,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (!response.ok) {
     const message =
       (data as { error?: string }).error ?? `Request failed (${response.status})`;
-    throw new ApiError(response.status, message);
+    throw new ApiError(response.status, message, data);
   }
   return data as T;
 }
@@ -278,6 +291,13 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify({ name }),
     }),
+  updateServerResources: (id: string, memoryMb: number, cpuLimit: number) =>
+    request<{ server: ApiServer }>(`/api/servers/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ memoryMb, cpuLimit }),
+    }),
+  hostResources: () =>
+    request<{ resources: ApiHostResources }>('/api/host'),
   deleteServer: (id: string) =>
     request<{ ok: boolean }>(`/api/servers/${id}`, { method: 'DELETE' }),
   serverAction: (id: string, action: ServerAction) =>
