@@ -57,15 +57,21 @@ export const config = {
    * RAM (in MiB) kept untouched on the host as a safety margin for the
    * OS, Docker and Peregrine itself. The create / resize endpoints
    * refuse any allocation that would push usage past `total - reserved`.
-   * Default: 1024 MiB. Lower it on small VPS.
+   *
+   * Default: 512 MiB — the realistic minimum for Debian + Docker
+   * daemon + the Peregrine container + Caddy + fail2ban. Bump it on
+   * bigger hosts if you want more breathing room (1024 is a common
+   * "comfortable" value).
    */
-  reservedMemMb: readNumber('RESERVED_MEM_MB', 1024),
+  reservedMemMb: readNumber('RESERVED_MEM_MB', 512),
 
   /**
    * CPU cores (can be fractional, e.g. 0.5) kept untouched on the host
-   * as a safety margin. Default: 1 core. Lower it on small VPS.
+   * as a safety margin. Default: 0.5 — the host stack is mostly idle
+   * so half a core is plenty. Bump it on production-grade hosts that
+   * run other workloads alongside Peregrine.
    */
-  reservedCpus: readNumber('RESERVED_CPUS', 1),
+  reservedCpus: readNumber('RESERVED_CPUS', 0.5),
 
   /** Port the built-in SFTP server listens on (0 disables it). */
   sftpPort: readNumber('SFTP_PORT', 2022),

@@ -2,6 +2,27 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.10.3 — 2026-05-29
+
+### Changed
+
+- **Default host safety margin lowered** from `1024 MiB + 1 core` to
+  `512 MiB + 0.5 core`. The new defaults are the realistic minimum
+  for Debian + Docker + the Peregrine container + Caddy + fail2ban —
+  small 2 GiB / 2 vCPU VPS now work out of the box without having
+  to override anything in `.env`. Admins who want more breathing
+  room can still raise the values via `RESERVED_MEM_MB` and
+  `RESERVED_CPUS`.
+- **Create-server dialog now offers a 0.5-core CPU option** in
+  addition to 1 / 2 / 4. Useful on small hosts where reserving a
+  full core for a game server is too much.
+
+### Notes for upgraders
+
+- If you set `RESERVED_MEM_MB=512` and `RESERVED_CPUS=0.5` in your
+  `.env` for v0.10.2 to make Peregrine work on a small VPS, you can
+  now delete those two lines: the new defaults match what you set.
+
 ## v0.10.2 — 2026-05-29
 
 ### Added

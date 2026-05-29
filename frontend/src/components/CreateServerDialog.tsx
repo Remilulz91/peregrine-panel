@@ -15,8 +15,9 @@ import { useTranslation, type TranslationKey } from '../lib/i18n';
 // Memory amounts (in MB) offered when creating a server.
 const MEMORY_OPTIONS = [1024, 2048, 4096, 8192];
 
-// CPU limits (in cores) offered when creating a server.
-const CPU_OPTIONS = [1, 2, 4];
+// CPU limits (in cores) offered when creating a server. 0.5 is
+// available for small VPS where a full core is too much.
+const CPU_OPTIONS = [0.5, 1, 2, 4];
 
 const SELECT_CLASS =
   'w-full rounded-lg border border-peregrine-700 bg-peregrine-950 px-3 py-2 text-sm text-white outline-none transition-colors focus:border-falcon';

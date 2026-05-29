@@ -7,10 +7,11 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.10.2** — patch release: configurable host safety
-> margin (`RESERVED_MEM_MB`, `RESERVED_CPUS`) and a specific error
-> message when the create-server preflight refuses an allocation.
-> See the changelog in [`CHANGELOG.md`](CHANGELOG.md).
+> **Version 0.10.3** — patch release: lowered default host safety
+> margin to a realistic minimum (`512 MiB + 0.5 core`) so small VPS
+> work out of the box, and added a 0.5-core option in the
+> create-server dialog. See the changelog in
+> [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features
 
