@@ -2,6 +2,41 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.12.0 — 2026-05-29
+
+**Breaking change** to the permissions model: server **creation** and
+**deletion** are now restricted to administrators. Regular users can
+still manage every aspect of the servers they own (start/stop,
+console, files, backups, rename, resize, subusers, …) — they just
+can't spin up new servers or delete existing ones. This brings the
+hosting model closer to what shared-hosting panels (Pterodactyl,
+Pelican, …) do.
+
+### Changed
+
+- **`POST /api/servers`** now returns HTTP 403 unless the caller has
+  the `ADMIN` role. The route also accepts an optional `ownerId`
+  field so an admin can create a server on behalf of any user.
+- **`DELETE /api/servers/:id`** is administrator-only (HTTP 403
+  otherwise). The previous "must be the owner" check is dropped —
+  ownership no longer grants the right to destroy a server, only the
+  right to manage it.
+- **Create-server dialog** now includes an **Owner** dropdown listing
+  every account (admin-only UI). Defaults to the calling admin.
+- **Dashboard** hides the "Create server" button for non-admin
+  users (it would 403 anyway).
+- **Settings → Danger zone** shows the Delete button only to admins,
+  with an updated French/English message.
+
+### Notes for existing deployments
+
+- Existing non-admin owners keep full management rights on their
+  servers; the only thing they lose is the ability to delete them.
+- The historical `settings.deleteOwnerOnly` i18n key was renamed to
+  `settings.deleteAdminOnly`. If you forked the translations, update
+  accordingly.
+- No database migration is needed for this release.
+
 ## v0.11.0 — 2026-05-29
 
 A small but useful quality-of-life feature: Peregrine now tells the

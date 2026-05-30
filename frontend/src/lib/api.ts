@@ -200,6 +200,12 @@ interface CreateServerInput {
   minecraftVersion?: string;
   /** Optional loader override. Bedrock servers ignore this; Java defaults to vanilla. */
   loader?: ServerLoader;
+  /**
+   * Optional owner account. Defaults to the calling admin. Only
+   * meaningful when the caller is an administrator — the backend
+   * rejects the create with 403 otherwise.
+   */
+  ownerId?: string;
   memoryMb: number;
   cpuLimit: number;
 }

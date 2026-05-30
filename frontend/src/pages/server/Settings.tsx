@@ -8,6 +8,7 @@ import {
   type ApiServer,
 } from '../../lib/api';
 import { navigate } from '../../lib/router';
+import { useAuth } from '../../lib/auth';
 import { useTranslation, type TranslationKey } from '../../lib/i18n';
 
 interface SettingsPageProps {
@@ -28,6 +29,8 @@ export default function SettingsPage({
   onRenamed,
 }: SettingsPageProps) {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
 
   const [name, setName] = useState(server.name);
   const [renaming, setRenaming] = useState(false);
@@ -131,9 +134,11 @@ export default function SettingsPage({
     }
   }
 
-  const deleteDisabled = !isOwner || isRunning || deleting;
-  const deleteTooltip = !isOwner
-    ? t('settings.deleteOwnerOnly')
+  // v0.12.0+: deletion is administrator-only. Owners can still
+  // rename, resize, start/stop, etc. — they just can't destroy.
+  const deleteDisabled = !isAdmin || isRunning || deleting;
+  const deleteTooltip = !isAdmin
+    ? t('settings.deleteAdminOnly')
     : isRunning
     ? t('settings.deleteBlocked')
     : undefined;
@@ -255,8 +260,8 @@ export default function SettingsPage({
       <div className="rounded-2xl border border-rose-500/30 bg-rose-500/5 p-5">
         <h3 className="text-sm font-semibold text-rose-300">{t('settings.dangerZone')}</h3>
         <p className="mt-2 text-sm text-peregrine-300">{t('settings.deleteHint')}</p>
-        {!isOwner && <p className="mt-2 text-sm text-peregrine-400">{t('settings.deleteOwnerOnly')}</p>}
-        {isOwner && isRunning && <p className="mt-2 text-sm text-falcon">{t('settings.deleteBlocked')}</p>}
+        {!isAdmin && <p className="mt-2 text-sm text-peregrine-400">{t('settings.deleteAdminOnly')}</p>}
+        {isAdmin && isRunning && <p className="mt-2 text-sm text-falcon">{t('settings.deleteBlocked')}</p>}
         <button
           type="button"
           disabled={deleteDisabled}

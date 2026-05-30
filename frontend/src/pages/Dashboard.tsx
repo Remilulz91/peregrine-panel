@@ -123,13 +123,18 @@ export default function Dashboard() {
                   {t('servers.subtitle')}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setDialogOpen(true)}
-                className="shrink-0 rounded-lg bg-falcon px-4 py-2 text-sm font-semibold text-peregrine-950 transition-colors hover:bg-falcon-bright"
-              >
-                {t('servers.create')}
-              </button>
+              {/* v0.12.0+: server creation is administrator-only.
+                  Regular users only see the servers they own (or are
+                  a subuser of) and cannot start new ones. */}
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => setDialogOpen(true)}
+                  className="shrink-0 rounded-lg bg-falcon px-4 py-2 text-sm font-semibold text-peregrine-950 transition-colors hover:bg-falcon-bright"
+                >
+                  {t('servers.create')}
+                </button>
+              )}
             </div>
 
             {loadError && (

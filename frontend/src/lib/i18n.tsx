@@ -239,6 +239,12 @@ const translations = {
 
   'create.title': { en: 'New game server', fr: 'Nouveau serveur de jeu' },
   'create.nameLabel': { en: 'Server name', fr: 'Nom du serveur' },
+  'create.ownerLabel': { en: 'Owner', fr: 'Propriétaire' },
+  'create.ownerYou': { en: 'you', fr: 'vous' },
+  'create.ownerHint': {
+    en: 'The user who will own this server. Pick yourself or any other account.',
+    fr: "L'utilisateur à qui appartiendra ce serveur. Choisissez-vous ou un autre compte.",
+  },
   'create.templateLabel': { en: 'Game', fr: 'Jeu' },
   'create.versionLabel': { en: 'Version', fr: 'Version' },
   'create.versionHint': {
@@ -400,9 +406,9 @@ const translations = {
     en: 'Stop the server before deleting it.',
     fr: 'Arrêtez le serveur avant de le supprimer.',
   },
-  'settings.deleteOwnerOnly': {
-    en: 'Only the owner can delete this server.',
-    fr: 'Seul le propriétaire peut supprimer ce serveur.',
+  'settings.deleteAdminOnly': {
+    en: 'Only an administrator can delete this server.',
+    fr: 'Seul un administrateur peut supprimer ce serveur.',
   },
   'settings.renameNoPermission': {
     en: 'You do not have permission to rename this server.',

@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import Field from './Field';
 import {
   api,
@@ -6,10 +6,12 @@ import {
   BEDROCK_MC_VERSIONS,
   JAVA_LOADERS,
   JAVA_MC_VERSIONS,
+  type ApiAdminUser,
   type ApiHostResources,
   type ApiTemplate,
   type ServerLoader,
 } from '../lib/api';
+import { useAuth } from '../lib/auth';
 import { useTranslation, type TranslationKey } from '../lib/i18n';
 
 // Memory amounts (in MB) offered when creating a server.
@@ -42,9 +44,31 @@ export default function CreateServerDialog({
   onCreated,
 }: CreateServerDialogProps) {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [name, setName] = useState('');
   const [templateId, setTemplateId] = useState(templates[0]?.id ?? '');
   const [loader, setLoader] = useState<ServerLoader>('vanilla');
+  // v0.12.0+: only admins reach this dialog (the button is hidden
+  // for other users in Dashboard). We let the admin pick which user
+  // will own the new server, defaulting to themselves.
+  const [users, setUsers] = useState<ApiAdminUser[]>([]);
+  const [ownerId, setOwnerId] = useState<string>(user?.id ?? '');
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .listAdminUsers()
+      .then((result) => {
+        if (!cancelled) setUsers(result.users);
+      })
+      .catch(() => {
+        // Silently fall back to no list — the admin can still create
+        // for themselves via the default ownerId.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const [version, setVersion] = useState('LATEST');
   const [memoryMb, setMemoryMb] = useState(2048);
   const [cpuLimit, setCpuLimit] = useState(2);
@@ -75,6 +99,7 @@ export default function CreateServerDialog({
       await api.createServer({
         name,
         templateId,
+        ownerId: ownerId || undefined,
         minecraftVersion: version,
         // The backend ignores the loader on Bedrock, but we send it
         // explicitly when the game is Java to keep the wire payload
@@ -129,6 +154,35 @@ export default function CreateServerDialog({
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
+
+          {/* Owner picker — admins create servers on behalf of users. */}
+          <div>
+            <label
+              htmlFor="srv-owner"
+              className="mb-1 block text-xs font-medium text-peregrine-400"
+            >
+              {t('create.ownerLabel')}
+            </label>
+            <select
+              id="srv-owner"
+              value={ownerId}
+              onChange={(e) => setOwnerId(e.target.value)}
+              className={SELECT_CLASS}
+            >
+              {users.length === 0 && user && (
+                <option value={user.id}>{user.username}</option>
+              )}
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.username}
+                  {u.id === user?.id ? ` (${t('create.ownerYou')})` : ''}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-peregrine-600">
+              {t('create.ownerHint')}
+            </p>
+          </div>
 
           <div>
             <label

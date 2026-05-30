@@ -44,6 +44,12 @@ interface CreateServerBody {
   minecraftVersion?: string;
   /** Optional — server flavour for Java (vanilla / paper / fabric / forge). */
   loader?: string;
+  /**
+   * Optional account id that should own the new server. Defaults to
+   * the admin creating it. Only admins can call this route at all,
+   * so there's no privilege-escalation risk in trusting the value.
+   */
+  ownerId?: string;
   memoryMb: number;
   cpuLimit: number;
 }
@@ -137,6 +143,7 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
               type: 'string',
               enum: ['vanilla', 'paper', 'fabric', 'forge'],
             },
+            ownerId: { type: 'string', minLength: 1 },
             memoryMb: { type: 'integer', minimum: 512, maximum: 16384 },
             cpuLimit: { type: 'number', minimum: 0.5, maximum: 16 },
           },
@@ -144,11 +151,32 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
       },
     },
     async (request, reply) => {
+      // Server creation is administrator-only. Owners and subusers can
+      // still manage existing servers (start/stop, console, files, ...)
+      // but cannot create new ones — that's the hosting-panel model
+      // adopted in v0.12.0.
+      if (request.user.role !== 'ADMIN') {
+        return reply
+          .code(403)
+          .send({ error: 'Only administrators can create servers.' });
+      }
+
       const body = request.body as CreateServerBody;
 
       const template = getTemplate(body.templateId);
       if (!template) {
         return reply.code(400).send({ error: 'Unknown game template.' });
+      }
+
+      // ownerId defaults to the calling admin. When provided, the
+      // chosen user must exist — otherwise reject with a clear 400.
+      let ownerId = request.user.sub;
+      if (typeof body.ownerId === 'string' && body.ownerId.length > 0) {
+        const target = findUserById(body.ownerId);
+        if (!target) {
+          return reply.code(400).send({ error: 'Unknown owner account.' });
+        }
+        ownerId = target.id;
       }
 
       try {
@@ -199,7 +227,7 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
       }
 
       const server = createServer({
-        ownerId: request.user.sub,
+        ownerId,
         templateId: template.id,
         name: body.name,
         minecraftVersion:
@@ -355,12 +383,20 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
   );
 
   app.delete('/servers/:id', async (request, reply) => {
+    // Deleting a server is administrator-only (v0.12.0+). Owners
+    // can still manage everything else (rename, resize, start/stop,
+    // backups, ...) but the destructive remove action is gated to
+    // admins to avoid accidental data loss by end users.
+    if (request.user.role !== 'ADMIN') {
+      return reply
+        .code(403)
+        .send({ error: 'Only administrators can delete servers.' });
+    }
     const { id } = request.params as { id: string };
     const server = accessibleServer(request, id);
     if (!server) {
       return reply.code(404).send({ error: 'Server not found.' });
     }
-    if (!requireOwner(request, reply, server)) return;
     if (server.containerId) {
       const state = await getContainerState(server.containerId);
       if (state === 'running') {
