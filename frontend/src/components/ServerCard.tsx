@@ -121,6 +121,12 @@ export default function ServerCard({
           <h3 className="truncate text-sm font-semibold text-white">
             {server.name}
           </h3>
+          {/* Free-text description (v0.13.0+). Shown only when set. */}
+          {server.description && (
+            <p className="mt-0.5 truncate text-xs italic text-peregrine-300">
+              {server.description}
+            </p>
+          )}
           <p className="mt-0.5 truncate text-xs text-peregrine-400">
             {templateName}
             {/* Loader chip: only shown for non-vanilla setups, kept in

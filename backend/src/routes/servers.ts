@@ -9,6 +9,7 @@ import {
   isLoader,
   listServersVisibleTo,
   renameServer,
+  updateServerDescription,
   updateServerResources,
   type ServerLoader,
   type ServerRecord,
@@ -44,6 +45,8 @@ interface CreateServerBody {
   minecraftVersion?: string;
   /** Optional — server flavour for Java (vanilla / paper / fabric / forge). */
   loader?: string;
+  /** Optional free-text description shown under the server name. */
+  description?: string;
   /**
    * Optional account id that should own the new server. Defaults to
    * the admin creating it. Only admins can call this route at all,
@@ -56,6 +59,7 @@ interface CreateServerBody {
 
 interface RenameServerBody {
   name?: string;
+  description?: string;
   memoryMb?: number;
   cpuLimit?: number;
 }
@@ -85,6 +89,7 @@ async function publicServer(server: ServerRecord, viewerId: string) {
     templateId: server.templateId,
     minecraftVersion: server.minecraftVersion,
     loader: server.loader,
+    description: server.description,
     memoryMb: server.memoryMb,
     cpuLimit: server.cpuLimit,
     port: server.port,
@@ -137,6 +142,7 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
           additionalProperties: false,
           properties: {
             name: { type: 'string', minLength: 1, maxLength: 48 },
+            description: { type: 'string', maxLength: 200 },
             templateId: { type: 'string', minLength: 1 },
             minecraftVersion: { type: 'string', maxLength: 32 },
             loader: {
@@ -230,6 +236,7 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
         ownerId,
         templateId: template.id,
         name: body.name,
+        description: (body.description ?? '').trim(),
         minecraftVersion:
           body.minecraftVersion?.trim() || template.defaultVersion,
         loader,
@@ -261,6 +268,7 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
           additionalProperties: false,
           properties: {
             name: { type: 'string', minLength: 1, maxLength: 48 },
+            description: { type: 'string', maxLength: 200 },
             memoryMb: { type: 'integer', minimum: 512, maximum: 65536 },
             cpuLimit: { type: 'number', minimum: 0.5, maximum: 64 },
           },
@@ -276,15 +284,41 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
       const body = request.body as RenameServerBody;
       const wantsRename =
         typeof body.name === 'string' && body.name.trim() !== server.name;
+      const wantsDescription =
+        typeof body.description === 'string' &&
+        body.description.trim() !== server.description;
       const wantsResize =
         typeof body.memoryMb === 'number' || typeof body.cpuLimit === 'number';
 
-      if (!wantsRename && !wantsResize) {
+      if (!wantsRename && !wantsDescription && !wantsResize) {
         // Nothing to change — return current state, no permission check.
         const current = getServer(server.id);
         return {
           server: current && (await publicServer(current, request.user.sub)),
         };
+      }
+
+      if (wantsDescription) {
+        // The description shares the settings.rename permission since
+        // both are cosmetic, owner-managed metadata.
+        if (
+          !requirePermission(
+            request,
+            reply,
+            server,
+            PERMISSION.SETTINGS_RENAME,
+          )
+        ) {
+          return;
+        }
+        const newDescription = (body.description ?? '').trim();
+        updateServerDescription(server.id, newDescription);
+        logActivity({
+          serverId: server.id,
+          actorId: request.user.sub,
+          kind: 'server.describe',
+          details: newDescription.length > 0 ? newDescription.slice(0, 100) : '(cleared)',
+        });
       }
 
       if (wantsRename) {

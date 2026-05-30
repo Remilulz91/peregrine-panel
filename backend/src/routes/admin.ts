@@ -207,6 +207,7 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
           status: await effectiveStatus(server),
           templateId: server.templateId,
           minecraftVersion: server.minecraftVersion,
+          description: server.description,
           memoryMb: server.memoryMb,
           cpuLimit: server.cpuLimit,
           port: server.port,

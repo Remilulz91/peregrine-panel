@@ -120,6 +120,11 @@ const MIGRATIONS: string[] = [
   // (which was implicit vanilla). Bedrock servers will also carry
   // 'vanilla' — the column is meaningless for them but harmless.
   `ALTER TABLE servers ADD COLUMN loader TEXT NOT NULL DEFAULT 'vanilla';`,
+
+  // Migration 11 - optional human-readable description per server.
+  // Free-text field shown under the server name in the dashboard
+  // and editable from the Settings tab. NULL means "no description".
+  `ALTER TABLE servers ADD COLUMN description TEXT;`,
 ];
 
 /** Applies any migrations that have not been run on this database yet. */

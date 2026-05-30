@@ -2,6 +2,26 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.13.0 — 2026-05-29
+
+A small but useful organisational feature inspired by Pterodactyl:
+per-server free-text descriptions.
+
+### Added
+
+- **Server description** — an optional free-text field (max 200
+  characters) set when creating a server and editable later from the
+  Settings tab. Shown in italics under the server name in the
+  Dashboard list, so you can tell apart "Vanilla for friends" from
+  "Test server" at a glance.
+- **Migration 11** adds a nullable `description` column to the
+  `servers` table. Applied automatically on first boot; existing
+  servers come up with no description until you set one.
+- **`PATCH /api/servers/:id`** accepts a `description` field. Same
+  permission as rename (`settings.rename`).
+- **Activity log entry** `server.describe` recorded when the
+  description is changed (or cleared).
+
 ## v0.12.0 — 2026-05-29
 
 **Breaking change** to the permissions model: server **creation** and

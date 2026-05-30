@@ -37,6 +37,10 @@ export default function SettingsPage({
   const [renameError, setRenameError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  const [description, setDescription] = useState(server.description);
+  const [savingDescription, setSavingDescription] = useState(false);
+  const [descriptionError, setDescriptionError] = useState<string | null>(null);
+
   const [memMb, setMemMb] = useState(server.memoryMb);
   const [cpu, setCpu] = useState(server.cpuLimit);
   const [savingResources, setSavingResources] = useState(false);
@@ -82,6 +86,24 @@ export default function SettingsPage({
       );
     } finally {
       setRenaming(false);
+    }
+  }
+
+  async function handleDescription(event: FormEvent): Promise<void> {
+    event.preventDefault();
+    setDescriptionError(null);
+    const trimmed = description.trim();
+    if (trimmed === server.description) return;
+    setSavingDescription(true);
+    try {
+      const result = await api.updateServerDescription(server.id, trimmed);
+      onRenamed(result.server);
+    } catch (err) {
+      setDescriptionError(
+        err instanceof ApiError ? err.message : t('common.errorGeneric'),
+      );
+    } finally {
+      setSavingDescription(false);
     }
   }
 
@@ -185,6 +207,33 @@ export default function SettingsPage({
           <p className="mt-3 text-sm text-peregrine-500">{t('settings.renameNoPermission')}</p>
         )}
       </div>
+
+      {/* Description — same permission as rename (cosmetic owner metadata). */}
+      {canRename && (
+        <div className="rounded-2xl border border-peregrine-700 bg-peregrine-900 p-5">
+          <h3 className="text-sm font-semibold text-white">{t('settings.descriptionTitle')}</h3>
+          <p className="mt-1 text-sm text-peregrine-400">{t('settings.descriptionSubtitle')}</p>
+          <form onSubmit={handleDescription} className="mt-4 space-y-3">
+            <textarea
+              id="description-input"
+              rows={2}
+              maxLength={200}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder={t('settings.descriptionPlaceholder')}
+              className="w-full resize-none rounded-lg border border-peregrine-700 bg-peregrine-950 px-3 py-2 text-sm text-white outline-none transition-colors placeholder:text-peregrine-600 focus:border-falcon"
+            />
+            <button
+              type="submit"
+              disabled={savingDescription || description.trim() === server.description}
+              className="rounded-lg bg-falcon px-4 py-2 text-sm font-semibold text-peregrine-950 transition-colors hover:bg-falcon-bright disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {savingDescription ? t('common.pleaseWait') : t('settings.descriptionSave')}
+            </button>
+          </form>
+          {descriptionError && <p className="mt-2 text-sm text-rose-400">{descriptionError}</p>}
+        </div>
+      )}
 
       {isOwner && (
         <div className="rounded-2xl border border-peregrine-700 bg-peregrine-900 p-5">

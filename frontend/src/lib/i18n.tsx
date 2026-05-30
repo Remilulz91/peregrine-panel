@@ -239,6 +239,11 @@ const translations = {
 
   'create.title': { en: 'New game server', fr: 'Nouveau serveur de jeu' },
   'create.nameLabel': { en: 'Server name', fr: 'Nom du serveur' },
+  'create.descriptionLabel': { en: 'Description (optional)', fr: 'Description (optionnelle)' },
+  'create.descriptionHint': {
+    en: 'A short note to identify this server in the list (max 200 characters).',
+    fr: 'Une courte note pour identifier ce serveur dans la liste (max 200 caractères).',
+  },
   'create.ownerLabel': { en: 'Owner', fr: 'Propriétaire' },
   'create.ownerYou': { en: 'you', fr: 'vous' },
   'create.ownerHint': {
@@ -369,6 +374,17 @@ const translations = {
   'settings.renameTitle': { en: 'Rename', fr: 'Renommer' },
   'settings.renameLabel': { en: 'Server name', fr: 'Nom du serveur' },
   'settings.renameSave': { en: 'Save name', fr: 'Enregistrer' },
+
+  'settings.descriptionTitle': { en: 'Description', fr: 'Description' },
+  'settings.descriptionSubtitle': {
+    en: 'A short note shown under the server name in the list. Leave empty to clear it.',
+    fr: 'Une courte note affichée sous le nom du serveur dans la liste. Laissez vide pour la supprimer.',
+  },
+  'settings.descriptionPlaceholder': {
+    en: 'e.g. Vanilla server for friends',
+    fr: 'Ex. Serveur vanilla entre potes',
+  },
+  'settings.descriptionSave': { en: 'Save description', fr: 'Enregistrer' },
 
   'settings.resourcesTitle': { en: 'Resources', fr: 'Ressources' },
   'settings.resourcesSubtitle': {

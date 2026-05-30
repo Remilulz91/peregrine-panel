@@ -46,6 +46,7 @@ export default function CreateServerDialog({
   const { t } = useTranslation();
   const { user } = useAuth();
   const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
   const [templateId, setTemplateId] = useState(templates[0]?.id ?? '');
   const [loader, setLoader] = useState<ServerLoader>('vanilla');
   // v0.12.0+: only admins reach this dialog (the button is hidden
@@ -98,6 +99,7 @@ export default function CreateServerDialog({
     try {
       await api.createServer({
         name,
+        description: description.trim() || undefined,
         templateId,
         ownerId: ownerId || undefined,
         minecraftVersion: version,
@@ -154,6 +156,27 @@ export default function CreateServerDialog({
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
+
+          {/* Optional description — free text, shown under the name. */}
+          <div>
+            <label
+              htmlFor="srv-description"
+              className="mb-1 block text-xs font-medium text-peregrine-400"
+            >
+              {t('create.descriptionLabel')}
+            </label>
+            <textarea
+              id="srv-description"
+              rows={2}
+              maxLength={200}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full resize-none rounded-lg border border-peregrine-700 bg-peregrine-950 px-3 py-2 text-sm text-white outline-none transition-colors focus:border-falcon"
+            />
+            <p className="mt-1 text-xs text-peregrine-600">
+              {t('create.descriptionHint')}
+            </p>
+          </div>
 
           {/* Owner picker — admins create servers on behalf of users. */}
           <div>

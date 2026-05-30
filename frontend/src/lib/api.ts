@@ -32,6 +32,8 @@ export interface ApiServer {
   minecraftVersion: string;
   /** Server flavour: vanilla / paper / fabric / forge. */
   loader: ServerLoader;
+  /** Free-text description shown under the name. Empty string = none. */
+  description: string;
   memoryMb: number;
   cpuLimit: number;
   port: number;
@@ -197,6 +199,8 @@ interface CreateUserInput {
 interface CreateServerInput {
   name: string;
   templateId: string;
+  /** Optional free-text description shown under the server name. */
+  description?: string;
   minecraftVersion?: string;
   /** Optional loader override. Bedrock servers ignore this; Java defaults to vanilla. */
   loader?: ServerLoader;
@@ -305,6 +309,11 @@ export const api = {
     request<{ server: ApiServer }>(`/api/servers/${id}`, {
       method: 'PATCH',
       body: JSON.stringify({ name }),
+    }),
+  updateServerDescription: (id: string, description: string) =>
+    request<{ server: ApiServer }>(`/api/servers/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ description }),
     }),
   updateServerResources: (id: string, memoryMb: number, cpuLimit: number) =>
     request<{ server: ApiServer }>(`/api/servers/${id}`, {

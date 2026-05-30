@@ -27,6 +27,8 @@ export interface ServerRecord {
   minecraftVersion: string;
   /** Loader passed as TYPE to the itzg image (vanilla / paper / fabric / forge). */
   loader: ServerLoader;
+  /** Free-text description shown under the name. Empty string = none. */
+  description: string;
   memoryMb: number;
   cpuLimit: number;
   port: number;
@@ -42,6 +44,7 @@ interface ServerRow {
   container_id: string | null;
   minecraft_version: string;
   loader: string;
+  description: string | null;
   memory_mb: number;
   cpu_limit: number;
   port: number;
@@ -58,6 +61,7 @@ function toRecord(row: ServerRow): ServerRecord {
     containerId: row.container_id,
     minecraftVersion: row.minecraft_version,
     loader: isLoader(row.loader) ? row.loader : 'vanilla',
+    description: row.description ?? '',
     memoryMb: row.memory_mb,
     cpuLimit: row.cpu_limit,
     port: row.port,
@@ -87,6 +91,7 @@ export function createServer(input: {
   ownerId: string;
   templateId: string;
   name: string;
+  description: string;
   minecraftVersion: string;
   loader: ServerLoader;
   memoryMb: number;
@@ -96,14 +101,15 @@ export function createServer(input: {
   const id = randomUUID();
   db.prepare(
     `INSERT INTO servers
-       (id, owner_id, template_id, name, minecraft_version, loader,
-        memory_mb, cpu_limit, port)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (id, owner_id, template_id, name, description, minecraft_version,
+        loader, memory_mb, cpu_limit, port)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     id,
     input.ownerId,
     input.templateId,
     input.name,
+    input.description || null,
     input.minecraftVersion,
     input.loader,
     input.memoryMb,
@@ -172,6 +178,14 @@ export function updateServerStatus(
 /** Renames a server (updates the human-readable name only). */
 export function renameServer(id: string, name: string): void {
   db.prepare('UPDATE servers SET name = ? WHERE id = ?').run(name, id);
+}
+
+/** Updates the free-text description (empty string clears it). */
+export function updateServerDescription(id: string, description: string): void {
+  db.prepare('UPDATE servers SET description = ? WHERE id = ?').run(
+    description.length > 0 ? description : null,
+    id,
+  );
 }
 
 /** Updates the RAM and CPU limits stored for a server. */

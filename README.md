@@ -7,9 +7,10 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.12.0** — server creation and deletion are now
-> administrator-only. Owners keep every other management right on
-> their servers. See the changelog in [`CHANGELOG.md`](CHANGELOG.md).
+> **Version 0.13.0** — each server can now carry an optional
+> free-text description, set at creation time and editable from the
+> Settings tab. Shown in italics under the server name on the
+> Dashboard. See the changelog in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features
 
