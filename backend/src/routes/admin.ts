@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { config } from '../config';
+import { hasIcon, iconUpdatedAt } from '../lib/icons';
 import { authenticateAdmin } from '../plugins/auth';
 import {
   countAdmins,
@@ -208,6 +209,8 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
           templateId: server.templateId,
           minecraftVersion: server.minecraftVersion,
           description: server.description,
+          hasIcon: hasIcon(server.id),
+          iconUpdatedAt: iconUpdatedAt(server.id),
           diskQuotaMb: server.diskQuotaMb,
           diskUsedMb: server.diskUsedMb,
           memoryMb: server.memoryMb,

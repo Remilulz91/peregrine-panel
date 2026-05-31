@@ -19,6 +19,7 @@ import {
   assertEnoughHostResources,
   HostResourcesError,
 } from '../lib/host';
+import { hasIcon, iconUpdatedAt } from '../lib/icons';
 import { findUserById } from '../lib/users';
 import { effectivePermissions } from '../lib/subusers';
 import { PERMISSION } from '../lib/permissions';
@@ -100,6 +101,8 @@ async function publicServer(server: ServerRecord, viewerId: string) {
     minecraftVersion: server.minecraftVersion,
     loader: server.loader,
     description: server.description,
+    hasIcon: hasIcon(server.id),
+    iconUpdatedAt: iconUpdatedAt(server.id),
     diskQuotaMb: server.diskQuotaMb,
     diskUsedMb: server.diskUsedMb,
     memoryMb: server.memoryMb,

@@ -1,5 +1,5 @@
 import type { SVGProps } from 'react';
-import type { ApiServer } from '../lib/api';
+import { api, type ApiServer } from '../lib/api';
 import { navigate, serverPath } from '../lib/router';
 import { useTranslation, type TranslationKey } from '../lib/i18n';
 
@@ -113,9 +113,24 @@ export default function ServerCard({
       <span aria-hidden className={`w-1 shrink-0 ${stripeStyle}`} />
 
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3 px-4 py-3 sm:flex-nowrap">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-peregrine-800 text-peregrine-400">
-          <IconServer className="h-5 w-5" />
-        </div>
+        {(() => {
+          // v0.17.0+: show the uploaded server icon if any, otherwise
+          // fall back to the generic server glyph. Cache-busted via the
+          // ?v= mtime parameter built into serverIconUrl.
+          const iconUrl = api.serverIconUrl(server);
+          return iconUrl ? (
+            <img
+              src={iconUrl}
+              alt=""
+              className="h-10 w-10 shrink-0 rounded-xl object-cover"
+              loading="lazy"
+            />
+          ) : (
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-peregrine-800 text-peregrine-400">
+              <IconServer className="h-5 w-5" />
+            </div>
+          );
+        })()}
 
         <div className="min-w-0 flex-1">
           <h3 className="truncate text-sm font-semibold text-white">

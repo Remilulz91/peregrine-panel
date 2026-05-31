@@ -2,6 +2,43 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.17.0 — 2026-05-31
+
+Upload a per-server icon — a small visual identifier that replaces
+the generic server glyph in the dashboard list, much like
+Pterodactyl's server avatars.
+
+### Added
+
+- **`GET /api/servers/:id/icon`** — streams the PNG with
+  `Cache-Control: public, max-age=86400`. The URL carries a `?v=`
+  query string built from the file's `mtime` so the browser refreshes
+  it as soon as the icon is re-uploaded.
+- **`POST /api/servers/:id/icon`** — multipart upload. Accepts PNG
+  only (magic-byte validated, not just the extension or MIME type),
+  hard-capped at 256 KiB. Requires the `settings.rename` permission,
+  the same gate as renaming or editing the description.
+- **`DELETE /api/servers/:id/icon`** — removes the file. Same
+  permission as upload.
+- **`hasIcon` and `iconUpdatedAt`** added to the public server payload
+  so the frontend can pick the right URL and bust the cache without
+  an extra round-trip.
+- **Icon section in the Settings tab** — preview + upload + remove
+  buttons, with inline validation for type and size.
+- **Icon on each ServerCard** — falls back to the generic glyph when
+  no icon is set.
+- **Activity log events**: `server.icon_set` and `server.icon_cleared`.
+- **`ICONS_PATH` env var** (defaults to `./data/icons` in dev) — the
+  filesystem location where icons are stored. Already covered by the
+  existing Docker `data` volume.
+
+### Notes
+
+- Icons are stored on disk rather than in the database to keep the
+  request path fast (the route can use `fs.createReadStream` straight
+  to the response) and to avoid bloating the SQLite file. Cleanup is
+  automatic — when a server is deleted, its icon is removed too.
+
 ## v0.16.1 — 2026-05-30
 
 ### Fixed

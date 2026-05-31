@@ -54,6 +54,15 @@ export const config = {
     process.env.BACKUPS_PATH ?? path.resolve(serversPath, '../backups'),
 
   /**
+   * Host directory that holds per-server icon files (PNG). Lives
+   * inside the Peregrine data volume so icons survive container
+   * rebuilds. Defaults to <data>/icons.
+   */
+  iconsPath:
+    process.env.ICONS_PATH ??
+    path.resolve(__dirname, '../../data/icons'),
+
+  /**
    * RAM (in MiB) kept untouched on the host as a safety margin for the
    * OS, Docker and Peregrine itself. The create / resize endpoints
    * refuse any allocation that would push usage past `total - reserved`.

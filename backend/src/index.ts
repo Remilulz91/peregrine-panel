@@ -19,6 +19,7 @@ import { sftpRoutes } from './routes/sftp';
 import { hostRoutes } from './routes/host';
 import { updateRoutes } from './routes/updates';
 import { playerRoutes } from './routes/players';
+import { iconRoutes } from './routes/icons';
 import { AUTH_COOKIE } from './plugins/auth';
 import { setupConsole } from './realtime/console';
 import { startScheduleWorker } from './services/scheduleWorker';
@@ -63,6 +64,7 @@ export async function buildServer() {
   await app.register(hostRoutes, { prefix: '/api' });
   await app.register(updateRoutes, { prefix: '/api' });
   await app.register(playerRoutes, { prefix: '/api' });
+  await app.register(iconRoutes, { prefix: '/api' });
 
   setupConsole(app, app.server);
 

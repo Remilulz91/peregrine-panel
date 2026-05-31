@@ -34,6 +34,10 @@ export interface ApiServer {
   loader: ServerLoader;
   /** Free-text description shown under the name. Empty string = none. */
   description: string;
+  /** True when a custom PNG icon has been uploaded for this server. */
+  hasIcon: boolean;
+  /** mtime (ms) of the icon file, used for cache-busting; null if none. */
+  iconUpdatedAt: number | null;
   /** Disk quota in MiB, or null for no enforcement. */
   diskQuotaMb: number | null;
   /** Measured disk usage in MiB, refreshed by the backend worker. */
@@ -350,6 +354,27 @@ export const api = {
   updateInfo: () => request<ApiUpdateInfo>('/api/updates'),
   serverPlayers: (id: string) =>
     request<ApiPlayerList>(`/api/servers/${id}/players`),
+
+  /**
+   * Returns the public URL of a server's icon, with a cache-busting
+   * query string when an icon has been set. Returns null when no
+   * icon has been uploaded yet — callers should render a placeholder
+   * in that case rather than a broken image.
+   */
+  serverIconUrl: (server: { id: string; hasIcon: boolean; iconUpdatedAt: number | null }) =>
+    server.hasIcon
+      ? `/api/servers/${server.id}/icon?v=${server.iconUpdatedAt ?? 0}`
+      : null,
+  uploadServerIcon: (id: string, file: File) => {
+    const form = new FormData();
+    form.append('icon', file);
+    return request<{ ok: boolean; iconUpdatedAt: number }>(
+      `/api/servers/${id}/icon`,
+      { method: 'POST', body: form },
+    );
+  },
+  deleteServerIcon: (id: string) =>
+    request<{ ok: boolean }>(`/api/servers/${id}/icon`, { method: 'DELETE' }),
   deleteServer: (id: string) =>
     request<{ ok: boolean }>(`/api/servers/${id}`, { method: 'DELETE' }),
   serverAction: (id: string, action: ServerAction) =>

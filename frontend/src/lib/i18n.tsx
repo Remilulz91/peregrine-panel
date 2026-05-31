@@ -408,6 +408,23 @@ const translations = {
   },
   'settings.descriptionSave': { en: 'Save description', fr: 'Enregistrer' },
 
+  'settings.iconTitle': { en: 'Icon', fr: 'Icône' },
+  'settings.iconSubtitle': {
+    en: 'A small PNG (max 256 KiB, ideally 64×64 or 128×128) shown next to the server name on the dashboard.',
+    fr: 'Un petit PNG (max 256 Kio, idéalement 64×64 ou 128×128) affiché à côté du nom du serveur sur le tableau de bord.',
+  },
+  'settings.iconUpload': { en: 'Upload PNG', fr: 'Téléverser un PNG' },
+  'settings.iconRemove': { en: 'Remove icon', fr: 'Supprimer l’icône' },
+  'settings.iconNone': { en: 'No icon set.', fr: 'Aucune icône définie.' },
+  'settings.iconTooLarge': {
+    en: 'Icon must be 256 KiB or smaller.',
+    fr: 'L’icône doit faire 256 Kio ou moins.',
+  },
+  'settings.iconWrongType': {
+    en: 'Only PNG images are accepted.',
+    fr: 'Seules les images PNG sont acceptées.',
+  },
+
   'settings.diskTitle': { en: 'Disk usage', fr: 'Utilisation disque' },
   'settings.diskSubtitle': {
     en: 'How much disk this server uses, and the optional quota an administrator has set.',

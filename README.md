@@ -7,9 +7,9 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.16.1** — patch: the player list parser no longer
-> mis-reads RCON connection errors during server boot as garbage
-> "X / Y en ligne" counters. See the changelog in
+> **Version 0.17.0** — upload a per-server icon (PNG, ≤256 KiB) from
+> the Settings tab. The icon shows up next to the server name in the
+> dashboard list, replacing the generic glyph. See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features

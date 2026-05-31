@@ -7,6 +7,7 @@ import {
   removeContainer,
   startContainer,
 } from '../lib/docker';
+import { removeIcon } from '../lib/icons';
 import { updateServerStatus, type ServerRecord } from '../lib/servers';
 import type { GameTemplate } from '../lib/templates';
 import { logActivity } from '../lib/activity';
@@ -152,10 +153,12 @@ export async function provisionServer(
   }
 }
 
-/** Removes a server's Docker container and deletes its game files. */
+/** Removes a server's Docker container, its game files, and its icon. */
 export async function deprovisionServer(server: ServerRecord): Promise<void> {
   if (server.containerId) {
     await removeContainer(server.containerId).catch(() => undefined);
   }
   fs.rmSync(serverDataDir(server.id), { recursive: true, force: true });
+  // v0.17.0+: drop the icon file too so the data dir stays tidy.
+  removeIcon(server.id);
 }

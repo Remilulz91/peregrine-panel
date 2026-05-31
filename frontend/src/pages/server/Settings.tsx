@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import {
   api,
   ApiError,
@@ -40,6 +40,11 @@ export default function SettingsPage({
   const [description, setDescription] = useState(server.description);
   const [savingDescription, setSavingDescription] = useState(false);
   const [descriptionError, setDescriptionError] = useState<string | null>(null);
+
+  // v0.17.0+: server icon upload (PNG, ≤256 KB).
+  const iconInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploadingIcon, setUploadingIcon] = useState(false);
+  const [iconError, setIconError] = useState<string | null>(null);
 
   const [memMb, setMemMb] = useState(server.memoryMb);
   const [cpu, setCpu] = useState(server.cpuLimit);
@@ -108,6 +113,51 @@ export default function SettingsPage({
       );
     } finally {
       setSavingDescription(false);
+    }
+  }
+
+  async function handleIconPicked(event: ChangeEvent<HTMLInputElement>): Promise<void> {
+    setIconError(null);
+    const file = event.target.files?.[0];
+    // Clear the input so picking the same file twice still fires a change.
+    event.target.value = '';
+    if (!file) return;
+    if (file.type && file.type !== 'image/png') {
+      setIconError(t('settings.iconWrongType'));
+      return;
+    }
+    if (file.size > 256 * 1024) {
+      setIconError(t('settings.iconTooLarge'));
+      return;
+    }
+    setUploadingIcon(true);
+    try {
+      await api.uploadServerIcon(server.id, file);
+      // Refetch the server record so hasIcon / iconUpdatedAt are fresh.
+      const refreshed = await api.getServer(server.id);
+      onRenamed(refreshed.server);
+    } catch (err) {
+      setIconError(
+        err instanceof ApiError ? err.message : t('common.errorGeneric'),
+      );
+    } finally {
+      setUploadingIcon(false);
+    }
+  }
+
+  async function handleIconDelete(): Promise<void> {
+    setIconError(null);
+    setUploadingIcon(true);
+    try {
+      await api.deleteServerIcon(server.id);
+      const refreshed = await api.getServer(server.id);
+      onRenamed(refreshed.server);
+    } catch (err) {
+      setIconError(
+        err instanceof ApiError ? err.message : t('common.errorGeneric'),
+      );
+    } finally {
+      setUploadingIcon(false);
     }
   }
 
@@ -254,6 +304,57 @@ export default function SettingsPage({
             </button>
           </form>
           {descriptionError && <p className="mt-2 text-sm text-rose-400">{descriptionError}</p>}
+        </div>
+      )}
+
+      {/* Server icon (v0.17.0+). Same permission as rename. PNG, ≤256 KB.
+          The current icon is shown if any; otherwise a tiny placeholder
+          tells the user the slot is empty. */}
+      {canRename && (
+        <div className="rounded-2xl border border-peregrine-700 bg-peregrine-900 p-5">
+          <h3 className="text-sm font-semibold text-white">{t('settings.iconTitle')}</h3>
+          <p className="mt-1 text-sm text-peregrine-400">{t('settings.iconSubtitle')}</p>
+          <div className="mt-4 flex flex-wrap items-center gap-4">
+            {api.serverIconUrl(server) ? (
+              <img
+                src={api.serverIconUrl(server) ?? undefined}
+                alt=""
+                className="h-16 w-16 rounded-xl border border-peregrine-700 object-cover"
+              />
+            ) : (
+              <div className="flex h-16 w-16 items-center justify-center rounded-xl border border-dashed border-peregrine-700 text-xs text-peregrine-500">
+                {t('settings.iconNone')}
+              </div>
+            )}
+            <div className="flex flex-wrap gap-2">
+              <input
+                ref={iconInputRef}
+                type="file"
+                accept="image/png"
+                className="hidden"
+                onChange={(e) => void handleIconPicked(e)}
+              />
+              <button
+                type="button"
+                disabled={uploadingIcon}
+                onClick={() => iconInputRef.current?.click()}
+                className="rounded-lg bg-falcon px-4 py-2 text-sm font-semibold text-peregrine-950 transition-colors hover:bg-falcon-bright disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {uploadingIcon ? t('common.pleaseWait') : t('settings.iconUpload')}
+              </button>
+              {server.hasIcon && (
+                <button
+                  type="button"
+                  disabled={uploadingIcon}
+                  onClick={() => void handleIconDelete()}
+                  className="rounded-lg border border-peregrine-700 px-4 py-2 text-sm font-semibold text-peregrine-200 transition-colors hover:bg-peregrine-800 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {t('settings.iconRemove')}
+                </button>
+              )}
+            </div>
+          </div>
+          {iconError && <p className="mt-2 text-sm text-rose-400">{iconError}</p>}
         </div>
       )}
 
