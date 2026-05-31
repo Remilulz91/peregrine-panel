@@ -34,6 +34,10 @@ export interface ApiServer {
   loader: ServerLoader;
   /** Free-text description shown under the name. Empty string = none. */
   description: string;
+  /** Disk quota in MiB, or null for no enforcement. */
+  diskQuotaMb: number | null;
+  /** Measured disk usage in MiB, refreshed by the backend worker. */
+  diskUsedMb: number;
   memoryMb: number;
   cpuLimit: number;
   port: number;
@@ -215,6 +219,8 @@ interface CreateServerInput {
    * install completes. Set to false to leave it offline.
    */
   autostart?: boolean;
+  /** Optional disk quota in MiB. 0 / undefined = unlimited. */
+  diskQuotaMb?: number;
   memoryMb: number;
   cpuLimit: number;
 }
@@ -324,6 +330,11 @@ export const api = {
     request<{ server: ApiServer }>(`/api/servers/${id}`, {
       method: 'PATCH',
       body: JSON.stringify({ memoryMb, cpuLimit }),
+    }),
+  updateServerDiskQuota: (id: string, diskQuotaMb: number) =>
+    request<{ server: ApiServer }>(`/api/servers/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ diskQuotaMb }),
     }),
   hostResources: () =>
     request<{ resources: ApiHostResources }>('/api/host'),

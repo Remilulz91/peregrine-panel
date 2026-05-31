@@ -21,6 +21,7 @@ import { updateRoutes } from './routes/updates';
 import { AUTH_COOKIE } from './plugins/auth';
 import { setupConsole } from './realtime/console';
 import { startScheduleWorker } from './services/scheduleWorker';
+import { startDiskQuotaWorker } from './services/diskQuotaWorker';
 import { startSftpServer } from './services/sftpServer';
 
 /**
@@ -92,6 +93,9 @@ async function start(): Promise<void> {
   // The schedule worker runs alongside the HTTP server. It's started
   // unconditionally because it does nothing until a schedule is due.
   startScheduleWorker();
+  // The disk quota worker measures every server's data folder size
+  // every minute and enforces per-server quotas.
+  startDiskQuotaWorker();
   // The SFTP server runs in-process on its own TCP port. SFTP_PORT=0
   // disables it (handy for development environments where the port is
   // already taken).

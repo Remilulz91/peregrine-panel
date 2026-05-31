@@ -10,6 +10,7 @@ import {
   listServersVisibleTo,
   renameServer,
   updateServerDescription,
+  updateServerDiskQuota,
   updateServerResources,
   type ServerLoader,
   type ServerRecord,
@@ -58,6 +59,8 @@ interface CreateServerBody {
    * install completes. Defaults to true — matches the Pterodactyl UX.
    */
   autostart?: boolean;
+  /** Optional disk quota in MiB. 0 / omitted = no quota (unlimited). */
+  diskQuotaMb?: number;
   memoryMb: number;
   cpuLimit: number;
 }
@@ -67,6 +70,8 @@ interface RenameServerBody {
   description?: string;
   memoryMb?: number;
   cpuLimit?: number;
+  /** Disk quota in MiB. 0 means "remove the quota" (unlimited). */
+  diskQuotaMb?: number;
 }
 
 async function effectiveStatus(server: ServerRecord): Promise<string> {
@@ -95,6 +100,8 @@ async function publicServer(server: ServerRecord, viewerId: string) {
     minecraftVersion: server.minecraftVersion,
     loader: server.loader,
     description: server.description,
+    diskQuotaMb: server.diskQuotaMb,
+    diskUsedMb: server.diskUsedMb,
     memoryMb: server.memoryMb,
     cpuLimit: server.cpuLimit,
     port: server.port,
@@ -156,6 +163,7 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
             },
             ownerId: { type: 'string', minLength: 1 },
             autostart: { type: 'boolean' },
+            diskQuotaMb: { type: 'integer', minimum: 0, maximum: 1048576 },
             memoryMb: { type: 'integer', minimum: 512, maximum: 16384 },
             cpuLimit: { type: 'number', minimum: 0.5, maximum: 16 },
           },
@@ -238,6 +246,12 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
         loader = body.loader;
       }
 
+      // Normalise the quota: 0 / undefined => null = no quota.
+      const diskQuotaMb =
+        typeof body.diskQuotaMb === 'number' && body.diskQuotaMb > 0
+          ? body.diskQuotaMb
+          : null;
+
       const server = createServer({
         ownerId,
         templateId: template.id,
@@ -248,6 +262,7 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
         loader,
         memoryMb: body.memoryMb,
         cpuLimit: body.cpuLimit,
+        diskQuotaMb,
         port,
       });
 
@@ -278,6 +293,7 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
           properties: {
             name: { type: 'string', minLength: 1, maxLength: 48 },
             description: { type: 'string', maxLength: 200 },
+            diskQuotaMb: { type: 'integer', minimum: 0, maximum: 1048576 },
             memoryMb: { type: 'integer', minimum: 512, maximum: 65536 },
             cpuLimit: { type: 'number', minimum: 0.5, maximum: 64 },
           },
@@ -298,8 +314,9 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
         body.description.trim() !== server.description;
       const wantsResize =
         typeof body.memoryMb === 'number' || typeof body.cpuLimit === 'number';
+      const wantsQuota = typeof body.diskQuotaMb === 'number';
 
-      if (!wantsRename && !wantsDescription && !wantsResize) {
+      if (!wantsRename && !wantsDescription && !wantsResize && !wantsQuota) {
         // Nothing to change — return current state, no permission check.
         const current = getServer(server.id);
         return {
@@ -418,6 +435,29 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
+      if (wantsQuota) {
+        // Disk quota changes the resource allocation, so it's admin-only,
+        // just like rename of memory/CPU limits.
+        if (request.user.role !== 'ADMIN') {
+          return reply.code(403).send({
+            error: 'Only administrators can change the disk quota.',
+          });
+        }
+        // 0 = remove the quota (unlimited).
+        const newQuota =
+          (body.diskQuotaMb ?? 0) > 0 ? (body.diskQuotaMb as number) : null;
+        updateServerDiskQuota(server.id, newQuota);
+        logActivity({
+          serverId: server.id,
+          actorId: request.user.sub,
+          kind: 'server.quota',
+          details:
+            newQuota === null
+              ? '(unlimited)'
+              : `${server.diskQuotaMb ?? 'unlimited'} → ${newQuota} MiB`,
+        });
+      }
+
       const updated = getServer(server.id);
       return {
         server: updated && (await publicServer(updated, request.user.sub)),
@@ -469,6 +509,20 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
     if (!requirePermission(request, reply, server, PERMISSION.CONTROL_START)) return;
     if (!server.containerId) {
       return reply.code(409).send({ error: 'Server is not ready yet.' });
+    }
+    // v0.15.0+: refuse to start a server that is already over its
+    // disk quota — make some room (delete world, clear logs, ...) or
+    // raise the quota first.
+    if (
+      server.diskQuotaMb !== null &&
+      server.diskUsedMb > server.diskQuotaMb
+    ) {
+      return reply.code(409).send({
+        error:
+          'Disk quota exceeded. Free up space or raise the quota before starting the server.',
+        diskUsedMb: server.diskUsedMb,
+        diskQuotaMb: server.diskQuotaMb,
+      });
     }
     try {
       await startContainer(server.containerId);

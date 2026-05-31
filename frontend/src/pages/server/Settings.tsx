@@ -46,6 +46,10 @@ export default function SettingsPage({
   const [savingResources, setSavingResources] = useState(false);
   const [resourcesError, setResourcesError] = useState<string | null>(null);
   const [resourcesSavedAt, setResourcesSavedAt] = useState<number>(0);
+
+  const [diskQuota, setDiskQuota] = useState(server.diskQuotaMb ?? 0);
+  const [savingDiskQuota, setSavingDiskQuota] = useState(false);
+  const [diskQuotaError, setDiskQuotaError] = useState<string | null>(null);
   const [host, setHost] = useState<ApiHostResources | null>(null);
 
   useEffect(() => {
@@ -139,6 +143,24 @@ export default function SettingsPage({
       );
     } finally {
       setSavingResources(false);
+    }
+  }
+
+  async function handleDiskQuota(event: FormEvent): Promise<void> {
+    event.preventDefault();
+    setDiskQuotaError(null);
+    const target = Math.max(0, Math.floor(diskQuota));
+    if (target === (server.diskQuotaMb ?? 0)) return;
+    setSavingDiskQuota(true);
+    try {
+      const result = await api.updateServerDiskQuota(server.id, target);
+      onRenamed(result.server);
+    } catch (err) {
+      setDiskQuotaError(
+        err instanceof ApiError ? err.message : t('common.errorGeneric'),
+      );
+    } finally {
+      setSavingDiskQuota(false);
     }
   }
 
@@ -305,6 +327,87 @@ export default function SettingsPage({
           )}
         </div>
       )}
+
+      {/* Disk usage / quota (v0.15.0+). Visible to anyone with access;
+          quota editing is admin-only. */}
+      <div className="rounded-2xl border border-peregrine-700 bg-peregrine-900 p-5">
+        <h3 className="text-sm font-semibold text-white">{t('settings.diskTitle')}</h3>
+        <p className="mt-1 text-sm text-peregrine-400">{t('settings.diskSubtitle')}</p>
+
+        {/* Usage indicator: bar when a quota is set, plain text otherwise. */}
+        {server.diskQuotaMb !== null ? (
+          <div className="mt-4 space-y-1.5">
+            <div className="flex items-baseline justify-between text-xs text-peregrine-300">
+              <span>
+                {fmt(t('settings.diskUsedOfQuota'), {
+                  used: server.diskUsedMb,
+                  quota: server.diskQuotaMb,
+                  pct: Math.min(
+                    100,
+                    Math.round((server.diskUsedMb / server.diskQuotaMb) * 100),
+                  ),
+                })}
+              </span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-peregrine-800">
+              <div
+                className={
+                  server.diskUsedMb > server.diskQuotaMb
+                    ? 'h-full rounded-full bg-rose-500'
+                    : server.diskUsedMb / server.diskQuotaMb > 0.8
+                    ? 'h-full rounded-full bg-falcon'
+                    : 'h-full rounded-full bg-emerald-500'
+                }
+                style={{
+                  width: `${Math.min(100, Math.round((server.diskUsedMb / server.diskQuotaMb) * 100))}%`,
+                }}
+              />
+            </div>
+            {server.diskUsedMb > server.diskQuotaMb && (
+              <p className="text-xs text-rose-400">{t('settings.diskExceeded')}</p>
+            )}
+          </div>
+        ) : (
+          <div className="mt-4 text-sm text-peregrine-300">
+            <p>{fmt(t('settings.diskUsed'), { used: server.diskUsedMb })}</p>
+            <p className="mt-1 text-xs text-peregrine-500">{t('settings.diskNoQuota')}</p>
+          </div>
+        )}
+
+        {/* Admin-only quota editor. */}
+        {isAdmin ? (
+          <form onSubmit={handleDiskQuota} className="mt-5 flex flex-wrap items-end gap-3">
+            <div className="min-w-[200px]">
+              <label
+                htmlFor="disk-quota-input"
+                className="mb-1 block text-xs font-medium text-peregrine-400"
+              >
+                {t('settings.diskQuotaLabel')}
+              </label>
+              <input
+                id="disk-quota-input"
+                type="number"
+                min={0}
+                max={1048576}
+                step={512}
+                value={diskQuota}
+                onChange={(e) => setDiskQuota(Number(e.target.value) || 0)}
+                className="w-full rounded-lg border border-peregrine-700 bg-peregrine-950 px-3 py-2 text-sm text-white outline-none transition-colors focus:border-falcon"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={savingDiskQuota || diskQuota === (server.diskQuotaMb ?? 0)}
+              className="rounded-lg bg-falcon px-4 py-2 text-sm font-semibold text-peregrine-950 transition-colors hover:bg-falcon-bright disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {savingDiskQuota ? t('common.pleaseWait') : t('settings.diskQuotaSave')}
+            </button>
+          </form>
+        ) : (
+          <p className="mt-4 text-xs text-peregrine-500">{t('settings.diskQuotaAdminOnly')}</p>
+        )}
+        {diskQuotaError && <p className="mt-2 text-sm text-rose-400">{diskQuotaError}</p>}
+      </div>
 
       <div className="rounded-2xl border border-rose-500/30 bg-rose-500/5 p-5">
         <h3 className="text-sm font-semibold text-rose-300">{t('settings.dangerZone')}</h3>

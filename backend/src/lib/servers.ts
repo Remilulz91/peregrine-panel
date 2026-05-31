@@ -31,6 +31,13 @@ export interface ServerRecord {
   description: string;
   memoryMb: number;
   cpuLimit: number;
+  /** Optional disk quota in MiB. NULL = no quota enforcement. */
+  diskQuotaMb: number | null;
+  /**
+   * Current disk usage in MiB, refreshed by the diskQuotaWorker tick.
+   * 0 until the first measurement lands (just after server creation).
+   */
+  diskUsedMb: number;
   port: number;
   createdAt: string;
 }
@@ -47,6 +54,8 @@ interface ServerRow {
   description: string | null;
   memory_mb: number;
   cpu_limit: number;
+  disk_quota_mb: number | null;
+  disk_used_mb: number;
   port: number;
   created_at: string;
 }
@@ -64,6 +73,8 @@ function toRecord(row: ServerRow): ServerRecord {
     description: row.description ?? '',
     memoryMb: row.memory_mb,
     cpuLimit: row.cpu_limit,
+    diskQuotaMb: row.disk_quota_mb,
+    diskUsedMb: row.disk_used_mb ?? 0,
     port: row.port,
     createdAt: row.created_at,
   };
@@ -96,14 +107,15 @@ export function createServer(input: {
   loader: ServerLoader;
   memoryMb: number;
   cpuLimit: number;
+  diskQuotaMb: number | null;
   port: number;
 }): ServerRecord {
   const id = randomUUID();
   db.prepare(
     `INSERT INTO servers
        (id, owner_id, template_id, name, description, minecraft_version,
-        loader, memory_mb, cpu_limit, port)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        loader, memory_mb, cpu_limit, disk_quota_mb, port)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     id,
     input.ownerId,
@@ -114,6 +126,7 @@ export function createServer(input: {
     input.loader,
     input.memoryMb,
     input.cpuLimit,
+    input.diskQuotaMb,
     input.port,
   );
   const created = getServer(id);
@@ -197,6 +210,25 @@ export function updateServerResources(
   db.prepare(
     'UPDATE servers SET memory_mb = ?, cpu_limit = ? WHERE id = ?',
   ).run(memoryMb, cpuLimit, id);
+}
+
+/** Updates the disk quota (NULL = unlimited). */
+export function updateServerDiskQuota(
+  id: string,
+  diskQuotaMb: number | null,
+): void {
+  db.prepare('UPDATE servers SET disk_quota_mb = ? WHERE id = ?').run(
+    diskQuotaMb,
+    id,
+  );
+}
+
+/** Updates the measured disk usage (called by the disk worker). */
+export function updateServerDiskUsed(id: string, diskUsedMb: number): void {
+  db.prepare('UPDATE servers SET disk_used_mb = ? WHERE id = ?').run(
+    diskUsedMb,
+    id,
+  );
 }
 
 /** Removes a server row from the database. */

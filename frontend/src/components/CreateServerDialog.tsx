@@ -73,6 +73,8 @@ export default function CreateServerDialog({
   const [version, setVersion] = useState('LATEST');
   const [memoryMb, setMemoryMb] = useState(2048);
   const [cpuLimit, setCpuLimit] = useState(2);
+  // v0.15.0+: optional disk quota. 0 = unlimited (no enforcement).
+  const [diskQuotaMb, setDiskQuotaMb] = useState(0);
   // v0.14.0+: auto-start the server right after the install completes.
   // On by default to match Pterodactyl's UX.
   const [autostart, setAutostart] = useState(true);
@@ -106,6 +108,7 @@ export default function CreateServerDialog({
         templateId,
         ownerId: ownerId || undefined,
         autostart,
+        diskQuotaMb: diskQuotaMb > 0 ? diskQuotaMb : undefined,
         minecraftVersion: version,
         // The backend ignores the loader on Bedrock, but we send it
         // explicitly when the game is Java to keep the wire payload
@@ -321,6 +324,29 @@ export default function CreateServerDialog({
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Optional disk quota (v0.15.0+). 0 = unlimited. */}
+          <div>
+            <label
+              htmlFor="srv-quota"
+              className="mb-1 block text-xs font-medium text-peregrine-400"
+            >
+              {t('create.diskQuotaLabel')}
+            </label>
+            <input
+              id="srv-quota"
+              type="number"
+              min={0}
+              max={1048576}
+              step={512}
+              value={diskQuotaMb}
+              onChange={(e) => setDiskQuotaMb(Number(e.target.value) || 0)}
+              className="w-full rounded-lg border border-peregrine-700 bg-peregrine-950 px-3 py-2 text-sm text-white outline-none transition-colors focus:border-falcon"
+            />
+            <p className="mt-1 text-xs text-peregrine-600">
+              {t('create.diskQuotaHint')}
+            </p>
           </div>
 
           {/* Auto-start checkbox — bottom of the form, on by default. */}

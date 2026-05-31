@@ -2,6 +2,40 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.15.0 — 2026-05-29
+
+The biggest of the three Pterodactyl-inspired releases: per-server
+disk quotas, with measured usage and hard enforcement.
+
+### Added
+
+- **Per-server disk quota** in MiB, set at creation time (admin) and
+  editable from a new **Disk usage** section on the Settings tab.
+  When the quota is exceeded:
+  - the running container is hard-stopped on the next worker tick
+    (60 s), with a `server.quota_exceeded` activity entry
+  - subsequent `POST /api/servers/:id/start` calls return HTTP 409
+    until the user frees space or the admin raises the quota
+- **Live disk usage bar** in the Settings tab, color-coded green /
+  amber / red depending on how close the server is to its limit.
+  Refreshed by a background worker that walks each server's data
+  folder via `du -sb` every minute and persists the result.
+- **`backend/src/services/diskQuotaWorker.ts`** — boots alongside
+  the schedule and SFTP workers in `index.ts`.
+- **Migration 12** adds `disk_quota_mb` (nullable = unlimited) and
+  `disk_used_mb` (default 0) columns to the `servers` table.
+- **`PATCH /api/servers/:id`** accepts a `diskQuotaMb` field (admin-
+  only, 0 = remove the quota). Logged as `server.quota`.
+
+### Notes
+
+- The eventual consistency window is up to 60 s — a server can
+  briefly exceed its quota between two worker ticks. That's
+  acceptable for the panel's threat model (protect against runaway
+  worlds, not against tenants trying to fill the disk in seconds).
+- `disk_used_mb` starts at 0 for existing servers until the first
+  worker tick lands; the UI just shows 0 MiB / quota briefly.
+
 ## v0.14.0 — 2026-05-29
 
 Small quality-of-life: the create-server dialog now auto-starts the

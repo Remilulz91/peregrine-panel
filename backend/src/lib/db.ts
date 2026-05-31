@@ -125,6 +125,14 @@ const MIGRATIONS: string[] = [
   // Free-text field shown under the server name in the dashboard
   // and editable from the Settings tab. NULL means "no description".
   `ALTER TABLE servers ADD COLUMN description TEXT;`,
+
+  // Migration 12 - per-server disk quota + measured usage.
+  // disk_quota_mb is NULL = no quota enforcement (unlimited within
+  // the host disk reserve). disk_used_mb is filled by the worker
+  // (services/diskQuotaWorker.ts) on a 60 s tick using `du -sb`;
+  // its initial value is 0 until the first tick lands.
+  `ALTER TABLE servers ADD COLUMN disk_quota_mb INTEGER;
+   ALTER TABLE servers ADD COLUMN disk_used_mb INTEGER NOT NULL DEFAULT 0;`,
 ];
 
 /** Applies any migrations that have not been run on this database yet. */

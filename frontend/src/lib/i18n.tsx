@@ -248,6 +248,14 @@ const translations = {
     en: 'Start the server right after installation',
     fr: 'Démarrer le serveur dès la fin de l’installation',
   },
+  'create.diskQuotaLabel': {
+    en: 'Disk quota (MiB, 0 = unlimited)',
+    fr: 'Quota disque (Mio, 0 = illimité)',
+  },
+  'create.diskQuotaHint': {
+    en: 'Maximum disk space this server can use. Refused start when exceeded.',
+    fr: 'Espace disque maximum que ce serveur peut utiliser. Démarrage refusé si dépassé.',
+  },
   'create.ownerLabel': { en: 'Owner', fr: 'Propriétaire' },
   'create.ownerYou': { en: 'you', fr: 'vous' },
   'create.ownerHint': {
@@ -389,6 +397,37 @@ const translations = {
     fr: 'Ex. Serveur vanilla entre potes',
   },
   'settings.descriptionSave': { en: 'Save description', fr: 'Enregistrer' },
+
+  'settings.diskTitle': { en: 'Disk usage', fr: 'Utilisation disque' },
+  'settings.diskSubtitle': {
+    en: 'How much disk this server uses, and the optional quota an administrator has set.',
+    fr: 'L’espace disque utilisé par ce serveur, et le quota optionnel défini par un administrateur.',
+  },
+  'settings.diskUsed': {
+    en: '{used} MiB used',
+    fr: '{used} Mio utilisés',
+  },
+  'settings.diskUsedOfQuota': {
+    en: '{used} MiB / {quota} MiB ({pct}%)',
+    fr: '{used} Mio / {quota} Mio ({pct} %)',
+  },
+  'settings.diskNoQuota': {
+    en: 'No quota set — the server can use as much disk as the host allows.',
+    fr: 'Aucun quota défini — le serveur peut utiliser tout l’espace disponible sur l’hôte.',
+  },
+  'settings.diskQuotaLabel': {
+    en: 'Disk quota (MiB, 0 = unlimited)',
+    fr: 'Quota disque (Mio, 0 = illimité)',
+  },
+  'settings.diskQuotaSave': { en: 'Save quota', fr: 'Enregistrer le quota' },
+  'settings.diskQuotaAdminOnly': {
+    en: 'Only an administrator can change the disk quota.',
+    fr: 'Seul un administrateur peut modifier le quota disque.',
+  },
+  'settings.diskExceeded': {
+    en: 'The server is currently over its disk quota and has been stopped. Free up space or raise the quota to start it again.',
+    fr: 'Le serveur dépasse actuellement son quota disque et a été arrêté. Libérez de l’espace ou augmentez le quota pour le redémarrer.',
+  },
 
   'settings.resourcesTitle': { en: 'Resources', fr: 'Ressources' },
   'settings.resourcesSubtitle': {
