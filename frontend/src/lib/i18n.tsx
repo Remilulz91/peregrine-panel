@@ -467,7 +467,7 @@ const translations = {
   },
 
   // Server detail tab label (v0.18.0+).
-  'detail.tab.game': { en: 'Game', fr: 'Game' },
+  'detail.tab.game': { en: 'Game', fr: 'Jeu' },
 
 
   'settings.diskTitle': { en: 'Disk usage', fr: 'Utilisation disque' },

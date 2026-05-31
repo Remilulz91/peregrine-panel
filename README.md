@@ -7,7 +7,7 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.18.0** — new **Game** tab in the server panel to edit
+> **Version 0.18.1** — new **Game / Jeu** tab in the server panel to edit
 > MOTD, gamemode, difficulty, max-players, pvp, white-list, online-mode
 > and view-distance directly from the web UI (Java only). See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).

@@ -2,6 +2,15 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.18.1 — 2026-05-31
+
+### Fixed
+
+- **Game tab label was left in English in the French UI** — the
+  `Game` tab now reads `Jeu` in French, in line with every other
+  tab (`Console`, `Fichiers`, `Réseau`, `Sauvegardes`, …). The
+  English label is unchanged.
+
 ## v0.18.0 — 2026-05-31
 
 A new **Game** tab in the server panel lets owners edit the most
