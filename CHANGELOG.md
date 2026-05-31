@@ -2,6 +2,22 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.16.1 — 2026-05-30
+
+### Fixed
+
+- **Player list parser was too lenient** and mis-parsed RCON
+  connection errors during the first ~30 s of server boot. Symptoms
+  on screen included a wrong "2026 / 5 en ligne" count (digits
+  scraped from the error timestamp `2026/05/30 20:32 Failed to
+  connect to RCON...`) and a green chip showing the connection-
+  refused error as if it were a connected pseudo. The parser now
+  explicitly recognises the standard "Failed to connect to RCON",
+  "connection refused" and "Unable to connect" messages and returns
+  a zero state for them, and the success regex requires the exact
+  `There are X of a max of Y players online:` phrasing instead of a
+  loose digit-pair match.
+
 ## v0.16.0 — 2026-05-29
 
 Live player list on the Console tab — see at a glance who is

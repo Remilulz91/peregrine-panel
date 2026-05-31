@@ -21,23 +21,45 @@ interface PlayerListResponse {
 
 /**
  * Parses the textual output of the Minecraft `list` RCON command.
- * Format on vanilla / Paper / Fabric / Forge:
+ * Expected formats on vanilla / Paper / Fabric / Forge:
  *
  *   "There are 2 of a max of 20 players online: alice, bob"
  *   "There are 0 of a max of 20 players online:"
+ *   "There are 2 of a max 20 players online: alice, bob"  (older Paper)
  *
- * Some forks (e.g. older Paper) use "of a max" vs "out of a maximum of",
- * so the regex is intentionally lenient.
+ * Anything else — including RCON connection errors during boot
+ * (e.g. "Failed to connect to RCON server" while MC is still
+ * starting up) — is treated as "no data yet" rather than parsed
+ * lossily, otherwise stray digits in error messages end up shown as
+ * online / max counters on the dashboard.
  */
 function parseListOutput(output: string): {
   online: number;
   max: number;
   players: string[];
 } {
-  const match = output.match(/(\d+)\D+(\d+)[^:]*:\s*(.*)$/m);
+  // Fast path: RCON not ready yet (typical during the first ~30s
+  // of the server boot). The itzg image's rcon-cli prints a line
+  // like "2026/05/30 20:32 Failed to connect to RCON serverdial
+  // tcp [::1]:25575: connect: connection refused" in that case.
+  if (
+    /failed to connect to rcon|connection refused|unable to connect|no such host/i.test(
+      output,
+    )
+  ) {
+    return { online: 0, max: 0, players: [] };
+  }
+
+  // Strict match — require the actual phrasing the Minecraft list
+  // command outputs. The "of a max( of)? " group covers both modern
+  // vanilla and older Paper wording.
+  const match = output.match(
+    /There are (\d+) of a max(?: of)? (\d+) players online:?\s*(.*)$/im,
+  );
   if (!match) {
     return { online: 0, max: 0, players: [] };
   }
+
   const online = parseInt(match[1], 10);
   const max = parseInt(match[2], 10);
   const rest = match[3].trim();

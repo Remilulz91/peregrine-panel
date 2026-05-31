@@ -7,9 +7,10 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.16.0** — live player list on the Console tab. See
-> at a glance who is connected to a Java server, refreshed every
-> 30 seconds. See the changelog in [`CHANGELOG.md`](CHANGELOG.md).
+> **Version 0.16.1** — patch: the player list parser no longer
+> mis-reads RCON connection errors during server boot as garbage
+> "X / Y en ligne" counters. See the changelog in
+> [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features
 

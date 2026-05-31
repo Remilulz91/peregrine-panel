@@ -1,6 +1,6 @@
 {
   "name": "peregrine-frontend",
-  "version": "0.16.0",
+  "version": "0.16.1",
   "private": true,
   "description": "Peregrine - panel web interface (React, Vite)",
   "license": "SEE LICENSE IN ../LICENSE",
