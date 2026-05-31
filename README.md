@@ -7,9 +7,9 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.15.0** — per-server disk quotas with live usage bar
-> and hard enforcement (the server is stopped when over quota, with
-> a `server.quota_exceeded` activity entry). See the changelog in
+> **Version 0.15.1** — create-server dialog reworked into a
+> two-column landscape layout so it no longer spills off-screen
+> with all the fields added over v0.13–v0.15. See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features

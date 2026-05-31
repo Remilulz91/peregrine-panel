@@ -148,235 +148,245 @@ export default function CreateServerDialog({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-2xl border border-peregrine-700 bg-peregrine-900 p-6"
+        className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-y-auto rounded-2xl border border-peregrine-700 bg-peregrine-900 p-6"
         onClick={(event) => event.stopPropagation()}
       >
         <h2 className="text-lg font-semibold text-white">{t('create.title')}</h2>
 
-        <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
-          <Field
-            id="srv-name"
-            label={t('create.nameLabel')}
-            type="text"
-            required
-            maxLength={48}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
+        <form className="mt-5" onSubmit={handleSubmit}>
+          {/* v0.15.1+: two-column landscape layout. Collapses back to
+              a single column on screens narrower than the md breakpoint
+              (768 px) so phone users still get a usable dialog. */}
+          <div className="grid grid-cols-1 gap-x-5 gap-y-4 md:grid-cols-2">
+            {/* ---------- Left column — identity ---------- */}
+            <div className="space-y-4">
+              <Field
+                id="srv-name"
+                label={t('create.nameLabel')}
+                type="text"
+                required
+                maxLength={48}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
 
-          {/* Optional description — free text, shown under the name. */}
-          <div>
-            <label
-              htmlFor="srv-description"
-              className="mb-1 block text-xs font-medium text-peregrine-400"
-            >
-              {t('create.descriptionLabel')}
-            </label>
-            <textarea
-              id="srv-description"
-              rows={2}
-              maxLength={200}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full resize-none rounded-lg border border-peregrine-700 bg-peregrine-950 px-3 py-2 text-sm text-white outline-none transition-colors focus:border-falcon"
-            />
-            <p className="mt-1 text-xs text-peregrine-600">
-              {t('create.descriptionHint')}
-            </p>
-          </div>
+              <div>
+                <label
+                  htmlFor="srv-description"
+                  className="mb-1 block text-xs font-medium text-peregrine-400"
+                >
+                  {t('create.descriptionLabel')}
+                </label>
+                <textarea
+                  id="srv-description"
+                  rows={3}
+                  maxLength={200}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="w-full resize-none rounded-lg border border-peregrine-700 bg-peregrine-950 px-3 py-2 text-sm text-white outline-none transition-colors focus:border-falcon"
+                />
+                <p className="mt-1 text-xs text-peregrine-600">
+                  {t('create.descriptionHint')}
+                </p>
+              </div>
 
-          {/* Owner picker — admins create servers on behalf of users. */}
-          <div>
-            <label
-              htmlFor="srv-owner"
-              className="mb-1 block text-xs font-medium text-peregrine-400"
-            >
-              {t('create.ownerLabel')}
-            </label>
-            <select
-              id="srv-owner"
-              value={ownerId}
-              onChange={(e) => setOwnerId(e.target.value)}
-              className={SELECT_CLASS}
-            >
-              {users.length === 0 && user && (
-                <option value={user.id}>{user.username}</option>
+              <div>
+                <label
+                  htmlFor="srv-owner"
+                  className="mb-1 block text-xs font-medium text-peregrine-400"
+                >
+                  {t('create.ownerLabel')}
+                </label>
+                <select
+                  id="srv-owner"
+                  value={ownerId}
+                  onChange={(e) => setOwnerId(e.target.value)}
+                  className={SELECT_CLASS}
+                >
+                  {users.length === 0 && user && (
+                    <option value={user.id}>{user.username}</option>
+                  )}
+                  {users.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.username}
+                      {u.id === user?.id ? ` (${t('create.ownerYou')})` : ''}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-peregrine-600">
+                  {t('create.ownerHint')}
+                </p>
+              </div>
+            </div>
+
+            {/* ---------- Right column — technical config ---------- */}
+            <div className="space-y-4">
+              <div>
+                <label
+                  htmlFor="srv-template"
+                  className="mb-1 block text-xs font-medium text-peregrine-400"
+                >
+                  {t('create.templateLabel')}
+                </label>
+                <select
+                  id="srv-template"
+                  value={templateId}
+                  onChange={(e) => setTemplateId(e.target.value)}
+                  className={SELECT_CLASS}
+                >
+                  {templates.map((template) => (
+                    <option key={template.id} value={template.id}>
+                      {template.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Loader is Java-only — Bedrock has no fork ecosystem. */}
+              {isJava && (
+                <div>
+                  <label
+                    htmlFor="srv-loader"
+                    className="mb-1 block text-xs font-medium text-peregrine-400"
+                  >
+                    {t('create.loaderLabel')}
+                  </label>
+                  <select
+                    id="srv-loader"
+                    value={loader}
+                    onChange={(e) => setLoader(e.target.value as ServerLoader)}
+                    className={SELECT_CLASS}
+                  >
+                    {JAVA_LOADERS.map((l) => (
+                      <option key={l} value={l}>
+                        {t((`loader.${l}` as TranslationKey))}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-peregrine-600">
+                    {t('create.loaderHint')}
+                  </p>
+                </div>
               )}
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.username}
-                  {u.id === user?.id ? ` (${t('create.ownerYou')})` : ''}
-                </option>
-              ))}
-            </select>
-            <p className="mt-1 text-xs text-peregrine-600">
-              {t('create.ownerHint')}
-            </p>
-          </div>
 
-          <div>
-            <label
-              htmlFor="srv-template"
-              className="mb-1 block text-xs font-medium text-peregrine-400"
-            >
-              {t('create.templateLabel')}
-            </label>
-            <select
-              id="srv-template"
-              value={templateId}
-              onChange={(e) => setTemplateId(e.target.value)}
-              className={SELECT_CLASS}
-            >
-              {templates.map((template) => (
-                <option key={template.id} value={template.id}>
-                  {template.name}
-                </option>
-              ))}
-            </select>
-          </div>
+              <div>
+                <label
+                  htmlFor="srv-version"
+                  className="mb-1 block text-xs font-medium text-peregrine-400"
+                >
+                  {t('create.versionLabel')}
+                </label>
+                <select
+                  id="srv-version"
+                  value={version}
+                  onChange={(e) => setVersion(e.target.value)}
+                  className={SELECT_CLASS}
+                >
+                  {versionOptions.map((v) => (
+                    <option key={v} value={v}>
+                      {v}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-          {/* Loader is Java-only — Bedrock has no fork ecosystem. */}
-          {isJava && (
-            <div>
-              <label
-                htmlFor="srv-loader"
-                className="mb-1 block text-xs font-medium text-peregrine-400"
-              >
-                {t('create.loaderLabel')}
-              </label>
-              <select
-                id="srv-loader"
-                value={loader}
-                onChange={(e) => setLoader(e.target.value as ServerLoader)}
-                className={SELECT_CLASS}
-              >
-                {JAVA_LOADERS.map((l) => (
-                  <option key={l} value={l}>
-                    {t((`loader.${l}` as TranslationKey))}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1 text-xs text-peregrine-600">
-                {t('create.loaderHint')}
-              </p>
-            </div>
-          )}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label
+                    htmlFor="srv-memory"
+                    className="mb-1 block text-xs font-medium text-peregrine-400"
+                  >
+                    {t('create.memoryLabel')}
+                  </label>
+                  <select
+                    id="srv-memory"
+                    value={memoryMb}
+                    onChange={(e) => setMemoryMb(Number(e.target.value))}
+                    className={SELECT_CLASS}
+                  >
+                    {MEMORY_OPTIONS.map((mb) => (
+                      <option key={mb} value={mb}>
+                        {mb / 1024} GB
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label
+                    htmlFor="srv-cpu"
+                    className="mb-1 block text-xs font-medium text-peregrine-400"
+                  >
+                    {t('create.cpuLabel')}
+                  </label>
+                  <select
+                    id="srv-cpu"
+                    value={cpuLimit}
+                    onChange={(e) => setCpuLimit(Number(e.target.value))}
+                    className={SELECT_CLASS}
+                  >
+                    {CPU_OPTIONS.map((cores) => (
+                      <option key={cores} value={cores}>
+                        {cores}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
 
-          <div>
-            <label
-              htmlFor="srv-version"
-              className="mb-1 block text-xs font-medium text-peregrine-400"
-            >
-              {t('create.versionLabel')}
-            </label>
-            <select
-              id="srv-version"
-              value={version}
-              onChange={(e) => setVersion(e.target.value)}
-              className={SELECT_CLASS}
-            >
-              {versionOptions.map((v) => (
-                <option key={v} value={v}>
-                  {v}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label
-                htmlFor="srv-memory"
-                className="mb-1 block text-xs font-medium text-peregrine-400"
-              >
-                {t('create.memoryLabel')}
-              </label>
-              <select
-                id="srv-memory"
-                value={memoryMb}
-                onChange={(e) => setMemoryMb(Number(e.target.value))}
-                className={SELECT_CLASS}
-              >
-                {MEMORY_OPTIONS.map((mb) => (
-                  <option key={mb} value={mb}>
-                    {mb / 1024} GB
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label
-                htmlFor="srv-cpu"
-                className="mb-1 block text-xs font-medium text-peregrine-400"
-              >
-                {t('create.cpuLabel')}
-              </label>
-              <select
-                id="srv-cpu"
-                value={cpuLimit}
-                onChange={(e) => setCpuLimit(Number(e.target.value))}
-                className={SELECT_CLASS}
-              >
-                {CPU_OPTIONS.map((cores) => (
-                  <option key={cores} value={cores}>
-                    {cores}
-                  </option>
-                ))}
-              </select>
+              <div>
+                <label
+                  htmlFor="srv-quota"
+                  className="mb-1 block text-xs font-medium text-peregrine-400"
+                >
+                  {t('create.diskQuotaLabel')}
+                </label>
+                <input
+                  id="srv-quota"
+                  type="number"
+                  min={0}
+                  max={1048576}
+                  step={512}
+                  value={diskQuotaMb}
+                  onChange={(e) => setDiskQuotaMb(Number(e.target.value) || 0)}
+                  className="w-full rounded-lg border border-peregrine-700 bg-peregrine-950 px-3 py-2 text-sm text-white outline-none transition-colors focus:border-falcon"
+                />
+                <p className="mt-1 text-xs text-peregrine-600">
+                  {t('create.diskQuotaHint')}
+                </p>
+              </div>
             </div>
           </div>
 
-          {/* Optional disk quota (v0.15.0+). 0 = unlimited. */}
-          <div>
-            <label
-              htmlFor="srv-quota"
-              className="mb-1 block text-xs font-medium text-peregrine-400"
-            >
-              {t('create.diskQuotaLabel')}
+          {/* ---------- Full-width footer ---------- */}
+          <div className="mt-5 space-y-4 border-t border-peregrine-800 pt-4">
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-peregrine-200">
+              <input
+                type="checkbox"
+                checked={autostart}
+                onChange={(e) => setAutostart(e.target.checked)}
+                className="h-4 w-4 cursor-pointer accent-falcon"
+              />
+              {t('create.autostartLabel')}
             </label>
-            <input
-              id="srv-quota"
-              type="number"
-              min={0}
-              max={1048576}
-              step={512}
-              value={diskQuotaMb}
-              onChange={(e) => setDiskQuotaMb(Number(e.target.value) || 0)}
-              className="w-full rounded-lg border border-peregrine-700 bg-peregrine-950 px-3 py-2 text-sm text-white outline-none transition-colors focus:border-falcon"
-            />
-            <p className="mt-1 text-xs text-peregrine-600">
-              {t('create.diskQuotaHint')}
-            </p>
-          </div>
 
-          {/* Auto-start checkbox — bottom of the form, on by default. */}
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-peregrine-200">
-            <input
-              type="checkbox"
-              checked={autostart}
-              onChange={(e) => setAutostart(e.target.checked)}
-              className="h-4 w-4 cursor-pointer accent-falcon"
-            />
-            {t('create.autostartLabel')}
-          </label>
+            {error && <p className="text-sm text-rose-400">{error}</p>}
 
-          {error && <p className="text-sm text-rose-400">{error}</p>}
-
-          <div className="flex justify-end gap-2 pt-1">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg border border-peregrine-700 px-4 py-2 text-sm font-medium text-peregrine-200 transition-colors hover:bg-peregrine-800"
-            >
-              {t('common.cancel')}
-            </button>
-            <button
-              type="submit"
-              disabled={busy}
-              className="rounded-lg bg-falcon px-4 py-2 text-sm font-semibold text-peregrine-950 transition-colors hover:bg-falcon-bright disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {busy ? t('common.pleaseWait') : t('create.submit')}
-            </button>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-lg border border-peregrine-700 px-4 py-2 text-sm font-medium text-peregrine-200 transition-colors hover:bg-peregrine-800"
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                type="submit"
+                disabled={busy}
+                className="rounded-lg bg-falcon px-4 py-2 text-sm font-semibold text-peregrine-950 transition-colors hover:bg-falcon-bright disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {busy ? t('common.pleaseWait') : t('create.submit')}
+              </button>
+            </div>
           </div>
         </form>
       </div>

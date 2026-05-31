@@ -2,6 +2,25 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.15.1 — 2026-05-29
+
+### Changed
+
+- **Create-server dialog reworked into a two-column landscape
+  layout.** With every field accumulated over v0.13–v0.15 (name,
+  description, owner, game, loader, version, memory, CPU, disk
+  quota, autostart), the previous single-column dialog had become
+  too tall and spilled off-screen. The dialog is now wider
+  (`max-w-3xl`, ~768 px) and groups identity fields on the left
+  (name, description, owner) and technical fields on the right
+  (game, loader, version, memory/CPU, disk quota). The autostart
+  checkbox + Cancel/Create buttons span the full width at the
+  bottom.
+- Falls back to a single-column stack below the `md` breakpoint
+  (768 px) so phones and narrow windows stay usable.
+- Adds a `max-h-[90vh] overflow-y-auto` safety so the dialog still
+  scrolls cleanly on very small viewports.
+
 ## v0.15.0 — 2026-05-29
 
 The biggest of the three Pterodactyl-inspired releases: per-server
