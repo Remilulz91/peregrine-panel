@@ -210,6 +210,11 @@ interface CreateServerInput {
    * rejects the create with 403 otherwise.
    */
   ownerId?: string;
+  /**
+   * When true (default), the server is auto-started right after the
+   * install completes. Set to false to leave it offline.
+   */
+  autostart?: boolean;
   memoryMb: number;
   cpuLimit: number;
 }

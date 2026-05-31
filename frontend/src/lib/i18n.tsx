@@ -244,6 +244,10 @@ const translations = {
     en: 'A short note to identify this server in the list (max 200 characters).',
     fr: 'Une courte note pour identifier ce serveur dans la liste (max 200 caractères).',
   },
+  'create.autostartLabel': {
+    en: 'Start the server right after installation',
+    fr: 'Démarrer le serveur dès la fin de l’installation',
+  },
   'create.ownerLabel': { en: 'Owner', fr: 'Propriétaire' },
   'create.ownerYou': { en: 'you', fr: 'vous' },
   'create.ownerHint': {

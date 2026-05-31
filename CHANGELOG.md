@@ -2,6 +2,30 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.14.0 — 2026-05-29
+
+Small quality-of-life: the create-server dialog now auto-starts the
+server right after the install completes, matching what Pterodactyl
+does. No more "wait for status to flip then go click Start".
+
+### Added
+
+- **"Start the server right after installation"** checkbox in the
+  create-server dialog, on by default. When checked, Peregrine
+  calls `startContainer` automatically as soon as the install
+  finishes, and records a `server.start` activity entry tagged
+  "auto-start after install".
+- **`POST /api/servers`** now accepts an `autostart: boolean` field
+  (default `true`). Set to `false` to keep the server offline after
+  the install.
+
+### Notes
+
+- If the auto-start fails (e.g. Docker daemon hiccup), the install
+  is still marked as successful — the server stays in `OFFLINE`
+  state and the failure is logged as `server.autostart_failed`. The
+  user can simply hit Start manually from the panel.
+
 ## v0.13.0 — 2026-05-29
 
 A small but useful organisational feature inspired by Pterodactyl:

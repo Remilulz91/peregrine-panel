@@ -73,6 +73,9 @@ export default function CreateServerDialog({
   const [version, setVersion] = useState('LATEST');
   const [memoryMb, setMemoryMb] = useState(2048);
   const [cpuLimit, setCpuLimit] = useState(2);
+  // v0.14.0+: auto-start the server right after the install completes.
+  // On by default to match Pterodactyl's UX.
+  const [autostart, setAutostart] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -102,6 +105,7 @@ export default function CreateServerDialog({
         description: description.trim() || undefined,
         templateId,
         ownerId: ownerId || undefined,
+        autostart,
         minecraftVersion: version,
         // The backend ignores the loader on Bedrock, but we send it
         // explicitly when the game is Java to keep the wire payload
@@ -318,6 +322,17 @@ export default function CreateServerDialog({
               </select>
             </div>
           </div>
+
+          {/* Auto-start checkbox — bottom of the form, on by default. */}
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-peregrine-200">
+            <input
+              type="checkbox"
+              checked={autostart}
+              onChange={(e) => setAutostart(e.target.checked)}
+              className="h-4 w-4 cursor-pointer accent-falcon"
+            />
+            {t('create.autostartLabel')}
+          </label>
 
           {error && <p className="text-sm text-rose-400">{error}</p>}
 

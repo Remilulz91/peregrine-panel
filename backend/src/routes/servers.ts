@@ -53,6 +53,11 @@ interface CreateServerBody {
    * so there's no privilege-escalation risk in trusting the value.
    */
   ownerId?: string;
+  /**
+   * When true, the server is automatically started right after the
+   * install completes. Defaults to true — matches the Pterodactyl UX.
+   */
+  autostart?: boolean;
   memoryMb: number;
   cpuLimit: number;
 }
@@ -150,6 +155,7 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
               enum: ['vanilla', 'paper', 'fabric', 'forge'],
             },
             ownerId: { type: 'string', minLength: 1 },
+            autostart: { type: 'boolean' },
             memoryMb: { type: 'integer', minimum: 512, maximum: 16384 },
             cpuLimit: { type: 'number', minimum: 0.5, maximum: 16 },
           },
@@ -251,7 +257,10 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
         kind: 'server.create',
       });
 
-      void provisionServer(server, template);
+      // autostart defaults to true — matches the Pterodactyl UX of
+      // "Start Server when Installed" being on by default.
+      const autostart = body.autostart !== false;
+      void provisionServer(server, template, { autostart });
 
       return reply
         .code(201)

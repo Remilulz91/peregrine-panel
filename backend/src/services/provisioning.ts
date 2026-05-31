@@ -5,6 +5,7 @@ import {
   createServerContainer,
   pullImage,
   removeContainer,
+  startContainer,
 } from '../lib/docker';
 import { updateServerStatus, type ServerRecord } from '../lib/servers';
 import type { GameTemplate } from '../lib/templates';
@@ -79,8 +80,10 @@ async function pullImageWithRetry(
 export async function provisionServer(
   server: ServerRecord,
   template: GameTemplate,
+  options: { autostart?: boolean } = {},
 ): Promise<void> {
   let stage: 'mkdir' | 'pull' | 'create' = 'mkdir';
+  let containerId: string | null = null;
   try {
     const dataDir = serverDataDir(server.id);
     fs.mkdirSync(dataDir, { recursive: true });
@@ -89,7 +92,7 @@ export async function provisionServer(
     await pullImageWithRetry(template.dockerImage);
 
     stage = 'create';
-    const containerId = await createServerContainer({
+    containerId = await createServerContainer({
       serverId: server.id,
       image: template.dockerImage,
       kind: template.kind,
@@ -117,6 +120,35 @@ export async function provisionServer(
       kind: 'server.install_failed',
       details: `${stage}: ${reason}`.slice(0, 500),
     });
+    return;
+  }
+
+  // Optional auto-start (v0.14.0+). The install itself is done at this
+  // point, so a failure here doesn't roll the server back to
+  // INSTALL_FAILED — the user can simply hit Start manually. We log
+  // both success and failure to the activity feed so the boot trace
+  // is visible.
+  if (options.autostart && containerId) {
+    try {
+      await startContainer(containerId);
+      logActivity({
+        serverId: server.id,
+        actorId: null,
+        kind: 'server.start',
+        details: 'auto-start after install',
+      });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[provisioning] auto-start failed for ${server.id}: ${describeError(err)}`,
+      );
+      logActivity({
+        serverId: server.id,
+        actorId: null,
+        kind: 'server.autostart_failed',
+        details: describeError(err).slice(0, 500),
+      });
+    }
   }
 }
 
