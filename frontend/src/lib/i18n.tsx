@@ -425,6 +425,51 @@ const translations = {
     fr: 'Seules les images PNG sont acceptées.',
   },
 
+  // --- Game settings tab (v0.18.0+) ---
+  'game.title': { en: 'Game settings', fr: 'Paramètres du jeu' },
+  'game.subtitle': {
+    en: 'Edit the server.properties values shown on the Pterodactyl-style Game tab. Changes take effect at the next restart.',
+    fr: 'Modifie les valeurs de server.properties affichées sur l’onglet Game façon Pterodactyl. Les changements prennent effet au prochain redémarrage.',
+  },
+  'game.javaOnly': {
+    en: 'Game settings are only available for Minecraft Java servers.',
+    fr: 'Les paramètres du jeu ne sont disponibles que pour les serveurs Minecraft Java.',
+  },
+  'game.motd': { en: 'MOTD (Message of the Day)', fr: 'MOTD (message du jour)' },
+  'game.maxPlayers': { en: 'Max players', fr: 'Joueurs max' },
+  'game.gamemode': { en: 'Gamemode', fr: 'Mode de jeu' },
+  'game.gamemode.survival': { en: 'Survival', fr: 'Survie' },
+  'game.gamemode.creative': { en: 'Creative', fr: 'Créatif' },
+  'game.gamemode.adventure': { en: 'Adventure', fr: 'Aventure' },
+  'game.gamemode.spectator': { en: 'Spectator', fr: 'Spectateur' },
+  'game.difficulty': { en: 'Difficulty', fr: 'Difficulté' },
+  'game.difficulty.peaceful': { en: 'Peaceful', fr: 'Paisible' },
+  'game.difficulty.easy': { en: 'Easy', fr: 'Facile' },
+  'game.difficulty.normal': { en: 'Normal', fr: 'Normal' },
+  'game.difficulty.hard': { en: 'Hard', fr: 'Difficile' },
+  'game.pvp': { en: 'Player vs. Player (PvP)', fr: 'Joueur contre Joueur (PvP)' },
+  'game.onlineMode': { en: 'Online mode (premium auth)', fr: 'Online mode (auth premium)' },
+  'game.onlineModeWarning': {
+    en: 'Disabling online mode lets cracked clients connect — anyone can join with any name, including yours. Only turn it off on closed/private networks.',
+    fr: 'Désactiver l’online mode laisse entrer les clients craqués — n’importe qui peut se connecter avec n’importe quel pseudo, y compris le tien. Ne le coupe que sur un réseau fermé.',
+  },
+  'game.whiteList': { en: 'White-list', fr: 'White-list' },
+  'game.viewDistance': { en: 'View distance (chunks)', fr: 'View distance (chunks)' },
+  'game.save': { en: 'Save settings', fr: 'Enregistrer' },
+  'game.saved': { en: 'Saved — restart the server to apply.', fr: 'Enregistré — redémarre le serveur pour appliquer.' },
+  'game.requiresRestart': {
+    en: 'Changes only take effect the next time the server starts.',
+    fr: 'Les changements ne prennent effet qu’au prochain démarrage du serveur.',
+  },
+  'game.noPermission': {
+    en: 'You do not have permission to edit game settings on this server.',
+    fr: 'Tu n’as pas la permission de modifier les paramètres du jeu de ce serveur.',
+  },
+
+  // Server detail tab label (v0.18.0+).
+  'detail.tab.game': { en: 'Game', fr: 'Game' },
+
+
   'settings.diskTitle': { en: 'Disk usage', fr: 'Utilisation disque' },
   'settings.diskSubtitle': {
     en: 'How much disk this server uses, and the optional quota an administrator has set.',

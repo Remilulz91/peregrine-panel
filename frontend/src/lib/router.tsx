@@ -14,6 +14,7 @@ export type Route =
 export type ServerTab =
   | 'console'
   | 'files'
+  | 'game'
   | 'network'
   | 'backups'
   | 'schedules'
@@ -24,6 +25,7 @@ export type ServerTab =
 const SERVER_TABS: readonly ServerTab[] = [
   'console',
   'files',
+  'game',
   'network',
   'backups',
   'schedules',

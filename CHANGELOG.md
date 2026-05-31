@@ -2,6 +2,51 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.18.0 — 2026-05-31
+
+A new **Game** tab in the server panel lets owners edit the most
+common Minecraft `server.properties` keys from the web UI, in the
+spirit of Pterodactyl's Startup / Settings split.
+
+### Added
+
+- **Backend `lib/properties.ts`** — parses and serialises
+  `server.properties` while preserving original line order and
+  comments. Only the eight managed keys are rewritten; anything else
+  the user added by hand (or that a plugin wrote) is left intact.
+- **`GET /api/servers/:id/game-settings`** — returns the current
+  values for `motd`, `max-players`, `gamemode`, `difficulty`, `pvp`,
+  `online-mode`, `white-list`, `view-distance`. Returns the defaults
+  when the file does not exist yet (fresh install).
+- **`PUT /api/servers/:id/game-settings`** — overwrites those keys
+  after server-side validation (enums, numeric ranges, MOTD length).
+  Requires the `settings.rename` permission.
+- **Java-only** — both routes return `501 Not Implemented` on
+  Bedrock servers with a clear message. The Game tab in the UI
+  shows the same notice instead of an empty form.
+- **`OVERRIDE_SERVER_PROPERTIES=FALSE`** is now set on every new
+  Java container, so user edits to `server.properties` survive a
+  container restart instead of being overwritten by the itzg
+  entrypoint from env-var defaults.
+- **Frontend `Game` tab** — sits between Files and Network. Form
+  with two-column layout for gamemode/difficulty/max-players/view-
+  distance, MOTD on its own row, and grouped toggles for pvp,
+  white-list and online-mode (with a security warning when online
+  mode is turned off).
+- **Activity log event**: `server.game_settings_updated` (records a
+  short summary of the new state).
+
+### Notes
+
+- Changes take effect at the next server restart — this is shown
+  inline next to the Save button and reiterated in the success
+  banner after saving.
+- Servers created on versions prior to v0.18.0 will keep
+  overwriting `server.properties` on every restart (the env-var
+  flag was set at container creation time, and Docker can't update
+  envs on an existing container). For best results, recreate the
+  server, or stop / re-pull / recreate the container via the host.
+
 ## v0.17.0 — 2026-05-31
 
 Upload a per-server icon — a small visual identifier that replaces

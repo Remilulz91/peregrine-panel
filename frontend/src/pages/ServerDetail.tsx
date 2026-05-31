@@ -23,6 +23,7 @@ import {
 } from '../lib/i18n';
 import ConsolePage from './server/Console';
 import FilesPage from './server/Files';
+import GamePage from './server/Game';
 import NetworkPage from './server/Network';
 import BackupsPage from './server/Backups';
 import SchedulesPage from './server/Schedules';
@@ -56,6 +57,7 @@ const STATUS_KEY: Record<string, TranslationKey> = {
 const TABS: { id: ServerTab; key: TranslationKey; ownerOnly?: boolean }[] = [
   { id: 'console', key: 'detail.tab.console' },
   { id: 'files', key: 'detail.tab.files' },
+  { id: 'game', key: 'detail.tab.game' },
   { id: 'network', key: 'detail.tab.network' },
   { id: 'backups', key: 'detail.tab.backups' },
   { id: 'schedules', key: 'detail.tab.schedules', ownerOnly: true },
@@ -147,6 +149,14 @@ export default function ServerDetail({ id, tab }: ServerDetailProps) {
         );
       case 'files':
         return <FilesPage server={active} myPermissions={myPermissions} />;
+      case 'game':
+        return (
+          <GamePage
+            server={active}
+            template={template}
+            myPermissions={myPermissions}
+          />
+        );
       case 'network':
         return <NetworkPage server={active} template={template} />;
       case 'backups':

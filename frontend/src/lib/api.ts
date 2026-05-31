@@ -251,6 +251,18 @@ export type LoginResponse =
   | { user: ApiUser; requiresMfa?: undefined }
   | ApiMfaChallenge;
 
+/** Subset of `server.properties` we expose in the Game settings tab (v0.18.0+). */
+export interface ApiGameSettings {
+  motd: string;
+  maxPlayers: number;
+  gamemode: 'survival' | 'creative' | 'adventure' | 'spectator';
+  difficulty: 'peaceful' | 'easy' | 'normal' | 'hard';
+  pvp: boolean;
+  onlineMode: boolean;
+  whiteList: boolean;
+  viewDistance: number;
+}
+
 export const api = {
   setupRequired: () =>
     request<{ setupRequired: boolean }>('/api/auth/setup-required'),
@@ -375,6 +387,13 @@ export const api = {
   },
   deleteServerIcon: (id: string) =>
     request<{ ok: boolean }>(`/api/servers/${id}/icon`, { method: 'DELETE' }),
+  getGameSettings: (id: string) =>
+    request<{ settings: ApiGameSettings }>(`/api/servers/${id}/game-settings`),
+  updateGameSettings: (id: string, settings: ApiGameSettings) =>
+    request<{ settings: ApiGameSettings }>(`/api/servers/${id}/game-settings`, {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    }),
   deleteServer: (id: string) =>
     request<{ ok: boolean }>(`/api/servers/${id}`, { method: 'DELETE' }),
   serverAction: (id: string, action: ServerAction) =>

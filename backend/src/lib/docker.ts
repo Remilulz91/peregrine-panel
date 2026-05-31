@@ -116,6 +116,13 @@ export async function createServerContainer(
     // Leave headroom below the container limit for the JVM's non-heap memory.
     const heapMb = Math.max(input.memoryMb - 512, 512);
     env.push(`MEMORY=${heapMb}M`);
+    // v0.18.0+: stop the entrypoint from re-generating server.properties
+    // from env vars on every restart. We expose the file as editable via
+    // the Game settings tab, and the user's edits must win — otherwise
+    // a restart would silently revert MOTD/max-players/etc. to whatever
+    // the env vars say. The file is still seeded on first boot from
+    // these env vars, so the initial values are sane.
+    env.push('OVERRIDE_SERVER_PROPERTIES=FALSE');
   }
 
   const container = await docker.createContainer({
