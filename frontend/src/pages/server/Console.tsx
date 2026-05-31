@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { io, type Socket } from 'socket.io-client';
+import PlayerList from '../../components/PlayerList';
 import { hasPermission, PERM, type ApiServer } from '../../lib/api';
 import { useTranslation } from '../../lib/i18n';
 
@@ -109,6 +110,14 @@ export default function ConsolePage({
   else footer = 'noPerm';
 
   return (
+    <div className="space-y-4">
+      {/* v0.16.0+: live player list, polled every 30 s. Hidden for
+          Bedrock and any template without RCON support. */}
+      <PlayerList
+        serverId={server.id}
+        serverRunning={server.status === 'RUNNING'}
+      />
+
     <div className="flex h-[70vh] flex-col overflow-hidden rounded-2xl border border-peregrine-700 bg-peregrine-900">
       <div className="flex items-center justify-between border-b border-peregrine-800 px-5 py-2.5">
         <p className="text-xs text-peregrine-400">
@@ -155,6 +164,7 @@ export default function ConsolePage({
           {t('console.noSendPermission')}
         </p>
       )}
+    </div>
     </div>
   );
 }

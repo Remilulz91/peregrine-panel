@@ -2,6 +2,30 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.16.0 — 2026-05-29
+
+Live player list on the Console tab — see at a glance who is
+connected without having to type `list` in the console.
+
+### Added
+
+- **`GET /api/servers/:id/players`** endpoint that runs the `list`
+  RCON command and returns `{ supported, running, online, max,
+  players[] }`.
+- **`PlayerList` component** mounted above the live console on the
+  Console tab. Polls the endpoint every 30 seconds, shows
+  `X / Y online` and a chip per connected pseudo (color: emerald).
+  When the server is offline, shows a soft "start it to see who
+  connects" hint instead.
+
+### Notes
+
+- **Java servers only.** Bedrock containers from itzg don't expose
+  RCON, so the component returns `supported: false` and renders
+  nothing for them — no error, no empty box.
+- The output of the `list` command is parsed leniently to cope with
+  small wording differences between vanilla, Paper, Fabric and Forge.
+
 ## v0.15.1 — 2026-05-29
 
 ### Changed

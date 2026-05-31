@@ -291,6 +291,16 @@ const translations = {
 
   'console.connecting': { en: 'Connecting...', fr: 'Connexion...' },
   'console.connected': { en: 'Connected', fr: 'Connecté' },
+  'players.title': { en: 'Players online', fr: 'Joueurs en ligne' },
+  'players.count': {
+    en: '{online} / {max} online',
+    fr: '{online} / {max} en ligne',
+  },
+  'players.none': { en: 'No players online.', fr: 'Aucun joueur en ligne.' },
+  'players.offline': {
+    en: 'Server is offline — start it to see who connects.',
+    fr: 'Le serveur est arrêté — démarrez-le pour voir qui se connecte.',
+  },
   'console.waiting': {
     en: 'Waiting for the server output...',
     fr: 'En attente de la sortie du serveur...',

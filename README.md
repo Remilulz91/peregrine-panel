@@ -7,10 +7,9 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.15.1** — create-server dialog reworked into a
-> two-column landscape layout so it no longer spills off-screen
-> with all the fields added over v0.13–v0.15. See the changelog in
-> [`CHANGELOG.md`](CHANGELOG.md).
+> **Version 0.16.0** — live player list on the Console tab. See
+> at a glance who is connected to a Java server, refreshed every
+> 30 seconds. See the changelog in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features
 

@@ -153,6 +153,15 @@ export interface ApiUpdateInfo {
   releaseUrl: string | null;
   publishedAt: string | null;
 }
+
+export interface ApiPlayerList {
+  /** False for Bedrock or any template without RCON support. */
+  supported: boolean;
+  running: boolean;
+  online: number;
+  max: number;
+  players: string[];
+}
 export class ApiError extends Error {
   readonly status: number;
   readonly payload: unknown;
@@ -339,6 +348,8 @@ export const api = {
   hostResources: () =>
     request<{ resources: ApiHostResources }>('/api/host'),
   updateInfo: () => request<ApiUpdateInfo>('/api/updates'),
+  serverPlayers: (id: string) =>
+    request<ApiPlayerList>(`/api/servers/${id}/players`),
   deleteServer: (id: string) =>
     request<{ ok: boolean }>(`/api/servers/${id}`, { method: 'DELETE' }),
   serverAction: (id: string, action: ServerAction) =>
