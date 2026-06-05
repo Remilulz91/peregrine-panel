@@ -86,6 +86,21 @@ export const config = {
   sftpPort: readNumber('SFTP_PORT', 2022),
 
   /**
+   * v0.20.0+: itzg's Minecraft images run as UID 1000 / GID 1000 and
+   * expect files in /data to be owned the same way. The SFTP server
+   * runs in the panel container (as root), so every file/dir it
+   * creates would otherwise end up as root:root with 755/644 — which
+   * means itzg can read but NOT write, breaking world saves. We chown
+   * + chmod after every OPEN/MKDIR to keep ownership aligned. These
+   * values are configurable for non-standard images that use a
+   * different UID/GID.
+   */
+  containerUid: readNumber('CONTAINER_UID', 1000),
+  containerGid: readNumber('CONTAINER_GID', 1000),
+  containerFileMode: readNumber('CONTAINER_FILE_MODE', 0o664),
+  containerDirMode: readNumber('CONTAINER_DIR_MODE', 0o775),
+
+  /**
    * Where Peregrine persists the SSH host key for its SFTP server. The
    * file is generated on first launch and reused thereafter so SFTP
    * clients don't see "host key changed" warnings across restarts.

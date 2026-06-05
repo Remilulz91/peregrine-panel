@@ -2,6 +2,62 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.20.0 — 2026-06-05
+
+Fixes a long-standing **ownership mismatch** in the built-in SFTP
+server that broke server imports and could silently prevent
+Minecraft from saving world chunks.
+
+### Fixed
+
+- **Files uploaded via SFTP were owned by `root:root` (UID 0) with
+  `0755/0644` permissions**, while the itzg Minecraft image runs as
+  UID 1000 and expects `1000:1000` with group-writable perms
+  (`0775/0664`). The mismatch meant:
+  - imported worlds couldn't be saved (silent `Permission denied`
+    on chunk writes after the server boot)
+  - some SFTP clients failed mid-transfer with a generic code 4
+    when they tried to write into a subdir owned by root
+  - mods stored in `mods/` worked at first boot but couldn't be
+    updated by mods that write back to disk
+  The SFTP server now calls `fchown(uid, gid)` and `fchmod(mode)`
+  after every successful `OPEN` in write mode, and matching `chown`
+  /`chmod` after every `MKDIR`, so the on-disk ownership matches
+  what itzg expects out of the box.
+
+### Added
+
+- **`CONTAINER_UID`** (default `1000`), **`CONTAINER_GID`**
+  (default `1000`), **`CONTAINER_FILE_MODE`** (default `0o664`)
+  and **`CONTAINER_DIR_MODE`** (default `0o775`) env vars in
+  `backend/src/config.ts` so non-itzg images that use a different
+  UID/GID can be supported without code changes.
+- **`[sftp]` log lines** on `OPEN`, `WRITE` and `MKDIR` failures
+  (`console.warn`). They show up in `docker compose logs
+  peregrine-panel` so operators can finally see what the SFTP
+  server is doing when something goes wrong — previously these
+  failures were invisible because they didn't go through the
+  Fastify logger.
+
+### Notes
+
+- **Existing data is not auto-fixed.** Files already uploaded by
+  previous versions still have the old `root:root / 0644` mode and
+  may prevent the server from saving. Run this one-shot fix on
+  your Debian host (replace `<id>` with the affected server's id):
+  ```
+  sudo chown -R 1000:1000 /chemin/vers/data/servers/<id>/
+  sudo find /chemin/vers/data/servers/<id>/ -type d -exec chmod 775 {} \;
+  sudo find /chemin/vers/data/servers/<id>/ -type f -exec chmod 664 {} \;
+  ```
+  New uploads from v0.20.0 onwards land with the right ownership
+  automatically.
+- `fchown` requires root inside the container. If you ever run the
+  panel as a non-root user, the chown silently no-ops (`EPERM`)
+  and you'll get the pre-v0.20.0 behaviour. The default Docker
+  setup runs the panel as root, so this is a non-issue for
+  standard installs.
+
 ## v0.19.2 — 2026-06-05
 
 ### Fixed

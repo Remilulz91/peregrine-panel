@@ -280,7 +280,21 @@ function attachSftpHandlers(sftp: SFTPWrapper, session: AuthedSession): void {
     }
 
     fs.open(abs, fsFlags, 0o644, (err, fd) => {
-      if (err) return sftp.status(reqid, STATUS_CODE.NO_SUCH_FILE);
+      if (err) {
+        // eslint-disable-next-line no-console
+        console.warn(`[sftp] OPEN failed for ${abs} (flags=${fsFlags}): ${err.message}`);
+        return sftp.status(reqid, STATUS_CODE.NO_SUCH_FILE);
+      }
+      // v0.20.0+: align ownership on every write-mode OPEN so itzg
+      // (running as UID 1000) can read AND write. fchown/fchmod use the
+      // open fd, which works on both freshly-created files and ones the
+      // user is overwriting. Failures are swallowed (e.g. process not
+      // root in a non-Docker dev setup) — the upload still succeeds
+      // and the user can fix perms with a manual chown if needed.
+      if (writing) {
+        fs.fchown(fd, config.containerUid, config.containerGid, () => undefined);
+        fs.fchmod(fd, config.containerFileMode, () => undefined);
+      }
       const id = nextHandle++;
       const buf = Buffer.alloc(4);
       buf.writeUInt32BE(id, 0);
@@ -309,7 +323,11 @@ function attachSftpHandlers(sftp: SFTPWrapper, session: AuthedSession): void {
       return sftp.status(reqid, STATUS_CODE.PERMISSION_DENIED);
     }
     fs.write(entry.fd, data, 0, data.length, offset, (err) => {
-      if (err) return sftp.status(reqid, STATUS_CODE.FAILURE);
+      if (err) {
+        // eslint-disable-next-line no-console
+        console.warn(`[sftp] WRITE failed for ${entry.path} @${offset}: ${err.message}`);
+        return sftp.status(reqid, STATUS_CODE.FAILURE);
+      }
       sftp.status(reqid, STATUS_CODE.OK);
     });
   });
@@ -338,7 +356,15 @@ function attachSftpHandlers(sftp: SFTPWrapper, session: AuthedSession): void {
     const abs = safeJoin(session.root, p);
     if (!abs) return sftp.status(reqid, STATUS_CODE.PERMISSION_DENIED);
     fs.mkdir(abs, { recursive: false }, (err) => {
-      if (err) return sftp.status(reqid, STATUS_CODE.FAILURE);
+      if (err) {
+        // eslint-disable-next-line no-console
+        console.warn(`[sftp] MKDIR failed for ${abs}: ${err.message}`);
+        return sftp.status(reqid, STATUS_CODE.FAILURE);
+      }
+      // v0.20.0+: align ownership on the new directory so itzg can
+      // write inside it. See OPEN handler for the rationale.
+      fs.chown(abs, config.containerUid, config.containerGid, () => undefined);
+      fs.chmod(abs, config.containerDirMode, () => undefined);
       sftp.status(reqid, STATUS_CODE.OK);
     });
   });

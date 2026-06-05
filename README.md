@@ -7,10 +7,10 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.19.2** — the create-server dialog uses **free-text
-> inputs** for Version, RAM and CPU, validated against Mojang's official
-> manifest and the host's available resources, with **fully localised**
-> error messages (FR / EN).
+> **Version 0.20.0** — fixes a long-standing **SFTP ownership** bug:
+> files uploaded via SFTP now land as `1000:1000` with group-writable
+> perms, matching what itzg's Minecraft image expects. Imported worlds
+> save correctly out of the box.
 > See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 
