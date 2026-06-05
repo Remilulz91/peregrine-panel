@@ -203,6 +203,28 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
         ownerId = target.id;
       }
 
+      // v0.19.1+: validate the typed Minecraft version BEFORE we hit the
+      // disk / host preflights, so a typo in the version field doesn't
+      // get masked by a "not enough RAM" message. The validator only
+      // depends on the template kind (java vs bedrock), so we can run
+      // it ahead of loader normalisation. An empty version means "use
+      // the template default" — that's always trusted, so we skip.
+      const typedVersion = body.minecraftVersion?.trim();
+      const effectiveVersion = typedVersion || template.defaultVersion;
+      if (typedVersion) {
+        const versionResult = await validateVersion({
+          kind: template.kind,
+          loader: 'vanilla',
+          version: typedVersion,
+        });
+        if (!versionResult.ok) {
+          return reply.code(400).send({
+            error: versionResult.message,
+            field: 'minecraftVersion',
+          });
+        }
+      }
+
       try {
         await assertEnoughFreeSpace(config.serversPath, 2 * 1024 * 1024 * 1024);
       } catch (err) {
@@ -248,27 +270,6 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
       let loader: ServerLoader = 'vanilla';
       if (template.kind === 'java' && body.loader && isLoader(body.loader)) {
         loader = body.loader;
-      }
-
-      // v0.19.0+: free-text version input — validate against Mojang's
-      // manifest for Java, or a relaxed pattern for Bedrock. We do this
-      // AFTER the loader is normalised so the validator can use the
-      // right ruleset. If the user typed nothing, fall back to the
-      // template default and skip the check (defaults are trusted).
-      const typedVersion = body.minecraftVersion?.trim();
-      const effectiveVersion = typedVersion || template.defaultVersion;
-      if (typedVersion) {
-        const result = await validateVersion({
-          kind: template.kind,
-          loader,
-          version: typedVersion,
-        });
-        if (!result.ok) {
-          return reply.code(400).send({
-            error: result.message,
-            field: 'minecraftVersion',
-          });
-        }
       }
 
       // Normalise the quota: 0 / undefined => null = no quota.

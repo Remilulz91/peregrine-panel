@@ -100,6 +100,14 @@ export default function CreateServerDialog({
   );
   const isJava = selectedTemplate?.kind === 'java';
 
+  // v0.19.1+: Bedrock can only run the latest version (itzg pulls
+  // from a Microsoft endpoint that doesn't serve older builds), so
+  // when the user switches from Java → Bedrock we silently reset
+  // the version to LATEST and hide the field.
+  if (!isJava && version !== 'LATEST') {
+    setVersion('LATEST');
+  }
+
   async function handleSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
     setError(null);
@@ -272,26 +280,28 @@ export default function CreateServerDialog({
                 </div>
               )}
 
-              <div>
-                <label
-                  htmlFor="srv-version"
-                  className="mb-1 block text-xs font-medium text-peregrine-400"
-                >
-                  {t('create.versionLabel')}
-                </label>
-                <input
-                  id="srv-version"
-                  type="text"
-                  value={version}
-                  maxLength={32}
-                  onChange={(e) => setVersion(e.target.value)}
-                  placeholder="LATEST"
-                  className={SELECT_CLASS}
-                />
-                <p className="mt-1 text-xs text-peregrine-500">
-                  {t('create.versionHint')}
-                </p>
-              </div>
+              {isJava && (
+                <div>
+                  <label
+                    htmlFor="srv-version"
+                    className="mb-1 block text-xs font-medium text-peregrine-400"
+                  >
+                    {t('create.versionLabel')}
+                  </label>
+                  <input
+                    id="srv-version"
+                    type="text"
+                    value={version}
+                    maxLength={32}
+                    onChange={(e) => setVersion(e.target.value)}
+                    placeholder="LATEST"
+                    className={SELECT_CLASS}
+                  />
+                  <p className="mt-1 text-xs text-peregrine-500">
+                    {t('create.versionHint')}
+                  </p>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -305,7 +315,7 @@ export default function CreateServerDialog({
                     id="srv-memory"
                     type="number"
                     min={512}
-                    step={256}
+                    step="any"
                     value={memoryMb}
                     onChange={(e) =>
                       setMemoryMb(parseInt(e.target.value, 10) || 0)
@@ -332,7 +342,7 @@ export default function CreateServerDialog({
                     id="srv-cpu"
                     type="number"
                     min={0.5}
-                    step={0.5}
+                    step="any"
                     value={cpuLimit}
                     onChange={(e) =>
                       setCpuLimit(parseFloat(e.target.value) || 0)

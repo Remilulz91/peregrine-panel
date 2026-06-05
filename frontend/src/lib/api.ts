@@ -189,8 +189,24 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   });
   const data: unknown = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const message =
-      (data as { error?: string }).error ?? `Request failed (${response.status})`;
+    // Backends in this project send { error: '...' }. Fastify's built-in
+    // validation handler sends { error: 'Bad Request', message: '<detail>' }
+    // — in that case we want the detail, not the generic "Bad Request".
+    // Strategy: prefer `message` if it exists and `error` is one of the
+    // generic Fastify labels; otherwise fall back to `error`.
+    const d = data as { error?: string; message?: string };
+    const GENERIC = new Set([
+      'Bad Request', 'Unauthorized', 'Forbidden', 'Not Found',
+      'Conflict', 'Insufficient Storage', 'Internal Server Error',
+    ]);
+    let message: string;
+    if (d.message && (!d.error || GENERIC.has(d.error))) {
+      message = d.message;
+    } else if (d.error) {
+      message = d.error;
+    } else {
+      message = `Request failed (${response.status})`;
+    }
     throw new ApiError(response.status, message, data);
   }
   return data as T;

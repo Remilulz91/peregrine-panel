@@ -2,6 +2,38 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.19.1 — 2026-06-05
+
+Follow-ups to v0.19.0 based on real-world testing of the new
+free-text create-server form.
+
+### Fixed
+
+- **Bedrock version picker caused a 404 download** — typing
+  anything other than the latest version made itzg's Bedrock entry
+  point try to fetch a URL Microsoft no longer serves, which left
+  the server in `INSTALL_FAILED`. The version field is now hidden
+  entirely on Bedrock; switching the game from Java to Bedrock
+  also silently snaps the version to `LATEST`.
+- **All errors looked like "Not enough RAM / CPU on the host"** —
+  the version check ran *after* the disk and host-resources checks,
+  so a typo in the version field was masked by the host preflight's
+  message. Version is now validated *first*, before disk and host,
+  so the user sees the actual cause.
+- **CPU errors showed "Bad Request" instead of a useful message**
+  — Fastify's built-in validation handler returns
+  `{ error: "Bad Request", message: "<detail>" }`, but the API
+  client was reading `error` and discarding the detail. It now
+  prefers `message` whenever `error` is one of Fastify's generic
+  labels (Bad Request, Unauthorized, Forbidden, Not Found,
+  Conflict, etc.), so the user sees what was actually wrong.
+- **Browser "Please enter a valid value" tooltip on Memory / CPU**
+  — the `step=256` / `step=0.5` attributes triggered the native
+  HTML5 step validation when the user typed any number off the
+  step. The inputs now use `step="any"` so the browser stays
+  quiet and the backend's host-resources preflight is the only
+  source of truth.
+
 ## v0.19.0 — 2026-05-31
 
 The Version, Memory and CPU pickers in the create-server dialog

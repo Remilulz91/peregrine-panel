@@ -7,9 +7,10 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.19.0** — the create-server dialog now uses **free-text
+> **Version 0.19.1** — the create-server dialog uses **free-text
 > inputs** for Version, RAM and CPU, validated against Mojang's official
-> manifest and the host's available resources, with clear error messages.
+> manifest and the host's available resources. v0.19.1 fixes Bedrock
+> version handling and a few error-message issues.
 > See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 
