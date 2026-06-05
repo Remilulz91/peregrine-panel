@@ -265,11 +265,21 @@ const translations = {
   'create.templateLabel': { en: 'Game', fr: 'Jeu' },
   'create.versionLabel': { en: 'Version', fr: 'Version' },
   'create.versionHint': {
-    en: 'Use LATEST for the newest version, or a number like 1.21.',
-    fr: 'Utilisez LATEST pour la dernière version, ou un numéro comme 1.21.',
+    en: 'Type LATEST or a Minecraft version like 1.21.4. Java versions are checked against Mojang\'s official list.',
+    fr: 'Tape LATEST ou une version Minecraft comme 1.21.4. Les versions Java sont vérifiées contre la liste officielle Mojang.',
   },
-  'create.memoryLabel': { en: 'Memory', fr: 'Mémoire' },
+  'create.memoryLabel': { en: 'Memory (MiB)', fr: 'Mémoire (Mio)' },
   'create.cpuLabel': { en: 'CPU cores', fr: 'Cœurs CPU' },
+  'create.memoryHint': {
+    en: 'Min 512 MiB. Available on this host: {availMb} MiB.',
+    fr: 'Min 512 Mio. Disponible sur cet hôte : {availMb} Mio.',
+  },
+  'create.cpuHint': {
+    en: 'Min 0.5 core (use 0.5 steps). Available on this host: {availCpu} cores.',
+    fr: 'Min 0.5 cœur (par pas de 0.5). Disponible sur cet hôte : {availCpu} cœurs.',
+  },
+  'create.memoryHintNoHost': { en: 'Min 512 MiB.', fr: 'Min 512 Mio.' },
+  'create.cpuHintNoHost': { en: 'Min 0.5 core (use 0.5 steps).', fr: 'Min 0.5 cœur (par pas de 0.5).' },
   'create.submit': { en: 'Create', fr: 'Créer' },
   'create.error': {
     en: 'The server could not be created.',

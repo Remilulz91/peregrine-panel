@@ -19,6 +19,7 @@ import {
   assertEnoughHostResources,
   HostResourcesError,
 } from '../lib/host';
+import { validateVersion } from '../lib/minecraftVersions';
 import { hasIcon, iconUpdatedAt } from '../lib/icons';
 import { findUserById } from '../lib/users';
 import { effectivePermissions } from '../lib/subusers';
@@ -167,8 +168,8 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
             ownerId: { type: 'string', minLength: 1 },
             autostart: { type: 'boolean' },
             diskQuotaMb: { type: 'integer', minimum: 0, maximum: 1048576 },
-            memoryMb: { type: 'integer', minimum: 512, maximum: 16384 },
-            cpuLimit: { type: 'number', minimum: 0.5, maximum: 16 },
+            memoryMb: { type: 'integer', minimum: 512, maximum: 524288 },
+            cpuLimit: { type: 'number', minimum: 0.5, maximum: 256 },
           },
         },
       },
@@ -249,6 +250,27 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
         loader = body.loader;
       }
 
+      // v0.19.0+: free-text version input — validate against Mojang's
+      // manifest for Java, or a relaxed pattern for Bedrock. We do this
+      // AFTER the loader is normalised so the validator can use the
+      // right ruleset. If the user typed nothing, fall back to the
+      // template default and skip the check (defaults are trusted).
+      const typedVersion = body.minecraftVersion?.trim();
+      const effectiveVersion = typedVersion || template.defaultVersion;
+      if (typedVersion) {
+        const result = await validateVersion({
+          kind: template.kind,
+          loader,
+          version: typedVersion,
+        });
+        if (!result.ok) {
+          return reply.code(400).send({
+            error: result.message,
+            field: 'minecraftVersion',
+          });
+        }
+      }
+
       // Normalise the quota: 0 / undefined => null = no quota.
       const diskQuotaMb =
         typeof body.diskQuotaMb === 'number' && body.diskQuotaMb > 0
@@ -260,8 +282,7 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
         templateId: template.id,
         name: body.name,
         description: (body.description ?? '').trim(),
-        minecraftVersion:
-          body.minecraftVersion?.trim() || template.defaultVersion,
+        minecraftVersion: effectiveVersion,
         loader,
         memoryMb: body.memoryMb,
         cpuLimit: body.cpuLimit,

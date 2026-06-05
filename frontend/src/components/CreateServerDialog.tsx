@@ -3,9 +3,7 @@ import Field from './Field';
 import {
   api,
   ApiError,
-  BEDROCK_MC_VERSIONS,
   JAVA_LOADERS,
-  JAVA_MC_VERSIONS,
   type ApiAdminUser,
   type ApiHostResources,
   type ApiTemplate,
@@ -13,13 +11,6 @@ import {
 } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useTranslation, type TranslationKey } from '../lib/i18n';
-
-// Memory amounts (in MB) offered when creating a server.
-const MEMORY_OPTIONS = [1024, 2048, 4096, 8192];
-
-// CPU limits (in cores) offered when creating a server. 0.5 is
-// available for small VPS where a full core is too much.
-const CPU_OPTIONS = [0.5, 1, 2, 4];
 
 const SELECT_CLASS =
   'w-full rounded-lg border border-peregrine-700 bg-peregrine-950 px-3 py-2 text-sm text-white outline-none transition-colors focus:border-falcon';
@@ -55,6 +46,26 @@ export default function CreateServerDialog({
   const [users, setUsers] = useState<ApiAdminUser[]>([]);
   const [ownerId, setOwnerId] = useState<string>(user?.id ?? '');
 
+  // v0.19.0+: fetch host resources once so we can show the available
+  // RAM / CPU as live helper text under the inputs.
+  const [hostResources, setHostResources] = useState<ApiHostResources | null>(
+    null,
+  );
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .hostResources()
+      .then((r) => {
+        if (!cancelled) setHostResources(r.resources);
+      })
+      .catch(() => {
+        // Silent — the form still works without the inline hint.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     api
@@ -88,14 +99,6 @@ export default function CreateServerDialog({
     [templates, templateId],
   );
   const isJava = selectedTemplate?.kind === 'java';
-  const versionOptions = isJava ? JAVA_MC_VERSIONS : BEDROCK_MC_VERSIONS;
-
-  // If the chosen version is not in the new game's list (e.g. user
-  // picked Bedrock after picking a Java-only version), snap back to the
-  // first valid option to avoid sending nonsense to the backend.
-  if (!versionOptions.includes(version)) {
-    setVersion(versionOptions[0]);
-  }
 
   async function handleSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
@@ -276,18 +279,18 @@ export default function CreateServerDialog({
                 >
                   {t('create.versionLabel')}
                 </label>
-                <select
+                <input
                   id="srv-version"
+                  type="text"
                   value={version}
+                  maxLength={32}
                   onChange={(e) => setVersion(e.target.value)}
+                  placeholder="LATEST"
                   className={SELECT_CLASS}
-                >
-                  {versionOptions.map((v) => (
-                    <option key={v} value={v}>
-                      {v}
-                    </option>
-                  ))}
-                </select>
+                />
+                <p className="mt-1 text-xs text-peregrine-500">
+                  {t('create.versionHint')}
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -298,18 +301,25 @@ export default function CreateServerDialog({
                   >
                     {t('create.memoryLabel')}
                   </label>
-                  <select
+                  <input
                     id="srv-memory"
+                    type="number"
+                    min={512}
+                    step={256}
                     value={memoryMb}
-                    onChange={(e) => setMemoryMb(Number(e.target.value))}
+                    onChange={(e) =>
+                      setMemoryMb(parseInt(e.target.value, 10) || 0)
+                    }
                     className={SELECT_CLASS}
-                  >
-                    {MEMORY_OPTIONS.map((mb) => (
-                      <option key={mb} value={mb}>
-                        {mb / 1024} GB
-                      </option>
-                    ))}
-                  </select>
+                  />
+                  <p className="mt-1 text-xs text-peregrine-500">
+                    {hostResources
+                      ? t('create.memoryHint').replace(
+                          '{availMb}',
+                          String(hostResources.allocatableMemMb),
+                        )
+                      : t('create.memoryHintNoHost')}
+                  </p>
                 </div>
                 <div>
                   <label
@@ -318,18 +328,25 @@ export default function CreateServerDialog({
                   >
                     {t('create.cpuLabel')}
                   </label>
-                  <select
+                  <input
                     id="srv-cpu"
+                    type="number"
+                    min={0.5}
+                    step={0.5}
                     value={cpuLimit}
-                    onChange={(e) => setCpuLimit(Number(e.target.value))}
+                    onChange={(e) =>
+                      setCpuLimit(parseFloat(e.target.value) || 0)
+                    }
                     className={SELECT_CLASS}
-                  >
-                    {CPU_OPTIONS.map((cores) => (
-                      <option key={cores} value={cores}>
-                        {cores}
-                      </option>
-                    ))}
-                  </select>
+                  />
+                  <p className="mt-1 text-xs text-peregrine-500">
+                    {hostResources
+                      ? t('create.cpuHint').replace(
+                          '{availCpu}',
+                          String(hostResources.allocatableCpus),
+                        )
+                      : t('create.cpuHintNoHost')}
+                  </p>
                 </div>
               </div>
 

@@ -2,6 +2,62 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.19.0 — 2026-05-31
+
+The Version, Memory and CPU pickers in the create-server dialog
+were dropdowns with a tiny preset list. They're now **free-text
+inputs** with proper validation — type the value you want and the
+backend tells you specifically what's wrong if it isn't acceptable.
+
+### Changed
+
+- **Version field** — was a dropdown of ~10 hard-coded entries
+  ("LATEST", "1.21.4", etc.); is now a text input that accepts:
+  - the magic keywords `LATEST` and `SNAPSHOT` (passed straight to
+    itzg's entrypoint)
+  - any Minecraft Java version that appears in **Mojang's official
+    version manifest** (e.g. `1.21.4`, `1.20.6`, `24w14a`)
+  - any `X.Y.Z(.W)` shape for Bedrock servers (Microsoft has no
+    public manifest to check against)
+- **Memory field** — was a dropdown of `1 / 2 / 4 / 8 GB`; is now
+  a number input in MiB, validated against the host's available
+  RAM (the existing host-resources preflight enforces the ceiling).
+  Sub-1 GB allocations are now possible (min 512 MiB), so small VPS
+  can host more servers.
+- **CPU field** — was a dropdown of `0.5 / 1 / 2 / 4` cores; is
+  now a number input with 0.5 step, validated against the host's
+  available cores.
+- **Helper text under each numeric field** shows the host's
+  current allocatable RAM and CPU so you know the ceiling before
+  you submit.
+
+### Added
+
+- **Backend `lib/minecraftVersions.ts`** — fetches Mojang's
+  manifest at `https://launchermeta.mojang.com/mc/game/version_manifest.json`,
+  caches it for 24 h, and exposes `validateVersion({ kind, loader,
+  version })`. Concurrent callers share an in-flight promise so the
+  manifest is fetched at most once per refresh window.
+- **Graceful Mojang fallback** — if the manifest can't be fetched
+  (DNS hiccup, Mojang outage) and we have no cached copy, the
+  validator falls back to a loose shape check so server creation
+  isn't blocked. The error message tells the user we couldn't
+  verify with Mojang.
+- **Targeted error messages**:
+  - `"abc" is not a known Minecraft Java version. Try "1.21.4" or "LATEST".`
+  - `"1.20" is not a valid Bedrock version. Expected something like "1.20.81.01".`
+  - The existing host-resources error already says how much RAM /
+    CPU is actually available; the new helper text mirrors it so the
+    user knows before submitting.
+
+### Notes
+
+- The server's JSON-schema bounds were widened (`memoryMb` up to
+  524 288 MiB, `cpuLimit` up to 256) so the **host-resources
+  preflight** is the source of truth for "too much for this
+  machine", with a clear error message, instead of a generic
+  "value must be ≤ 16384" rejection.
+
 ## v0.18.1 — 2026-05-31
 
 ### Fixed
