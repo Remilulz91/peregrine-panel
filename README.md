@@ -7,10 +7,10 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.20.0** — fixes a long-standing **SFTP ownership** bug:
-> files uploaded via SFTP now land as `1000:1000` with group-writable
-> perms, matching what itzg's Minecraft image expects. Imported worlds
-> save correctly out of the box.
+> **Version 0.20.1** — Game tab surfaces invalid values in
+> `server.properties` (typos in `difficulty`, out-of-range numbers, …)
+> as an amber warning banner instead of silently snapping to defaults.
+> Plus all the v0.20.0 SFTP ownership fixes.
 > See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 

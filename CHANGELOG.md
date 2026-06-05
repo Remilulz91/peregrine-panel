@@ -2,6 +2,33 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.20.1 — 2026-06-05
+
+### Fixed
+
+- **The Game tab silently hid typos in `server.properties`** —
+  hand-editing the file via the Files tab and typing
+  `difficulty=normals` (or any other invalid value) made the Game
+  tab show `easy` (the default), with no hint that anything was
+  wrong. If the user then saved the Game tab without noticing, the
+  typo was overwritten silently and the intent was lost.
+
+  `readGameSettings` now records a **warning** for every value it
+  had to reject (`not_in_enum`, `not_a_boolean`, `not_an_integer`,
+  `out_of_range`), the route forwards them on GET, and the Game tab
+  renders an **amber banner** above the form listing every issue
+  (key, raw value, fallback that's being shown). The user can then
+  either fix the file via the Files tab, or pick the right value
+  here and click Save to overwrite — saving clears the banner.
+
+### Notes
+
+- Saving the Game tab still **rewrites every managed key** with the
+  values the form shows. That's intentional — it's the simplest
+  "fix it for me" flow once the user has seen what was wrong. The
+  warning banner makes sure the user knows what they're about to
+  overwrite.
+
 ## v0.20.0 — 2026-06-05
 
 Fixes a long-standing **ownership mismatch** in the built-in SFTP

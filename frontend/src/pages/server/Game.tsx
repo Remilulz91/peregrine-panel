@@ -5,6 +5,7 @@ import {
   hasPermission,
   PERM,
   type ApiGameSettings,
+  type ApiGameSettingsWarning,
   type ApiServer,
   type ApiTemplate,
 } from '../../lib/api';
@@ -51,6 +52,7 @@ export default function GamePage({
   const isJava = template?.kind === 'java';
 
   const [settings, setSettings] = useState<ApiGameSettings | null>(null);
+  const [warnings, setWarnings] = useState<ApiGameSettingsWarning[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -63,7 +65,10 @@ export default function GamePage({
     api
       .getGameSettings(server.id)
       .then((result) => {
-        if (!cancelled) setSettings(result.settings);
+        if (!cancelled) {
+          setSettings(result.settings);
+          setWarnings(result.warnings);
+        }
       })
       .catch((err) => {
         if (!cancelled) {
@@ -85,6 +90,9 @@ export default function GamePage({
     try {
       const result = await api.updateGameSettings(server.id, settings);
       setSettings(result.settings);
+      // Saving rewrites the managed keys with valid values, so any
+      // pre-existing typos are now gone — clear the warning banner.
+      setWarnings([]);
       setSavedAt(Date.now());
     } catch (err) {
       setSaveError(
@@ -136,6 +144,25 @@ export default function GamePage({
         <h2 className="text-lg font-semibold text-white">{t('game.title')}</h2>
         <p className="mt-1 text-sm text-peregrine-400">{t('game.subtitle')}</p>
       </div>
+
+      {warnings.length > 0 && (
+        <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
+          <p className="font-semibold text-amber-300">{t('game.warningsTitle')}</p>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-amber-100/90">
+            {warnings.map((w, i) => (
+              <li key={i}>
+                {t(
+                  ('game.warningRow.' + w.reason) as TranslationKey,
+                )
+                  .replace('{key}', w.key)
+                  .replace('{rawValue}', w.rawValue)
+                  .replace('{fallback}', w.fallback)}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-xs text-amber-200/80">{t('game.warningsHint')}</p>
+        </div>
+      )}
 
       {!canEdit && (
         <div className="rounded-2xl border border-peregrine-700 bg-peregrine-900 p-4 text-sm text-peregrine-400">

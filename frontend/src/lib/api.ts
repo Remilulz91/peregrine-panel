@@ -267,6 +267,18 @@ export type LoginResponse =
   | { user: ApiUser; requiresMfa?: undefined }
   | ApiMfaChallenge;
 
+/** Warning about an invalid `server.properties` value (v0.20.1+). */
+export interface ApiGameSettingsWarning {
+  key: string;
+  rawValue: string;
+  fallback: string;
+  reason:
+    | 'not_in_enum'
+    | 'not_a_boolean'
+    | 'not_an_integer'
+    | 'out_of_range';
+}
+
 /** Subset of `server.properties` we expose in the Game settings tab (v0.18.0+). */
 export interface ApiGameSettings {
   motd: string;
@@ -404,7 +416,9 @@ export const api = {
   deleteServerIcon: (id: string) =>
     request<{ ok: boolean }>(`/api/servers/${id}/icon`, { method: 'DELETE' }),
   getGameSettings: (id: string) =>
-    request<{ settings: ApiGameSettings }>(`/api/servers/${id}/game-settings`),
+    request<{ settings: ApiGameSettings; warnings: ApiGameSettingsWarning[] }>(
+      `/api/servers/${id}/game-settings`,
+    ),
   updateGameSettings: (id: string, settings: ApiGameSettings) =>
     request<{ settings: ApiGameSettings }>(`/api/servers/${id}/game-settings`, {
       method: 'PUT',

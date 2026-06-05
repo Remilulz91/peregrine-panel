@@ -43,7 +43,7 @@ export async function gameSettingsRoutes(app: FastifyInstance): Promise<void> {
           error: 'Game settings are only available for Minecraft Java servers.',
         });
       }
-      return { settings: readGameSettings(server.id) };
+      return readGameSettings(server.id);
     },
   );
 

@@ -128,74 +128,172 @@ function serializeProperties(
   return outLines.join('\n');
 }
 
-/** Coerces a `server.properties` boolean string to a JS boolean. */
-function parseBool(raw: string | undefined, fallback: boolean): boolean {
+/**
+ * v0.20.1+: when a value in `server.properties` is unrecognised (e.g.
+ * the user hand-edited `difficulty=normals`), we used to silently
+ * fall back to the default and the UI would just show the default —
+ * the user couldn't tell their typo had been ignored. Now every
+ * fallback records a warning that the GET route forwards to the UI,
+ * which displays them as an inline banner above the Game form.
+ */
+export interface GameSettingsWarning {
+  /** Key as it appears in `server.properties` (e.g. 'difficulty'). */
+  key: string;
+  /** Value the user actually wrote in the file. */
+  rawValue: string;
+  /** Value the UI is showing in its place. */
+  fallback: string;
+  /** Reason the raw value was rejected. */
+  reason:
+    | 'not_in_enum'
+    | 'not_a_boolean'
+    | 'not_an_integer'
+    | 'out_of_range';
+}
+
+/** Coerces a `server.properties` boolean string, recording a warning on failure. */
+function parseBool(
+  key: string,
+  raw: string | undefined,
+  fallback: boolean,
+  warnings: GameSettingsWarning[],
+): boolean {
   if (raw === undefined) return fallback;
   const v = raw.trim().toLowerCase();
   if (v === 'true') return true;
   if (v === 'false') return false;
+  warnings.push({
+    key,
+    rawValue: raw,
+    fallback: fallback ? 'true' : 'false',
+    reason: 'not_a_boolean',
+  });
   return fallback;
 }
 
-/** Coerces a `server.properties` integer string, with clamping. */
+/** Coerces a `server.properties` integer string, with clamping + warnings. */
 function parseInt0(
+  key: string,
   raw: string | undefined,
   fallback: number,
   min: number,
   max: number,
+  warnings: GameSettingsWarning[],
 ): number {
   if (raw === undefined) return fallback;
-  const n = parseInt(raw.trim(), 10);
-  if (!Number.isFinite(n)) return fallback;
-  return Math.min(max, Math.max(min, n));
+  const trimmed = raw.trim();
+  const n = parseInt(trimmed, 10);
+  if (!Number.isFinite(n) || String(n) !== trimmed) {
+    warnings.push({
+      key,
+      rawValue: raw,
+      fallback: String(fallback),
+      reason: 'not_an_integer',
+    });
+    return fallback;
+  }
+  if (n < min || n > max) {
+    const clamped = Math.min(max, Math.max(min, n));
+    warnings.push({
+      key,
+      rawValue: raw,
+      fallback: String(clamped),
+      reason: 'out_of_range',
+    });
+    return clamped;
+  }
+  return n;
 }
 
 /**
- * Reads the current game settings from a server's `server.properties`.
- * Returns `DEFAULT_GAME_SETTINGS` if the file doesn't exist yet (e.g.
- * the server hasn't booted for the first time, so the itzg entrypoint
- * has not generated it).
+ * Reads the current game settings from a server's `server.properties`,
+ * along with any warnings about values that were rejected and replaced
+ * by their default. The UI uses the warnings to surface typos like
+ * `difficulty=normals` instead of silently snapping to `easy`.
+ *
+ * Returns the defaults and no warnings if the file doesn't exist yet
+ * (e.g. the server hasn't booted for the first time, so the itzg
+ * entrypoint has not generated it).
  */
-export function readGameSettings(serverId: string): GameSettings {
+export function readGameSettings(serverId: string): {
+  settings: GameSettings;
+  warnings: GameSettingsWarning[];
+} {
   const file = propertiesPath(serverId);
   let body: string;
   try {
     body = fs.readFileSync(file, 'utf8');
   } catch {
-    return { ...DEFAULT_GAME_SETTINGS };
+    return { settings: { ...DEFAULT_GAME_SETTINGS }, warnings: [] };
   }
   const props = parseProperties(body);
+  const warnings: GameSettingsWarning[] = [];
 
-  const rawGamemode = (props['gamemode'] ?? '').trim().toLowerCase();
-  const gamemode = (GAMEMODES as string[]).includes(rawGamemode)
-    ? (rawGamemode as GameSettings['gamemode'])
-    : DEFAULT_GAME_SETTINGS.gamemode;
+  let gamemode: GameSettings['gamemode'] = DEFAULT_GAME_SETTINGS.gamemode;
+  if (props['gamemode'] !== undefined) {
+    const rawGamemode = props['gamemode'].trim().toLowerCase();
+    if ((GAMEMODES as string[]).includes(rawGamemode)) {
+      gamemode = rawGamemode as GameSettings['gamemode'];
+    } else {
+      warnings.push({
+        key: 'gamemode',
+        rawValue: props['gamemode'],
+        fallback: DEFAULT_GAME_SETTINGS.gamemode,
+        reason: 'not_in_enum',
+      });
+    }
+  }
 
-  const rawDifficulty = (props['difficulty'] ?? '').trim().toLowerCase();
-  const difficulty = (DIFFICULTIES as string[]).includes(rawDifficulty)
-    ? (rawDifficulty as GameSettings['difficulty'])
-    : DEFAULT_GAME_SETTINGS.difficulty;
+  let difficulty: GameSettings['difficulty'] = DEFAULT_GAME_SETTINGS.difficulty;
+  if (props['difficulty'] !== undefined) {
+    const rawDifficulty = props['difficulty'].trim().toLowerCase();
+    if ((DIFFICULTIES as string[]).includes(rawDifficulty)) {
+      difficulty = rawDifficulty as GameSettings['difficulty'];
+    } else {
+      warnings.push({
+        key: 'difficulty',
+        rawValue: props['difficulty'],
+        fallback: DEFAULT_GAME_SETTINGS.difficulty,
+        reason: 'not_in_enum',
+      });
+    }
+  }
 
-  return {
+  const settings: GameSettings = {
     motd: props['motd'] ?? DEFAULT_GAME_SETTINGS.motd,
     maxPlayers: parseInt0(
+      'max-players',
       props['max-players'],
       DEFAULT_GAME_SETTINGS.maxPlayers,
       1,
       200,
+      warnings,
     ),
     gamemode,
     difficulty,
-    pvp: parseBool(props['pvp'], DEFAULT_GAME_SETTINGS.pvp),
-    onlineMode: parseBool(props['online-mode'], DEFAULT_GAME_SETTINGS.onlineMode),
-    whiteList: parseBool(props['white-list'], DEFAULT_GAME_SETTINGS.whiteList),
+    pvp: parseBool('pvp', props['pvp'], DEFAULT_GAME_SETTINGS.pvp, warnings),
+    onlineMode: parseBool(
+      'online-mode',
+      props['online-mode'],
+      DEFAULT_GAME_SETTINGS.onlineMode,
+      warnings,
+    ),
+    whiteList: parseBool(
+      'white-list',
+      props['white-list'],
+      DEFAULT_GAME_SETTINGS.whiteList,
+      warnings,
+    ),
     viewDistance: parseInt0(
+      'view-distance',
       props['view-distance'],
       DEFAULT_GAME_SETTINGS.viewDistance,
       3,
       32,
+      warnings,
     ),
   };
+  return { settings, warnings };
 }
 
 /**

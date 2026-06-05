@@ -495,6 +495,31 @@ const translations = {
     en: 'Changes only take effect the next time the server starts.',
     fr: 'Les changements ne prennent effet qu’au prochain démarrage du serveur.',
   },
+  // v0.20.1+: surface invalid server.properties values
+  'game.warningsTitle': {
+    en: 'Some values in server.properties were not understood',
+    fr: 'Certaines valeurs de server.properties n’ont pas été reconnues',
+  },
+  'game.warningsHint': {
+    en: 'The Game tab is showing the fallback values below. Edit the file (Files tab) to fix the typos, or pick the right value here and click Save to overwrite.',
+    fr: 'L’onglet Jeu affiche les valeurs de repli ci-dessous. Corrige le fichier (onglet Fichiers) pour réparer les typos, ou choisis la bonne valeur ici puis clique sur Enregistrer pour écraser.',
+  },
+  'game.warningRow.not_in_enum': {
+    en: '{key}={rawValue} is not one of the allowed values — using {fallback}',
+    fr: '{key}={rawValue} ne fait pas partie des valeurs autorisées — utilisation de {fallback}',
+  },
+  'game.warningRow.not_a_boolean': {
+    en: '{key}={rawValue} is not a boolean (true / false) — using {fallback}',
+    fr: '{key}={rawValue} n’est pas un booléen (true / false) — utilisation de {fallback}',
+  },
+  'game.warningRow.not_an_integer': {
+    en: '{key}={rawValue} is not an integer — using {fallback}',
+    fr: '{key}={rawValue} n’est pas un entier — utilisation de {fallback}',
+  },
+  'game.warningRow.out_of_range': {
+    en: '{key}={rawValue} is out of range — clamped to {fallback}',
+    fr: '{key}={rawValue} hors limites — limité à {fallback}',
+  },
   'game.noPermission': {
     en: 'You do not have permission to edit game settings on this server.',
     fr: 'Tu n’as pas la permission de modifier les paramètres du jeu de ce serveur.',
