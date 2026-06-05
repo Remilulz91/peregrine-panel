@@ -2,6 +2,51 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.21.0 — 2026-06-05
+
+Live container stats on the Console tab — Pterodactyl-style
+sidebar so you can see at a glance whether the server is
+healthy or struggling.
+
+### Added
+
+- **Backend `lib/dockerStats.ts`** — wraps Docker's
+  `container.stats({ stream: true })` API, parses each frame,
+  and exposes `streamContainerStats(containerId, onTick,
+  onError)` that yields `{ cpuPercent, memoryBytes,
+  memoryLimitBytes, memoryPercent, uptimeSeconds, ts }` roughly
+  once per second. CPU is computed as % of host cores (matching
+  `docker stats`), memory excludes the page cache (itzg fills it
+  with world data, counting it would make the widget useless).
+- **Socket.IO `stats:subscribe` / `stats:tick` / `stats:unsubscribe`**
+  events wired into the existing realtime channel. Same JWT-cookie
+  auth and ACL check as the console — subusers see live stats
+  for any server they can read, owners and admins for theirs.
+- **Frontend `LiveStats` component** mounted in a sidebar to the
+  right of the Console widget. Three stat boxes (CPU%, Memory
+  used/limit + %, Uptime) and two mini SVG sparklines for the
+  last 60 seconds (CPU + Memory). On screens narrower than
+  `lg` the sidebar stacks below the console.
+- **"Offline" state** — when the server is not `RUNNING`, the
+  widgets show the localised "Offline" label and no streaming
+  happens. As soon as the server boots, the subscribe kicks in
+  and the graphs start drawing.
+
+### Notes
+
+- CPU% is shown as **fraction of allocated cores**, not host
+  cores. A container with `cpuLimit=2` running at 100% reports
+  `100.0%`, not `200%`. This is more intuitive when the user
+  knows they paid for 2 cores.
+- The stats stream is opened **once per browser tab**, so
+  multiple users watching the same server each open their own
+  Docker stats stream. If that becomes a load issue on hosts
+  with many concurrent operators, a future release can
+  multiplex.
+- The Console tab continues to also poll the player list every
+  30 s (v0.16.0) — both are independent. The Game tab and the
+  rest of the UI are unchanged.
+
 ## v0.20.1 — 2026-06-05
 
 ### Fixed

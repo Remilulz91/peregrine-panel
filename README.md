@@ -7,10 +7,9 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.20.1** — Game tab surfaces invalid values in
-> `server.properties` (typos in `difficulty`, out-of-range numbers, …)
-> as an amber warning banner instead of silently snapping to defaults.
-> Plus all the v0.20.0 SFTP ownership fixes.
+> **Version 0.21.0** — live CPU / RAM / Uptime sidebar on the Console
+> tab, with mini sparklines for the last 60 seconds. Pterodactyl-style
+> at-a-glance health monitoring.
 > See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 

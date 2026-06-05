@@ -526,6 +526,13 @@ const translations = {
   },
 
   // Server detail tab label (v0.18.0+).
+  // Live stats sidebar (v0.21.0+).
+  'stats.cpu': { en: 'CPU', fr: 'CPU' },
+  'stats.memory': { en: 'Memory', fr: 'Mémoire' },
+  'stats.uptime': { en: 'Uptime', fr: 'Temps de fonctionnement' },
+  'stats.offline': { en: 'Offline', fr: 'Hors ligne' },
+  'stats.last60s': { en: 'Last 60 seconds', fr: '60 dernières secondes' },
+
   'detail.tab.game': { en: 'Game', fr: 'Jeu' },
 
 

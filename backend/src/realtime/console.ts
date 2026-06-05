@@ -4,6 +4,7 @@ import type { FastifyInstance } from 'fastify';
 import { AUTH_COOKIE } from '../plugins/auth';
 import { getServer } from '../lib/servers';
 import { attachConsole, sendConsoleCommand } from '../lib/docker';
+import { streamContainerStats } from '../lib/dockerStats';
 import { effectivePermissions, getSubuser } from '../lib/subusers';
 import { PERMISSION } from '../lib/permissions';
 
@@ -132,9 +133,39 @@ export function setupConsole(
       }
     });
 
+    // v0.21.0+: live container stats stream (CPU / memory / uptime).
+    // One Docker stats stream per socket — multiplexing across sockets
+    // could be added later if it becomes a load issue.
+    let stopStats: (() => void) | null = null;
+    socket.on('stats:subscribe', async (serverId: unknown) => {
+      const containerId = resolveContainer(serverId);
+      if (!containerId) {
+        socket.emit('stats:error', 'forbidden');
+        return;
+      }
+      stopStats?.();
+      stopStats = null;
+      try {
+        stopStats = await streamContainerStats(
+          containerId,
+          (tick) => socket.emit('stats:tick', tick),
+          () => socket.emit('stats:error', 'unavailable'),
+        );
+      } catch {
+        socket.emit('stats:error', 'unavailable');
+      }
+    });
+
+    socket.on('stats:unsubscribe', () => {
+      stopStats?.();
+      stopStats = null;
+    });
+
     socket.on('disconnect', () => {
       detach?.();
       detach = null;
+      stopStats?.();
+      stopStats = null;
     });
   });
 }

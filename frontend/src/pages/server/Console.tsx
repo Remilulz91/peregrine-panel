@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { io, type Socket } from 'socket.io-client';
 import PlayerList from '../../components/PlayerList';
+import LiveStats from '../../components/LiveStats';
 import { hasPermission, PERM, type ApiServer } from '../../lib/api';
 import { useTranslation } from '../../lib/i18n';
 
@@ -118,6 +119,7 @@ export default function ConsolePage({
         serverRunning={server.status === 'RUNNING'}
       />
 
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr,260px]">
     <div className="flex h-[70vh] flex-col overflow-hidden rounded-2xl border border-peregrine-700 bg-peregrine-900">
       <div className="flex items-center justify-between border-b border-peregrine-800 px-5 py-2.5">
         <p className="text-xs text-peregrine-400">
@@ -164,6 +166,15 @@ export default function ConsolePage({
           {t('console.noSendPermission')}
         </p>
       )}
+    </div>
+
+    {/* v0.21.0+: live CPU / RAM / Uptime sidebar. Shows "Offline"
+        widgets when the server is not RUNNING. */}
+    <LiveStats
+      serverId={server.id}
+      serverRunning={server.status === 'RUNNING'}
+      cpuLimit={server.cpuLimit}
+    />
     </div>
     </div>
   );
