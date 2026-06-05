@@ -2,6 +2,30 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.22.4 — 2026-06-06
+
+Documentation-only release.
+
+### Added
+
+- **`TZ` env var** documented in `.env.example`, wired through
+  `docker-compose.yml` with the `${TZ:-UTC}` default, and a new
+  **Timezone for scheduled tasks** section in the README. By
+  default the panel container runs in UTC, which is a footgun for
+  European users — a "backup at 04:00" schedule actually fires at
+  04:00 UTC = 06:00 CEST in summer. Setting `TZ=Europe/Paris` (or
+  any IANA timezone) in `.env` makes schedule times match the
+  operator's local clock.
+
+### Notes
+
+- After changing `TZ`, recreate the container with
+  `docker compose up -d` and edit (or toggle Enabled off/on) each
+  existing schedule so its `next_run_at` is recomputed.
+- No code change — the schedule worker already uses Node's local
+  TZ (which Docker derives from the `TZ` env var). This release
+  just makes that switch visible and easy to set.
+
 ## v0.22.3 — 2026-06-05
 
 ### Fixed

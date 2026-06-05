@@ -7,10 +7,9 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.22.3** — Peregrine now auto-reads `rcon.password` from
-> each server's own `server.properties` and passes it to `rcon-cli`.
-> Imported servers no longer suffer from RCON authentication mismatches,
-> player list and in-game restart warnings work out of the box.
+> **Version 0.22.4** — documentation release: adds a `TZ` env var
+> so scheduled tasks use your local timezone instead of UTC. Set
+> `TZ=Europe/Paris` in your `.env` and 04:00 means 04:00 Paris time.
 > See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 
@@ -85,6 +84,29 @@ firewall (UFW) and intrusion protection (fail2ban):
   `sudo bash install.sh your-domain.example`.
 - **Manual** — follow the step-by-step guide in
   [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+
+## Timezone for scheduled tasks
+
+The **Schedules** tab interprets times (e.g. "backup at 04:00") in the
+panel container's timezone. By default that's **UTC**, so a 04:00
+schedule actually fires at 04:00 UTC — that's **06:00 in Paris during
+summer** and 05:00 in winter.
+
+To make schedules use your local time, set `TZ` in your `.env`:
+
+```
+TZ=Europe/Paris
+```
+
+Then recreate the container:
+
+```bash
+docker compose up -d
+```
+
+After that, edit (or just toggle Enabled off / on) each existing
+schedule so its `next_run_at` is recomputed in the new timezone.
+See `.env.example` for examples and the IANA timezone list.
 
 ## Updating Peregrine
 

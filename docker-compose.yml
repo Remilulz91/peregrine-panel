@@ -16,6 +16,10 @@ services:
       - .env
     environment:
       - NODE_ENV=production
+      # v0.22.4+: timezone used by the schedule worker. Set TZ in your
+      # .env (e.g. TZ=Europe/Paris) so 04:00 means 04:00 local time
+      # instead of 04:00 UTC. Default UTC when .env doesn't set it.
+      - TZ=${TZ:-UTC}
     volumes:
       # Persistent panel data (the SQLite database).
       - peregrine-data:/data
