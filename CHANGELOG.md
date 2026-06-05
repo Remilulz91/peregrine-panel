@@ -2,6 +2,42 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.22.2 — 2026-06-05
+
+### Fixed
+
+- **Editing a schedule silently did nothing** — `updateSchedule()`
+  in `lib/schedules.ts` had a SQL placeholder count that didn't
+  match the positional arguments passed to `.run()`. The UPDATE
+  statement had 9 SET placeholders + 1 WHERE = 10, but `.run()`
+  only passed 9 values, so:
+  - `warning_minutes` received the next_run ISO timestamp (cast to
+    its default 0 by SQLite)
+  - `next_run_at` received the row id (a UUID string)
+  - `WHERE id = ?` received `undefined` → matched no rows → the
+    UPDATE was a silent no-op
+
+  Concretely: edit a schedule, change the action / warning lead
+  time / any field, click Save — the UI seemed to save but the row
+  was untouched on the next read. Visible symptom: reopen the
+  edit dialog and the previous value is back.
+
+  The bug was introduced when `action` was added in v0.22.0 (the
+  Python patch script that edited the file added a placeholder but
+  forgot the matching `.run()` argument) and amplified when
+  `warning_minutes` was added in v0.22.1. The `.run()` arguments
+  now match the placeholder count exactly (10 / 10).
+
+- **Backup → Restart conversion via edit was broken** for the same
+  reason. Existing backup schedules can now be turned into restart
+  schedules by editing them.
+
+### Notes
+
+- Creating a brand-new schedule (POST) was unaffected — that
+  INSERT path always had the right column / value count. Only the
+  PATCH path was broken.
+
 ## v0.22.1 — 2026-06-05
 
 Scheduled restarts (v0.22.0) can now **warn players in-game**

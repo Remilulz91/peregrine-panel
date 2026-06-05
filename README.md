@@ -7,9 +7,9 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.22.1** — scheduled restarts can now **warn players
-> in-game** before pulling the plug, via a configurable lead time
-> (default 5 minutes). Plus all the v0.22.0 scheduled-restart goodness.
+> **Version 0.22.2** — fixes editing a schedule silently doing nothing
+> (SQL placeholder count mismatch in the PATCH path). The v0.22.1 in-game
+> restart warnings now actually save when you change them.
 > See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 

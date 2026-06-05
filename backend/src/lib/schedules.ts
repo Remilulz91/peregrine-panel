@@ -261,6 +261,7 @@ export function updateSchedule(
     input.minute,
     input.dayOfWeek,
     input.enabled ? 1 : 0,
+    warningMinutes,
     nextRun?.toISOString() ?? null,
     id,
   );
