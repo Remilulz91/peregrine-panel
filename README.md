@@ -7,9 +7,9 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.21.0** — live CPU / RAM / Uptime sidebar on the Console
-> tab, with mini sparklines for the last 60 seconds. Pterodactyl-style
-> at-a-glance health monitoring.
+> **Version 0.22.0** — scheduled tasks now support **automatic restarts**
+> in addition to automatic backups. Set a weekly restart to keep long-
+> running modded Java servers fresh without leaving your couch.
 > See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 

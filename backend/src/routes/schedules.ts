@@ -3,6 +3,7 @@ import { authenticate } from '../plugins/auth';
 import { accessibleServer, requireOwner } from '../lib/acl';
 import {
   createSchedule,
+  isScheduleAction,
   deleteSchedule,
   getSchedule,
   isFrequency,
@@ -17,6 +18,8 @@ import { logActivity } from '../lib/activity';
 
 interface ScheduleBody {
   name: string;
+  /** v0.22.0+: defaults to 'backup.create'. */
+  action?: string;
   frequency: string;
   hour: number;
   minute: number;
@@ -49,6 +52,7 @@ const SCHEDULE_BODY_SCHEMA = {
   additionalProperties: false,
   properties: {
     name: { type: 'string', minLength: 1, maxLength: 48 },
+    action: { type: 'string', enum: ['backup.create', 'server.restart'] },
     frequency: { type: 'string', enum: ['hourly', 'daily', 'weekly'] },
     hour: { type: 'integer', minimum: 0, maximum: 23 },
     minute: { type: 'integer', minimum: 0, maximum: 59 },
@@ -94,9 +98,14 @@ export async function scheduleRoutes(app: FastifyInstance): Promise<void> {
       if (!isFrequency(body.frequency)) {
         return reply.code(400).send({ error: 'Unknown frequency.' });
       }
+      const action =
+        body.action && isScheduleAction(body.action)
+          ? body.action
+          : 'backup.create';
       const schedule = createSchedule({
         serverId: server.id,
         name: body.name.trim(),
+        action,
         frequency: body.frequency,
         hour: body.hour,
         minute: body.minute,
@@ -133,8 +142,13 @@ export async function scheduleRoutes(app: FastifyInstance): Promise<void> {
       if (!isFrequency(body.frequency)) {
         return reply.code(400).send({ error: 'Unknown frequency.' });
       }
+      const updateAction =
+        body.action && isScheduleAction(body.action)
+          ? body.action
+          : undefined;
       updateSchedule(existing.id, {
         name: body.name.trim(),
+        action: updateAction,
         frequency: body.frequency,
         hour: body.hour,
         minute: body.minute,

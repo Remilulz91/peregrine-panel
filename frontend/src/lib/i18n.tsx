@@ -796,6 +796,18 @@ const translations = {
   'schedules.form.title': { en: 'Schedule', fr: 'Planification' },
   'schedules.form.editTitle': { en: 'Edit schedule', fr: 'Modifier la planification' },
   'schedules.form.name': { en: 'Name', fr: 'Nom' },
+  // v0.22.0+: schedule action picker (backup vs restart).
+  'schedules.form.action': { en: 'Action', fr: 'Action' },
+  'schedules.action.backup.create': {
+    en: 'Take a backup',
+    fr: 'Faire une sauvegarde',
+  },
+  'schedules.action.server.restart': {
+    en: 'Restart the server',
+    fr: 'Redémarrer le serveur',
+  },
+  'schedules.action.unknown': { en: 'Unknown', fr: 'Inconnu' },
+  'schedules.colAction': { en: 'Action', fr: 'Action' },
   'schedules.form.frequency': { en: 'Frequency', fr: 'Fréquence' },
   'schedules.form.time': { en: 'Time', fr: 'Heure' },
   'schedules.form.day': { en: 'Day of the week', fr: 'Jour de la semaine' },

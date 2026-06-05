@@ -2,6 +2,49 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.22.0 — 2026-06-05
+
+Scheduled tasks (v0.6.0) used to only support automatic backups.
+They now also support **automatic restarts** — handy for long-
+running modded Java servers where the JVM heap drifts upward over
+days. Set a weekly "Sunday 5 AM restart" and your server stays
+fresh.
+
+### Added
+
+- **New scheduled action `server.restart`** alongside the existing
+  `backup.create`. The scheduleWorker dispatches on the action
+  type, calls `restartContainer` for restart schedules, and writes
+  an activity entry (`schedule.run` on success, `schedule.failed`
+  on Docker error, `schedule.skipped` if the server was offline at
+  fire time — a restart schedule deliberately does NOT auto-start
+  a stopped server).
+- **Action picker in the schedule create / edit dialog** — a new
+  dropdown sits between Name and Frequency: "Take a backup" or
+  "Restart the server" (FR: "Faire une sauvegarde" / "Redémarrer le
+  serveur"). The action is preserved when toggling enabled on/off
+  from the list.
+- **Action column in the schedules table** so you can tell at a
+  glance which schedules do what.
+- **Backend helpers**: `isScheduleAction()` type guard,
+  `ScheduleAction` union widened, `createSchedule` / `updateSchedule`
+  both accept `action`. The DB column already existed (it's been
+  `action TEXT NOT NULL DEFAULT 'backup.create'` since migration 8)
+  so no migration is needed.
+
+### Notes
+
+- Existing backup schedules keep working unchanged — the default
+  on `action` is still `'backup.create'`, so older rows are
+  treated identically to before.
+- A scheduled restart skips silently if the server is currently
+  OFFLINE. The intent of a "weekly restart" is to keep a running
+  24/7 server healthy, not to bring a stopped one back up.
+- No in-game warning ("Server restarting in 1 minute") yet — if
+  you want it, run a manual `say Restart in 1 minute` from the
+  Console tab before the scheduled time, or wait for a future
+  release that adds a notify-before grace window.
+
 ## v0.21.0 — 2026-06-05
 
 Live container stats on the Console tab — Pterodactyl-style

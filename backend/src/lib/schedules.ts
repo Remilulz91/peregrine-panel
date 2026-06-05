@@ -5,8 +5,18 @@ import { db } from './db';
 export type ScheduleFrequency = 'hourly' | 'daily' | 'weekly';
 const FREQ_SET: ReadonlySet<string> = new Set(['hourly', 'daily', 'weekly']);
 
-/** Supported scheduled actions. Only "create a backup" exists today. */
-export type ScheduleAction = 'backup.create';
+/**
+ * Supported scheduled actions (v0.22.0+):
+ *   - 'backup.create' — snapshot the server's data folder
+ *   - 'server.restart' — gracefully restart the container (libère la mémoire,
+ *      utile pour des serveurs Java qui tournent en 24/7)
+ */
+export type ScheduleAction = 'backup.create' | 'server.restart';
+const ACTION_SET: ReadonlySet<string> = new Set(['backup.create', 'server.restart']);
+
+export function isScheduleAction(value: string): value is ScheduleAction {
+  return ACTION_SET.has(value);
+}
 
 /** A scheduled task, as used inside the backend. */
 export interface ScheduleRecord {
@@ -164,6 +174,8 @@ export function getSchedule(
 export function createSchedule(input: {
   serverId: string;
   name: string;
+  /** Defaults to 'backup.create' for backward compatibility. */
+  action?: ScheduleAction;
   frequency: ScheduleFrequency;
   hour: number;
   minute: number;
@@ -172,16 +184,18 @@ export function createSchedule(input: {
   createdBy: string | null;
 }): ScheduleRecord {
   const id = randomUUID();
+  const action: ScheduleAction = input.action ?? 'backup.create';
   const nextRun = input.enabled ? computeNextRun(input) : null;
   db.prepare(
     `INSERT INTO server_schedules
        (id, server_id, name, action, frequency, hour, minute, day_of_week,
         enabled, next_run_at, created_by)
-     VALUES (?, ?, ?, 'backup.create', ?, ?, ?, ?, ?, ?, ?)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     id,
     input.serverId,
     input.name,
+    action,
     input.frequency,
     input.hour,
     input.minute,
@@ -195,11 +209,16 @@ export function createSchedule(input: {
   return created;
 }
 
-/** Updates an existing schedule; recomputes next_run_at from the new params. */
+/**
+ * Updates an existing schedule; recomputes next_run_at from the new
+ * params. v0.22.0+: also accepts a new `action` to convert e.g. a
+ * backup schedule into a restart schedule.
+ */
 export function updateSchedule(
   id: string,
   input: {
     name: string;
+    action?: ScheduleAction;
     frequency: ScheduleFrequency;
     hour: number;
     minute: number;
@@ -208,13 +227,19 @@ export function updateSchedule(
   },
 ): void {
   const nextRun = input.enabled ? computeNextRun(input) : null;
+  // Look up the current action so we keep it when the caller didn't
+  // specify one — keeps PATCH callers from accidentally turning a
+  // restart schedule back into a backup.
+  const current = getSchedule(id);
+  const action: ScheduleAction = input.action ?? current?.action ?? 'backup.create';
   db.prepare(
     `UPDATE server_schedules
-       SET name = ?, frequency = ?, hour = ?, minute = ?, day_of_week = ?,
+       SET name = ?, action = ?, frequency = ?, hour = ?, minute = ?, day_of_week = ?,
            enabled = ?, next_run_at = ?
      WHERE id = ?`,
   ).run(
     input.name,
+    action,
     input.frequency,
     input.hour,
     input.minute,

@@ -256,6 +256,8 @@ interface CreateServerInput {
 
 export interface ScheduleInput {
   name: string;
+  /** v0.22.0+: 'backup.create' (default) or 'server.restart'. */
+  action?: 'backup.create' | 'server.restart';
   frequency: 'hourly' | 'daily' | 'weekly';
   hour: number;
   minute: number;

@@ -57,6 +57,10 @@ function FormDialog({ serverId, initial, onClose, onSaved }: FormDialogProps) {
   const [dayOfWeek, setDayOfWeek] = useState<number>(
     initial?.dayOfWeek ?? 1,
   );
+  type Action = 'backup.create' | 'server.restart';
+  const [action, setAction] = useState<Action>(
+    (initial?.action as Action) ?? 'backup.create',
+  );
   const [enabled, setEnabled] = useState<boolean>(initial?.enabled ?? true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,6 +71,7 @@ function FormDialog({ serverId, initial, onClose, onSaved }: FormDialogProps) {
     setBusy(true);
     const body: ScheduleInput = {
       name: name.trim(),
+      action,
       frequency,
       hour,
       minute,
@@ -113,6 +118,24 @@ function FormDialog({ serverId, initial, onClose, onSaved }: FormDialogProps) {
               onChange={(e) => setName(e.target.value)}
               className="w-full rounded-lg border border-peregrine-700 bg-peregrine-950 px-3 py-2 text-sm text-white outline-none focus:border-falcon"
             />
+          </div>
+
+          <div>
+            <label
+              htmlFor="sch-action"
+              className="mb-1 block text-xs font-medium text-peregrine-400"
+            >
+              {t('schedules.form.action')}
+            </label>
+            <select
+              id="sch-action"
+              value={action}
+              onChange={(e) => setAction(e.target.value as Action)}
+              className="w-full rounded-lg border border-peregrine-700 bg-peregrine-950 px-3 py-2 text-sm text-white outline-none focus:border-falcon"
+            >
+              <option value="backup.create">{t('schedules.action.backup.create')}</option>
+              <option value="server.restart">{t('schedules.action.server.restart')}</option>
+            </select>
           </div>
 
           <div>
@@ -271,6 +294,7 @@ export default function SchedulesPage({ server }: SchedulesPageProps) {
     try {
       await api.updateSchedule(server.id, schedule.id, {
         name: schedule.name,
+        action: schedule.action as 'backup.create' | 'server.restart',
         frequency: schedule.frequency,
         hour: schedule.hour,
         minute: schedule.minute,
@@ -343,6 +367,7 @@ export default function SchedulesPage({ server }: SchedulesPageProps) {
             <thead className="bg-peregrine-900 text-left text-xs uppercase tracking-wider text-peregrine-400">
               <tr>
                 <th className="px-4 py-2">{t('schedules.colName')}</th>
+                <th className="px-4 py-2">{t('schedules.colAction')}</th>
                 <th className="px-4 py-2">{t('schedules.colFrequency')}</th>
                 <th className="px-4 py-2">{t('schedules.colNext')}</th>
                 <th className="px-4 py-2">{t('schedules.colLast')}</th>
@@ -356,6 +381,13 @@ export default function SchedulesPage({ server }: SchedulesPageProps) {
               {schedules.map((s) => (
                 <tr key={s.id}>
                   <td className="px-4 py-2 font-medium text-white">{s.name}</td>
+                  <td className="px-4 py-2 text-xs text-peregrine-300">
+                    {t(
+                      (s.action === 'backup.create' || s.action === 'server.restart'
+                        ? `schedules.action.${s.action}`
+                        : 'schedules.action.unknown') as TranslationKey,
+                    )}
+                  </td>
                   <td className="px-4 py-2 text-xs text-peregrine-300">
                     {frequencyDescription(s, t)}
                   </td>

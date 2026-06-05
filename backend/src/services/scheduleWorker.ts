@@ -5,6 +5,7 @@ import {
 } from '../lib/schedules';
 import { getServer } from '../lib/servers';
 import { createBackup, DiskFullError } from './backups';
+import { restartContainer } from '../lib/docker';
 import { logActivity } from '../lib/activity';
 
 /** How often the worker wakes up and looks for due schedules. */
@@ -23,11 +24,24 @@ async function runOnce(schedule: ScheduleRecord): Promise<void> {
     return;
   }
 
-  // The only action supported in v0.6.0.
-  if (schedule.action !== 'backup.create') {
-    return;
+  if (schedule.action === 'backup.create') {
+    return runBackup(schedule);
   }
+  if (schedule.action === 'server.restart') {
+    return runRestart(schedule);
+  }
+  // Unknown action — log and skip rather than crash the worker.
+  logActivity({
+    serverId: server.id,
+    actorId: null,
+    kind: 'schedule.failed',
+    details: `${schedule.name}: unknown action ${schedule.action}`,
+  });
+}
 
+/** Runs a scheduled backup. Same behaviour as v0.6.0. */
+async function runBackup(schedule: ScheduleRecord): Promise<void> {
+  const server = getServer(schedule.serverId)!;
   // Name pattern: "<schedule-name> — 2026-05-27 03:00". Helps the user
   // recognise scheduled vs. manual backups in the Backups tab.
   const now = new Date();
@@ -41,8 +55,6 @@ async function runOnce(schedule: ScheduleRecord): Promise<void> {
     await createBackup({
       server,
       name: backupName,
-      // Schedules are owned by the panel; attribute the run to the
-      // creator if we know them, otherwise leave actor empty.
       createdBy: schedule.createdBy,
     });
     logActivity({
@@ -53,8 +65,6 @@ async function runOnce(schedule: ScheduleRecord): Promise<void> {
     });
   } catch (err) {
     if (err instanceof DiskFullError) {
-      // Disk too tight to take a backup right now. Skip this occurrence
-      // and let the next one try — better than crashing the worker.
       logActivity({
         serverId: server.id,
         actorId: null,
@@ -69,6 +79,47 @@ async function runOnce(schedule: ScheduleRecord): Promise<void> {
         details: schedule.name,
       });
     }
+  }
+}
+
+/**
+ * Runs a scheduled restart (v0.22.0+). If the server is stopped, we
+ * skip (with a 'schedule.skipped' activity entry) rather than starting
+ * it — the intent of a scheduled restart is "refresh a long-running
+ * server", not "start one I left off".
+ */
+async function runRestart(schedule: ScheduleRecord): Promise<void> {
+  const server = getServer(schedule.serverId)!;
+  if (!server.containerId) {
+    logActivity({
+      serverId: server.id,
+      actorId: null,
+      kind: 'schedule.skipped',
+      details: `${schedule.name}: server is offline`,
+    });
+    return;
+  }
+  try {
+    await restartContainer(server.containerId);
+    logActivity({
+      serverId: server.id,
+      actorId: null,
+      kind: 'schedule.run',
+      details: `${schedule.name} (restart)`,
+    });
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[schedule] restart failed for ${server.id}: ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+    );
+    logActivity({
+      serverId: server.id,
+      actorId: null,
+      kind: 'schedule.failed',
+      details: `${schedule.name} (restart)`,
+    });
   }
 }
 
