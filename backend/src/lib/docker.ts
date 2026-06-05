@@ -109,6 +109,15 @@ export async function createServerContainer(
 
   // Environment variables understood by the itzg Minecraft images.
   const env = ['EULA=TRUE', `VERSION=${input.version}`];
+
+  // v0.22.5+: forward the panel's TZ env var to the game container so
+  // Minecraft logs use the operator's local clock instead of UTC.
+  // Existing containers are unaffected (Docker can't update env on a
+  // running container) — new servers pick this up automatically.
+  if (process.env.TZ && process.env.TZ.length > 0) {
+    env.push(`TZ=${process.env.TZ}`);
+  }
+
   if (input.kind === 'java') {
     // The TYPE env tells itzg which server flavour to download and run.
     // Bedrock has no loader concept, so we only set TYPE for Java.

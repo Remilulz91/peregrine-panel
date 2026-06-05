@@ -119,25 +119,27 @@ async function broadcastRestartWarnings(
 
   // Initial heads-up at T-warningMinutes.
   if (warningMinutes >= 2) {
-    await say(`Redémarrage dans ${warningMinutes} minutes`);
+    await say(
+      `Server restart in ${warningMinutes} minutes / Redémarrage dans ${warningMinutes} minutes`,
+    );
     // Wait until T-1min.
     await sleep((warningMinutes - 1) * 60 * 1000);
-    await say('Redémarrage dans 1 minute');
+    await say('Server restart in 1 minute / Redémarrage dans 1 minute');
     // Wait until T-30s.
     await sleep(30 * 1000);
-    await say('Redémarrage dans 30 secondes');
+    await say('Server restart in 30 seconds / Redémarrage dans 30 secondes');
     // Wait until T-10s.
     await sleep(20 * 1000);
-    await say('Redémarrage dans 10 secondes');
+    await say('Server restart in 10 seconds / Redémarrage dans 10 secondes');
     await sleep(10 * 1000);
     return;
   }
   // warningMinutes === 1: only the late warnings make sense.
-  await say('Redémarrage dans 1 minute');
+  await say('Server restart in 1 minute / Redémarrage dans 1 minute');
   await sleep(30 * 1000);
-  await say('Redémarrage dans 30 secondes');
+  await say('Server restart in 30 seconds / Redémarrage dans 30 secondes');
   await sleep(20 * 1000);
-  await say('Redémarrage dans 10 secondes');
+  await say('Server restart in 10 seconds / Redémarrage dans 10 secondes');
   await sleep(10 * 1000);
 }
 

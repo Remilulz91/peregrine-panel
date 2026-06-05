@@ -7,9 +7,10 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.22.4** — documentation release: adds a `TZ` env var
-> so scheduled tasks use your local timezone instead of UTC. Set
-> `TZ=Europe/Paris` in your `.env` and 04:00 means 04:00 Paris time.
+> **Version 0.22.5** — pre-restart in-game broadcasts are now
+> bilingual (English / French), and the panel's `TZ` env var is
+> forwarded to new Minecraft containers so their logs match your
+> local clock.
 > See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 

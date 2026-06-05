@@ -2,6 +2,33 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.22.5 — 2026-06-06
+
+### Changed
+
+- **Pre-restart in-game broadcasts are now bilingual** (English /
+  French) instead of French-only. Players see e.g.
+  `[Peregrine] Server restart in 10 minutes / Redémarrage dans 10
+  minutes`. Length stays well under Minecraft's 256-char chat
+  limit and covers both audiences without any configuration.
+
+### Added
+
+- **TZ propagation to new Minecraft containers**. When `TZ` is
+  set on the panel (recommended after v0.22.4), the same value is
+  now forwarded as a container env var when Peregrine creates a
+  new game server. Minecraft's own logs will then use the
+  operator's local clock instead of UTC.
+
+### Notes
+
+- **Existing game containers are unaffected** — Docker doesn't
+  allow changing env vars on existing containers. To get the new
+  TZ on an already-running server, delete + recreate it via the
+  panel. For day-to-day timestamps that's purely cosmetic
+  (schedule timing is driven by the panel's TZ, not the game
+  container's), so most users can ignore this.
+
 ## v0.22.4 — 2026-06-06
 
 Documentation-only release.
