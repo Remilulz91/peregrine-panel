@@ -4,6 +4,7 @@ import type { FastifyInstance } from 'fastify';
 import { AUTH_COOKIE } from '../plugins/auth';
 import { getServer } from '../lib/servers';
 import { attachConsole, sendConsoleCommand } from '../lib/docker';
+import { readRconPassword } from '../lib/properties';
 import { streamContainerStats } from '../lib/dockerStats';
 import { effectivePermissions, getSubuser } from '../lib/subusers';
 import { PERMISSION } from '../lib/permissions';
@@ -124,7 +125,11 @@ export function setupConsole(
         return;
       }
       try {
-        const output = await sendConsoleCommand(containerId, command);
+        const output = await sendConsoleCommand(
+          containerId,
+          command,
+          readRconPassword(server.id) ?? undefined,
+        );
         if (output.trim().length > 0) {
           socket.emit('console:output', output);
         }

@@ -2,6 +2,47 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.22.3 — 2026-06-05
+
+### Fixed
+
+- **RCON authentication failed on imported servers** — itzg
+  generates a random `RCON_PASSWORD` env var at container creation
+  and stores the same value in `server.properties`. When the user
+  imports an existing server (uploads their old `server.properties`
+  via SFTP), Minecraft starts using the imported password while
+  `rcon-cli` keeps using itzg's random env var → mismatch → every
+  `say` / `list` call returns `rcon: authentication failed`. The
+  player list widget then shows `0 / 0 online` forever, and
+  scheduled-restart in-game warnings never reach the players.
+
+  The fix: `sendConsoleCommand()` now reads `rcon.password` from
+  the server's own `server.properties` at every call and passes it
+  explicitly to `rcon-cli --password "..."`. Whatever password
+  Minecraft is actually accepting, that's what we send — no more
+  env-var-vs-file drift.
+
+### Added
+
+- **`readRconPassword(serverId)`** helper in `lib/properties.ts`,
+  reuses the existing properties parser. Returns `null` when the
+  file is missing or the key is absent; in that case `rcon-cli`
+  falls back to its default behaviour (RCON_PASSWORD env var) so
+  fresh installs keep working out of the box.
+- The three RCON callers (`realtime/console.ts`,
+  `routes/players.ts`, `services/scheduleWorker.ts`) now read the
+  password via the helper and pass it through.
+
+### Notes
+
+- No migration needed — the fix is purely on the read path.
+- Restart your panel after pulling so the new code is loaded.
+  The Minecraft container itself doesn't need to restart.
+- This also unblocks the **player list widget** (v0.16.0+) on
+  imported servers, the **Game tab** for servers with non-default
+  RCON passwords, and the **pre-restart broadcast** sequence
+  (v0.22.1+).
+
 ## v0.22.2 — 2026-06-05
 
 ### Fixed

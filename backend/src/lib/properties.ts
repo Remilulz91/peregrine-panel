@@ -391,3 +391,24 @@ export function writeGameSettings(
   const body = serializeProperties(original, updates);
   fs.writeFileSync(file, body, { encoding: 'utf8', mode: 0o644 });
 }
+/**
+ * Reads the `rcon.password` value from a server's `server.properties`
+ * (v0.22.3+). Returns null when the file is missing or the key isn't
+ * present. The caller passes this to `rcon-cli --password ...` so the
+ * tool authenticates against Minecraft regardless of the container's
+ * `RCON_PASSWORD` env var (which on imported servers may not match).
+ */
+export function readRconPassword(serverId: string): string | null {
+  const file = propertiesPath(serverId);
+  let body: string;
+  try {
+    body = fs.readFileSync(file, 'utf8');
+  } catch {
+    return null;
+  }
+  const props = parseProperties(body);
+  const raw = props['rcon.password'];
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}

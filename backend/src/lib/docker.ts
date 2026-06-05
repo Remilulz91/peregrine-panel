@@ -261,10 +261,23 @@ export async function attachConsole(
 export async function sendConsoleCommand(
   containerId: string,
   command: string,
+  /**
+   * v0.22.3+: explicit RCON password to pass to `rcon-cli --password`.
+   * When omitted, `rcon-cli` falls back to its built-in default
+   * (typically `RCON_PASSWORD` env var). Caller should read the
+   * password from the server's `server.properties` so it stays
+   * aligned with what Minecraft actually accepts — itzg's random env
+   * var doesn't survive a `server.properties` import via SFTP.
+   */
+  password?: string,
 ): Promise<string> {
   const container = docker.getContainer(containerId);
+  const cmd =
+    password && password.length > 0
+      ? ['rcon-cli', '--password', password, command]
+      : ['rcon-cli', command];
   const exec = await container.exec({
-    Cmd: ['rcon-cli', command],
+    Cmd: cmd,
     AttachStdout: true,
     AttachStderr: true,
     Tty: true,

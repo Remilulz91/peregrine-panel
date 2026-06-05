@@ -6,6 +6,7 @@ import {
 import { getServer } from '../lib/servers';
 import { createBackup, DiskFullError } from './backups';
 import { restartContainer, sendConsoleCommand } from '../lib/docker';
+import { readRconPassword } from '../lib/properties';
 import { logActivity } from '../lib/activity';
 
 /** How often the worker wakes up and looks for due schedules. */
@@ -105,10 +106,12 @@ function sleep(ms: number): Promise<void> {
 async function broadcastRestartWarnings(
   containerId: string,
   warningMinutes: number,
+  /** v0.22.3+: explicit RCON password (read from server.properties). */
+  rconPassword: string | undefined,
 ): Promise<void> {
   const say = async (msg: string): Promise<void> => {
     try {
-      await sendConsoleCommand(containerId, `say [Peregrine] ${msg}`);
+      await sendConsoleCommand(containerId, `say [Peregrine] ${msg}`, rconPassword);
     } catch {
       // Best-effort — RCON may be down. The restart will still fire.
     }
@@ -168,7 +171,8 @@ async function runRestart(schedule: ScheduleRecord): Promise<void> {
   void (async () => {
     try {
       if (warningMinutes > 0) {
-        await broadcastRestartWarnings(containerId, warningMinutes);
+        const rconPassword = readRconPassword(server.id) ?? undefined;
+        await broadcastRestartWarnings(containerId, warningMinutes, rconPassword);
       }
       await restartContainer(containerId);
       logActivity({

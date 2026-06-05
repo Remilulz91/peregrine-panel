@@ -4,6 +4,7 @@ import { accessibleServer } from '../lib/acl';
 import { getServer } from '../lib/servers';
 import { getTemplate } from '../lib/templates';
 import { getContainerState, sendConsoleCommand } from '../lib/docker';
+import { readRconPassword } from '../lib/properties';
 
 /** Snapshot of the players online on a server. */
 interface PlayerListResponse {
@@ -134,7 +135,11 @@ export async function playerRoutes(app: FastifyInstance): Promise<void> {
       }
 
       try {
-        const output = await sendConsoleCommand(server.containerId, 'list');
+        const output = await sendConsoleCommand(
+          server.containerId,
+          'list',
+          readRconPassword(server.id) ?? undefined,
+        );
         // Re-read the server in case the worker just bumped diskUsedMb
         // — keeps the response consistent if the client re-orders calls.
         const fresh = getServer(server.id) ?? server;

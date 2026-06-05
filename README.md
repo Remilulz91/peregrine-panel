@@ -7,9 +7,10 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.22.2** — fixes editing a schedule silently doing nothing
-> (SQL placeholder count mismatch in the PATCH path). The v0.22.1 in-game
-> restart warnings now actually save when you change them.
+> **Version 0.22.3** — Peregrine now auto-reads `rcon.password` from
+> each server's own `server.properties` and passes it to `rcon-cli`.
+> Imported servers no longer suffer from RCON authentication mismatches,
+> player list and in-game restart warnings work out of the box.
 > See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 
