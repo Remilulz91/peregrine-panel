@@ -61,6 +61,9 @@ function FormDialog({ serverId, initial, onClose, onSaved }: FormDialogProps) {
   const [action, setAction] = useState<Action>(
     (initial?.action as Action) ?? 'backup.create',
   );
+  const [warningMinutes, setWarningMinutes] = useState<number>(
+    initial?.warningMinutes ?? 5,
+  );
   const [enabled, setEnabled] = useState<boolean>(initial?.enabled ?? true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +75,7 @@ function FormDialog({ serverId, initial, onClose, onSaved }: FormDialogProps) {
     const body: ScheduleInput = {
       name: name.trim(),
       action,
+      warningMinutes: action === 'server.restart' ? warningMinutes : 0,
       frequency,
       hour,
       minute,
@@ -137,6 +141,34 @@ function FormDialog({ serverId, initial, onClose, onSaved }: FormDialogProps) {
               <option value="server.restart">{t('schedules.action.server.restart')}</option>
             </select>
           </div>
+
+          {action === 'server.restart' && (
+            <div>
+              <label
+                htmlFor="sch-warning"
+                className="mb-1 block text-xs font-medium text-peregrine-400"
+              >
+                {t('schedules.form.warningMinutes')}
+              </label>
+              <input
+                id="sch-warning"
+                type="number"
+                min={0}
+                max={30}
+                step={1}
+                value={warningMinutes}
+                onChange={(e) =>
+                  setWarningMinutes(
+                    Math.min(30, Math.max(0, parseInt(e.target.value, 10) || 0)),
+                  )
+                }
+                className="w-full rounded-lg border border-peregrine-700 bg-peregrine-950 px-3 py-2 text-sm text-white outline-none focus:border-falcon"
+              />
+              <p className="mt-1 text-xs text-peregrine-500">
+                {t('schedules.form.warningHint')}
+              </p>
+            </div>
+          )}
 
           <div>
             <label
@@ -295,6 +327,7 @@ export default function SchedulesPage({ server }: SchedulesPageProps) {
       await api.updateSchedule(server.id, schedule.id, {
         name: schedule.name,
         action: schedule.action as 'backup.create' | 'server.restart',
+        warningMinutes: schedule.warningMinutes,
         frequency: schedule.frequency,
         hour: schedule.hour,
         minute: schedule.minute,

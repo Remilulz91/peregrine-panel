@@ -133,6 +133,13 @@ const MIGRATIONS: string[] = [
   // its initial value is 0 until the first tick lands.
   `ALTER TABLE servers ADD COLUMN disk_quota_mb INTEGER;
    ALTER TABLE servers ADD COLUMN disk_used_mb INTEGER NOT NULL DEFAULT 0;`,
+
+  // Migration 13 - lead time (in minutes) for pre-restart in-game
+  // warnings on schedule actions of kind 'server.restart' (v0.22.1+).
+  // 0 = no warning, immediate restart. Up to 30 = broadcast a series
+  // of `say` messages over RCON before actually restarting the
+  // container, so players have time to log out cleanly.
+  `ALTER TABLE server_schedules ADD COLUMN warning_minutes INTEGER NOT NULL DEFAULT 0;`,
 ];
 
 /** Applies any migrations that have not been run on this database yet. */

@@ -2,6 +2,52 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.22.1 — 2026-06-05
+
+Scheduled restarts (v0.22.0) can now **warn players in-game**
+before pulling the plug — essential when day-and-night-shift
+players share a server.
+
+### Added
+
+- **`warningMinutes` field on every schedule** (default `0`),
+  configurable from 0 to 30. Only meaningful for `server.restart`
+  schedules — backups never need a heads-up.
+- **Migration 13** adds `warning_minutes INTEGER NOT NULL DEFAULT 0`
+  on `server_schedules`. Existing schedules keep their previous
+  behaviour (immediate restart).
+- **Pre-restart broadcast sequence** when `warningMinutes > 0`:
+  - **T-warningMinutes**: `say [Peregrine] Redémarrage dans N
+    minutes`
+  - **T-1 min**: `say [Peregrine] Redémarrage dans 1 minute`
+  - **T-30 s**: `say [Peregrine] Redémarrage dans 30 secondes`
+  - **T-10 s**: `say [Peregrine] Redémarrage dans 10 secondes`
+  - **T-0**: `restartContainer` Docker
+  Each broadcast goes through the existing `sendConsoleCommand`
+  (RCON `say`). A failed broadcast (RCON down) is swallowed; the
+  restart still fires.
+- **Frontend dialog** picks up a new "Pre-restart warning
+  (minutes)" input that only appears when the **server.restart**
+  action is selected. Defaults to 5 minutes on new restart
+  schedules.
+- **`schedule.warningMinutes` field** exposed by the GET/POST/PATCH
+  `/api/servers/:id/schedules` routes.
+
+### Notes
+
+- The broadcast runs as a **detached async task** so the worker
+  loop isn't blocked during the warning window. Other schedules
+  fire normally even while a 5-minute restart countdown is in
+  progress.
+- The actual restart happens at **the schedule's time + warning
+  window**. Setting a 05:00 schedule with `warningMinutes=5` means
+  the broadcast starts at 05:00 and the container restarts around
+  05:05. (Think of the schedule time as "when the heads-up
+  begins".)
+- Messages are in **French** for now (Peregrine's main audience).
+  Bilingual or per-schedule language could be added in a future
+  release if needed.
+
 ## v0.22.0 — 2026-06-05
 
 Scheduled tasks (v0.6.0) used to only support automatic backups.

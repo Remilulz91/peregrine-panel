@@ -32,6 +32,11 @@ export interface ScheduleRecord {
   /** Day of week (0=Sunday … 6=Saturday). Ignored unless `weekly`. */
   dayOfWeek: number;
   enabled: boolean;
+  /**
+   * Pre-restart in-game warning lead time, in minutes. 0 means
+   * "restart immediately". Only meaningful for 'server.restart' (v0.22.1+).
+   */
+  warningMinutes: number;
   /** ISO timestamp of the last successful run, or null. */
   lastRunAt: string | null;
   /** ISO timestamp of the next scheduled run. */
@@ -50,6 +55,7 @@ interface ScheduleRow {
   minute: number;
   day_of_week: number;
   enabled: number;
+  warning_minutes: number;
   last_run_at: string | null;
   next_run_at: string | null;
   created_by: string | null;
@@ -67,6 +73,7 @@ function toRecord(row: ScheduleRow): ScheduleRecord {
     minute: row.minute,
     dayOfWeek: row.day_of_week,
     enabled: row.enabled === 1,
+    warningMinutes: row.warning_minutes ?? 0,
     lastRunAt: row.last_run_at,
     nextRunAt: row.next_run_at,
     createdBy: row.created_by,
@@ -181,16 +188,18 @@ export function createSchedule(input: {
   minute: number;
   dayOfWeek: number;
   enabled: boolean;
+  warningMinutes?: number;
   createdBy: string | null;
 }): ScheduleRecord {
   const id = randomUUID();
   const action: ScheduleAction = input.action ?? 'backup.create';
+  const warningMinutes = Math.min(30, Math.max(0, Math.floor(input.warningMinutes ?? 0)));
   const nextRun = input.enabled ? computeNextRun(input) : null;
   db.prepare(
     `INSERT INTO server_schedules
        (id, server_id, name, action, frequency, hour, minute, day_of_week,
-        enabled, next_run_at, created_by)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        enabled, warning_minutes, next_run_at, created_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     id,
     input.serverId,
@@ -201,6 +210,7 @@ export function createSchedule(input: {
     input.minute,
     input.dayOfWeek,
     input.enabled ? 1 : 0,
+    warningMinutes,
     nextRun?.toISOString() ?? null,
     input.createdBy,
   );
@@ -224,18 +234,24 @@ export function updateSchedule(
     minute: number;
     dayOfWeek: number;
     enabled: boolean;
+    warningMinutes?: number;
   },
 ): void {
   const nextRun = input.enabled ? computeNextRun(input) : null;
-  // Look up the current action so we keep it when the caller didn't
-  // specify one — keeps PATCH callers from accidentally turning a
-  // restart schedule back into a backup.
+  // Look up the current action / warning so we keep them when the
+  // caller didn't specify them — keeps PATCH callers from accidentally
+  // turning a restart schedule back into a backup, and toggling
+  // Enabled in the list doesn't reset the warning window.
   const current = getSchedule(id);
   const action: ScheduleAction = input.action ?? current?.action ?? 'backup.create';
+  const warningMinutes = Math.min(
+    30,
+    Math.max(0, Math.floor(input.warningMinutes ?? current?.warningMinutes ?? 0)),
+  );
   db.prepare(
     `UPDATE server_schedules
        SET name = ?, action = ?, frequency = ?, hour = ?, minute = ?, day_of_week = ?,
-           enabled = ?, next_run_at = ?
+           enabled = ?, warning_minutes = ?, next_run_at = ?
      WHERE id = ?`,
   ).run(
     input.name,

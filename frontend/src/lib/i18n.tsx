@@ -798,6 +798,14 @@ const translations = {
   'schedules.form.name': { en: 'Name', fr: 'Nom' },
   // v0.22.0+: schedule action picker (backup vs restart).
   'schedules.form.action': { en: 'Action', fr: 'Action' },
+  'schedules.form.warningMinutes': {
+    en: 'Pre-restart warning (minutes)',
+    fr: 'Préavis avant redémarrage (minutes)',
+  },
+  'schedules.form.warningHint': {
+    en: 'Players see a "Restart in N minutes" message in chat. 0 = restart immediately.',
+    fr: 'Les joueurs voient un message "Redémarrage dans N minutes" dans le chat. 0 = redémarrage immédiat.',
+  },
   'schedules.action.backup.create': {
     en: 'Take a backup',
     fr: 'Faire une sauvegarde',

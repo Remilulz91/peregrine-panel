@@ -121,6 +121,8 @@ export interface ApiSchedule {
   minute: number;
   dayOfWeek: number;
   enabled: boolean;
+  /** v0.22.1+: in-game warning lead time before a restart (minutes). */
+  warningMinutes: number;
   lastRunAt: string | null;
   nextRunAt: string | null;
   createdAt: string;
@@ -258,6 +260,8 @@ export interface ScheduleInput {
   name: string;
   /** v0.22.0+: 'backup.create' (default) or 'server.restart'. */
   action?: 'backup.create' | 'server.restart';
+  /** v0.22.1+: minutes between fire time and actual restart (0-30). */
+  warningMinutes?: number;
   frequency: 'hourly' | 'daily' | 'weekly';
   hour: number;
   minute: number;

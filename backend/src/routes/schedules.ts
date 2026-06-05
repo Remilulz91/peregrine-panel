@@ -20,6 +20,8 @@ interface ScheduleBody {
   name: string;
   /** v0.22.0+: defaults to 'backup.create'. */
   action?: string;
+  /** v0.22.1+: pre-restart in-game warning lead time, in minutes. */
+  warningMinutes?: number;
   frequency: string;
   hour: number;
   minute: number;
@@ -39,6 +41,7 @@ function publicSchedule(schedule: ScheduleRecord) {
     minute: schedule.minute,
     dayOfWeek: schedule.dayOfWeek,
     enabled: schedule.enabled,
+    warningMinutes: schedule.warningMinutes,
     lastRunAt: schedule.lastRunAt,
     nextRunAt: schedule.nextRunAt,
     createdAt: schedule.createdAt,
@@ -58,6 +61,7 @@ const SCHEDULE_BODY_SCHEMA = {
     minute: { type: 'integer', minimum: 0, maximum: 59 },
     dayOfWeek: { type: 'integer', minimum: 0, maximum: 6 },
     enabled: { type: 'boolean' },
+    warningMinutes: { type: 'integer', minimum: 0, maximum: 30 },
   },
 } as const;
 
@@ -106,6 +110,7 @@ export async function scheduleRoutes(app: FastifyInstance): Promise<void> {
         serverId: server.id,
         name: body.name.trim(),
         action,
+        warningMinutes: body.warningMinutes,
         frequency: body.frequency,
         hour: body.hour,
         minute: body.minute,
@@ -149,6 +154,7 @@ export async function scheduleRoutes(app: FastifyInstance): Promise<void> {
       updateSchedule(existing.id, {
         name: body.name.trim(),
         action: updateAction,
+        warningMinutes: body.warningMinutes,
         frequency: body.frequency,
         hour: body.hour,
         minute: body.minute,

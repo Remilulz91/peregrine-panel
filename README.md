@@ -7,9 +7,9 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.22.0** — scheduled tasks now support **automatic restarts**
-> in addition to automatic backups. Set a weekly restart to keep long-
-> running modded Java servers fresh without leaving your couch.
+> **Version 0.22.1** — scheduled restarts can now **warn players
+> in-game** before pulling the plug, via a configurable lead time
+> (default 5 minutes). Plus all the v0.22.0 scheduled-restart goodness.
 > See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 
