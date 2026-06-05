@@ -2,6 +2,30 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.19.2 — 2026-06-05
+
+### Fixed
+
+- **Version-validation error messages were hard-coded in English** —
+  unlike the rest of the create-server dialog, the "unknown Minecraft
+  Java version" / "invalid Bedrock version" / "Mojang manifest
+  unreachable" messages were assembled on the backend as a single
+  English string and forwarded as-is to the UI. They are now
+  translated FR / EN like everything else.
+
+### Changed
+
+- The `validateVersion` function now returns a stable `code`
+  (`version.empty`, `version.bedrock_shape`, `version.unknown_java`,
+  `version.unknown_java_no_suggestion`, `version.unverifiable`) plus
+  a `data` object (`raw`, `suggestion`) and an English `message`
+  fallback. The POST `/api/servers` route forwards `code` + `data`
+  alongside the legacy English `error` string, so non-UI consumers
+  still get a sensible reason out of the box.
+- The frontend picks the matching `create.versionError.*` i18n key
+  and substitutes `{raw}` / `{suggestion}` so the user always sees a
+  message in their language.
+
 ## v0.19.1 — 2026-06-05
 
 Follow-ups to v0.19.0 based on real-world testing of the new

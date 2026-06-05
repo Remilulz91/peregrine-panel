@@ -144,6 +144,26 @@ export default function CreateServerDialog({
         } else {
           setError(err.message);
         }
+      } else if (err instanceof ApiError && err.payload) {
+        // v0.19.2+: if the backend tagged the error with a `code`
+        // starting with "version.", translate it locally so the user
+        // sees an FR/EN message that matches the rest of the UI.
+        const payload = err.payload as {
+          code?: string;
+          data?: { raw?: string; suggestion?: string };
+        };
+        if (payload.code && payload.code.startsWith('version.')) {
+          const key =
+            ('create.versionError.' + payload.code.slice('version.'.length)) as TranslationKey;
+          const data = payload.data ?? {};
+          setError(
+            t(key)
+              .replace('{raw}', data.raw ?? '')
+              .replace('{suggestion}', data.suggestion ?? ''),
+          );
+        } else {
+          setError(err.message || t('create.error'));
+        }
       } else if (err instanceof ApiError && err.message) {
         setError(err.message);
       } else {

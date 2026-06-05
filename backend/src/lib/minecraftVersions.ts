@@ -104,9 +104,55 @@ async function getManifest(): Promise<CacheValue | null> {
 }
 
 /**
+ * Stable error codes for `validateVersion`. The route layer sends both
+ * the code (so the UI can translate) and a fallback English message
+ * (so non-UI clients get a sensible reason out of the box).
+ */
+export type VersionErrorCode =
+  | 'version.empty'
+  | 'version.bedrock_shape'
+  | 'version.unknown_java'
+  | 'version.unknown_java_no_suggestion'
+  | 'version.unverifiable';
+
+export interface VersionErrorData {
+  raw?: string;
+  suggestion?: string;
+}
+
+export type VersionResult =
+  | { ok: true }
+  | { ok: false; code: VersionErrorCode; data: VersionErrorData; message: string };
+
+/** Builds the English fallback message for each error code. */
+function describeVersionError(
+  code: VersionErrorCode,
+  data: VersionErrorData,
+): string {
+  switch (code) {
+    case 'version.empty':
+      return 'Version is required.';
+    case 'version.bedrock_shape':
+      return `"${data.raw}" is not a valid Bedrock version. Expected something like "1.20.81.01" or "LATEST".`;
+    case 'version.unknown_java':
+      return `"${data.raw}" is not a known Minecraft Java version. Try "${data.suggestion}" or "LATEST".`;
+    case 'version.unknown_java_no_suggestion':
+      return `"${data.raw}" is not a known Minecraft Java version.`;
+    case 'version.unverifiable':
+      return `Could not verify the version with Mojang's manifest and "${data.raw}" does not look like a Minecraft version. Try a value like "1.21.4" or "LATEST".`;
+  }
+}
+
+function fail(code: VersionErrorCode, data: VersionErrorData = {}): VersionResult {
+  return { ok: false, code, data, message: describeVersionError(code, data) };
+}
+
+/**
  * Validates a Minecraft version string for the given kind / loader.
- * Resolves to `{ ok: true }` on success, or `{ ok: false, message }`
- * with a translated-ready short reason on failure.
+ * Resolves to `{ ok: true }` on success, or `{ ok: false, code, data,
+ * message }` on failure — the route layer forwards `code` + `data` to
+ * the UI so it can render a localised message, and exposes `message`
+ * as an English fallback for non-UI consumers.
  *
  * For Java with a known loader (Paper / Fabric / Forge), we still
  * validate against the Mojang manifest because every loader Minecraft
@@ -117,9 +163,9 @@ export async function validateVersion(input: {
   kind: 'java' | 'bedrock' | string;
   loader: ServerLoader;
   version: string;
-}): Promise<{ ok: true } | { ok: false; message: string }> {
+}): Promise<VersionResult> {
   const raw = input.version.trim();
-  if (!raw) return { ok: false, message: 'Version is required.' };
+  if (!raw) return fail('version.empty');
   const upper = raw.toUpperCase();
 
   if (MAGIC_KEYWORDS.has(upper)) return { ok: true };
@@ -127,10 +173,7 @@ export async function validateVersion(input: {
   // Bedrock: we have no manifest, so only check the shape.
   if (input.kind !== 'java') {
     if (BEDROCK_SHAPE.test(raw)) return { ok: true };
-    return {
-      ok: false,
-      message: `"${raw}" is not a valid Bedrock version. Expected something like "1.20.81.01" or "LATEST".`,
-    };
+    return fail('version.bedrock_shape', { raw });
   }
 
   // Java: hit the manifest. If the manifest is unreachable AND we
@@ -139,10 +182,7 @@ export async function validateVersion(input: {
   const manifest = await getManifest();
   if (!manifest) {
     if (VERSION_SHAPE.test(raw)) return { ok: true };
-    return {
-      ok: false,
-      message: `Could not verify the version with Mojang's manifest and "${raw}" does not look like a Minecraft version. Try a value like "1.21.4" or "LATEST".`,
-    };
+    return fail('version.unverifiable', { raw });
   }
 
   if (manifest.ids.has(raw)) return { ok: true };
@@ -153,11 +193,7 @@ export async function validateVersion(input: {
     if (id.toLowerCase() === raw.toLowerCase()) return { ok: true };
   }
 
-  const suggestion = manifest.latestRelease
-    ? ` Try "${manifest.latestRelease}" or "LATEST".`
-    : '';
-  return {
-    ok: false,
-    message: `"${raw}" is not a known Minecraft Java version.${suggestion}`,
-  };
+  return manifest.latestRelease
+    ? fail('version.unknown_java', { raw, suggestion: manifest.latestRelease })
+    : fail('version.unknown_java_no_suggestion', { raw });
 }

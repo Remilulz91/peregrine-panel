@@ -221,6 +221,8 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
           return reply.code(400).send({
             error: versionResult.message,
             field: 'minecraftVersion',
+            code: versionResult.code,
+            data: versionResult.data,
           });
         }
       }

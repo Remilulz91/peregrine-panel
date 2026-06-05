@@ -280,6 +280,30 @@ const translations = {
   },
   'create.memoryHintNoHost': { en: 'Min 512 MiB.', fr: 'Min 512 Mio.' },
   'create.cpuHintNoHost': { en: 'Min 0.5 core (use 0.5 steps).', fr: 'Min 0.5 cœur (par pas de 0.5).' },
+
+  // Localised messages for backend version-validation errors (v0.19.2+).
+  // The backend sends back a code + data, and the UI picks the matching key
+  // and substitutes {raw} / {suggestion}.
+  'create.versionError.empty': {
+    en: 'Please type a version.',
+    fr: 'Saisis une version.',
+  },
+  'create.versionError.bedrock_shape': {
+    en: '"{raw}" is not a valid Bedrock version. Expected something like "1.20.81.01" or "LATEST".',
+    fr: '"{raw}" n’est pas une version Bedrock valide. Attendu : un format comme "1.20.81.01" ou "LATEST".',
+  },
+  'create.versionError.unknown_java': {
+    en: '"{raw}" is not a known Minecraft Java version. Try "{suggestion}" or "LATEST".',
+    fr: '"{raw}" n’est pas une version Minecraft Java connue. Essaie "{suggestion}" ou "LATEST".',
+  },
+  'create.versionError.unknown_java_no_suggestion': {
+    en: '"{raw}" is not a known Minecraft Java version.',
+    fr: '"{raw}" n’est pas une version Minecraft Java connue.',
+  },
+  'create.versionError.unverifiable': {
+    en: 'Mojang\'s manifest could not be reached and "{raw}" does not look like a Minecraft version. Try a value like "1.21.4" or "LATEST".',
+    fr: 'La manifest Mojang est injoignable et "{raw}" ne ressemble pas à une version Minecraft. Essaie une valeur comme "1.21.4" ou "LATEST".',
+  },
   'create.submit': { en: 'Create', fr: 'Créer' },
   'create.error': {
     en: 'The server could not be created.',
