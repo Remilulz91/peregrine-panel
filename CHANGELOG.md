@@ -2,6 +2,54 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.23.0 — 2026-06-06
+
+### Security
+
+- **Login rate-limiter** on `/api/auth/login` and
+  `/api/auth/mfa/verify`. Each remote IP is allowed 5 failed
+  attempts per minute, after which the endpoint replies with HTTP
+  429 and a `Retry-After` header for one minute. Successful
+  logins clear the IP's budget so legitimate retries from the same
+  network are not penalised. The limiter lives in process memory,
+  has no external dependency, and adds zero ops burden.
+- **SFTP brute-force throttle**. The built-in SFTP server now
+  blocks an IP for 15 minutes after 5 failed authentications in a
+  15-minute window, mirroring fail2ban behaviour for the panel's
+  port 2022. Successful logins clear the bucket. Wrong-key
+  attempts that never reach the password step are also tracked.
+- **Auth event log** (new table `auth_events`, migration 14)
+  records every login attempt, success or failure, with the kind
+  of event (`auth.login`, `auth.login_failed`, `auth.mfa_failed`,
+  `auth.login_rate_limited`, `auth.sftp_login`,
+  `auth.sftp_failed`, `auth.sftp_rate_limited`, `auth.logout`,
+  `auth.login_mfa`), the user id (if known), the username typed,
+  and the remote IP. Lets an admin audit who tried to log in and
+  confirm the rate-limiter caught a brute-force burst before any
+  damage. Queryable directly via SQL on the SQLite database; a
+  UI listing is planned for a future release.
+
+### Notes
+
+- **No breaking changes.** All existing flows behave exactly as
+  before for legitimate users; only attackers see the new 429
+  responses. No new dependency was added; the limiter is a
+  ~100-line in-house helper (`backend/src/lib/rateLimit.ts`) that
+  uses a `Map<key, attempts[]>` in process memory.
+- **Reverse-proxy users**: Peregrine reads the client IP from
+  Fastify's `request.ip`, which by default is the socket address.
+  If you're behind Caddy / Nginx / Traefik, make sure your proxy
+  forwards `X-Forwarded-For` and that Fastify is configured to
+  trust it (the install.sh-generated Caddy config already does
+  this). Otherwise, every request looks like it came from
+  `127.0.0.1` and a single bad client could lock out the whole
+  panel.
+- **Multi-instance deployments** behind a load balancer: each
+  replica has its own counter, so the effective limit is 5 ×
+  number of replicas per IP per minute. Still far better than no
+  limit at all, but planned for hardening once Peregrine officially
+  supports horizontal scaling.
+
 ## v0.22.5 — 2026-06-06
 
 ### Changed

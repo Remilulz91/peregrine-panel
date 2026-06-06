@@ -16,8 +16,14 @@ import { getServer } from '../lib/servers';
 import { effectivePermissions, getSubuser } from '../lib/subusers';
 import { PERMISSION } from '../lib/permissions';
 import { logActivity } from '../lib/activity';
+import { logAuthEvent } from '../lib/authEvents';
+import { isRateLimited, recordAttempt, clearAttempts } from '../lib/rateLimit';
 
 const { STATUS_CODE, OPEN_MODE } = sshUtils.sftp;
+
+// v0.23.0+: 5 failed SFTP auth attempts per IP within 15 minutes
+// triggers a 15-minute lockout, mirroring fail2ban-style throttling.
+const SFTP_LIMIT = { max: 5, windowMs: 15 * 60_000, lockoutMs: 15 * 60_000 };
 
 /**
  * In-process SFTP server. Authenticates against the panel user DB and
@@ -441,28 +447,54 @@ export function startSftpServer(): () => void {
 
   const server = new SshServer(
     { hostKeys: [hostKey] },
-    (client: Connection) => {
+    (client: Connection, info: { ip: string }) => {
       let session: AuthedSession | null = null;
 
       client.on('authentication', (ctx: AuthContext) => {
+        const ip = info?.ip ?? '?';
+        if (isRateLimited(ip, SFTP_LIMIT)) {
+          logAuthEvent({
+            kind: 'auth.sftp_rate_limited',
+            username: ctx.username,
+            remoteIp: ip,
+          });
+          return ctx.reject(['password']);
+        }
         if (ctx.method !== 'password') {
           return ctx.reject(['password']);
         }
         void authenticate(ctx.username, ctx.password)
           .then((result) => {
             if (!result) {
+              recordAttempt(ip, SFTP_LIMIT);
+              logAuthEvent({
+                kind: 'auth.sftp_failed',
+                username: ctx.username,
+                remoteIp: ip,
+              });
               ctx.reject(['password']);
               return;
             }
+            clearAttempts(ip);
             session = result;
             logActivity({
               serverId: result.serverId,
               actorId: result.user.id,
               kind: 'sftp.connect',
             });
+            logAuthEvent({
+              kind: 'auth.sftp_login',
+              userId: result.user.id,
+              username: ctx.username,
+              remoteIp: ip,
+              details: `server=${result.serverId}`,
+            });
             ctx.accept();
           })
-          .catch(() => ctx.reject(['password']));
+          .catch(() => {
+            recordAttempt(ip, SFTP_LIMIT);
+            ctx.reject(['password']);
+          });
       });
 
       client.on('ready', () => {

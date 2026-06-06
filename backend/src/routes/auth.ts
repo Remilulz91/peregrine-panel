@@ -1,5 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { hashPassword, verifyPassword } from '../lib/password';
+import { isRateLimited, recordAttempt, clearAttempts, retryAfterSeconds } from '../lib/rateLimit';
+import { logAuthEvent } from '../lib/authEvents';
 import {
   countUsers,
   createUser,
@@ -78,6 +80,15 @@ function publicUser(user: UserRecord) {
 }
 
 const EMAIL_PATTERN = '^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$';
+// v0.23.0+: rate-limit budget for the login + MFA verify endpoints.
+// 5 attempts per IP per minute, with a 1-minute lockout once reached.
+const LOGIN_LIMIT = { max: 5, windowMs: 60_000, lockoutMs: 60_000 };
+
+/** Returns the client IP from Fastify's request. */
+function clientIp(request: import('fastify').FastifyRequest): string {
+  return (request.ip || '?').trim();
+}
+
 const USERNAME_PATTERN = '^[A-Za-z0-9._-]+$';
 
 /**
@@ -154,26 +165,55 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       },
     },
     async (request, reply) => {
+      const ip = clientIp(request);
+      if (isRateLimited(ip, LOGIN_LIMIT)) {
+        logAuthEvent({
+          kind: 'auth.login_rate_limited',
+          username: (request.body as LoginBody)?.username,
+          remoteIp: ip,
+        });
+        const retry = retryAfterSeconds(ip, LOGIN_LIMIT);
+        reply.header('Retry-After', String(retry));
+        return reply
+          .code(429)
+          .send({ error: `Too many attempts. Retry in ${retry}s.` });
+      }
       const { username, password } = request.body as LoginBody;
       const user = findUserByUsername(username);
       if (!user || !(await verifyPassword(user.passwordHash, password))) {
+        recordAttempt(ip, LOGIN_LIMIT);
+        logAuthEvent({
+          kind: 'auth.login_failed',
+          userId: user?.id ?? null,
+          username,
+          remoteIp: ip,
+        });
         return reply
           .code(401)
           .send({ error: 'Invalid username or password.' });
       }
-      // If MFA is enabled on this account, the password alone is not
-      // enough. Hand out an MFA-pending cookie so the next /mfa/verify
-      // call can complete the login.
+      clearAttempts(ip);
       if (userHasMfa(user)) {
         setMfaPendingCookie(app, reply, user);
         return reply.send({ requiresMfa: true });
       }
+      logAuthEvent({
+        kind: 'auth.login',
+        userId: user.id,
+        username: user.username,
+        remoteIp: ip,
+      });
       setAuthCookie(app, reply, user);
       return { user: publicUser(user) };
     },
   );
 
-  app.post('/logout', async (_request, reply) => {
+  app.post('/logout', async (request, reply) => {
+    logAuthEvent({
+      kind: 'auth.logout',
+      userId: (request.user as { sub?: string } | undefined)?.sub ?? null,
+      remoteIp: clientIp(request),
+    });
     clearAuthCookie(reply);
     clearMfaPendingCookie(reply);
     return { ok: true };
@@ -348,6 +388,13 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       },
     },
     async (request, reply) => {
+      const ipForCheck = clientIp(request);
+      if (isRateLimited(ipForCheck, LOGIN_LIMIT)) {
+        logAuthEvent({ kind: 'auth.login_rate_limited', remoteIp: ipForCheck });
+        const retry = retryAfterSeconds(ipForCheck, LOGIN_LIMIT);
+        reply.header('Retry-After', String(retry));
+        return reply.code(429).send({ error: `Too many attempts. Retry in ${retry}s.` });
+      }
       const pendingUserId = readMfaPendingUserId(app, request);
       if (!pendingUserId) {
         return reply.code(401).send({ error: 'No pending login. Sign in again.' });
@@ -370,11 +417,26 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
           .send({ error: 'Provide either a code or a recovery code.' });
       }
       if (!ok) {
+        const ipFail = clientIp(request);
+        recordAttempt(ipFail, LOGIN_LIMIT);
+        logAuthEvent({
+          kind: 'auth.mfa_failed',
+          userId: user.id,
+          username: user.username,
+          remoteIp: ipFail,
+        });
         return reply.code(401).send({ error: 'Invalid code.' });
       }
+      const ipOk = clientIp(request);
+      clearAttempts(ipOk);
       clearMfaPendingCookie(reply);
       setAuthCookie(app, reply, user);
-      // Re-read so `mfaRecoveryRemaining` reflects the possibly-consumed code.
+      logAuthEvent({
+        kind: 'auth.login_mfa',
+        userId: user.id,
+        username: user.username,
+        remoteIp: ipOk,
+      });
       const fresh = findUserById(user.id)!;
       return { user: publicUser(fresh) };
     },

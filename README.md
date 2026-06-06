@@ -7,10 +7,12 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.22.5** — pre-restart in-game broadcasts are now
-> bilingual (English / French), and the panel's `TZ` env var is
-> forwarded to new Minecraft containers so their logs match your
-> local clock.
+> **Version 0.23.0** — security hardening: login and SFTP now
+> have a per-IP rate-limiter (5 attempts / 1 min for the web
+> login, 5 / 15 min for SFTP), and every authentication event
+> (success, failure, rate-limit) is recorded in a new
+> `auth_events` table for audit. No breaking changes for
+> legitimate users.
 > See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 

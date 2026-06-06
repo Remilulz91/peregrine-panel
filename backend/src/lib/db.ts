@@ -140,6 +140,23 @@ const MIGRATIONS: string[] = [
   // of `say` messages over RCON before actually restarting the
   // container, so players have time to log out cleanly.
   `ALTER TABLE server_schedules ADD COLUMN warning_minutes INTEGER NOT NULL DEFAULT 0;`,
+
+  // Migration 14 - auth event log (v0.23.0+). Records authentication
+  // attempts (success / failure / logout) so an admin can audit who
+  // tried to log in, when, and from where. `user_id` is nullable
+  // because failed-login events for unknown usernames have no user
+  // to attribute to.
+  `CREATE TABLE auth_events (
+     id         INTEGER PRIMARY KEY AUTOINCREMENT,
+     kind       TEXT NOT NULL,
+     user_id    TEXT REFERENCES users(id) ON DELETE SET NULL,
+     username   TEXT,
+     remote_ip  TEXT,
+     details    TEXT,
+     created_at TEXT NOT NULL DEFAULT (datetime('now'))
+   );
+   CREATE INDEX auth_events_by_created_at ON auth_events(created_at);
+   CREATE INDEX auth_events_by_user ON auth_events(user_id);`,
 ];
 
 /** Applies any migrations that have not been run on this database yet. */
