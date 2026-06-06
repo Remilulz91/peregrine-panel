@@ -2,6 +2,19 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.23.1 — 2026-06-06
+
+### Fixed
+
+- **Critical follow-up to v0.23.0**. Fastify is now started with
+  `trustProxy: true`, so `request.ip` reflects the real client IP
+  from `X-Forwarded-For` instead of the local socket address.
+  Without this, every request behind Caddy / Nginx / Traefik would
+  appear to come from `127.0.0.1` and a single brute-force burst
+  would consume the rate-limiter's budget for ALL users at once.
+  Set `TRUST_PROXY=false` in `.env` to opt out (e.g. when exposing
+  the panel directly on a hostile network without a proxy).
+
 ## v0.23.0 — 2026-06-06
 
 ### Security
@@ -36,14 +49,14 @@ All notable changes to Peregrine are documented in this file.
   responses. No new dependency was added; the limiter is a
   ~100-line in-house helper (`backend/src/lib/rateLimit.ts`) that
   uses a `Map<key, attempts[]>` in process memory.
-- **Reverse-proxy users**: Peregrine reads the client IP from
-  Fastify's `request.ip`, which by default is the socket address.
-  If you're behind Caddy / Nginx / Traefik, make sure your proxy
-  forwards `X-Forwarded-For` and that Fastify is configured to
-  trust it (the install.sh-generated Caddy config already does
-  this). Otherwise, every request looks like it came from
-  `127.0.0.1` and a single bad client could lock out the whole
-  panel.
+- **Reverse-proxy support**: Fastify is now started with
+  `trustProxy: true` so `request.ip` reflects the real client IP
+  from `X-Forwarded-For` (set automatically by Caddy / Nginx /
+  Traefik). Without this, every request would look like it came
+  from `127.0.0.1` and one bad client could lock out the whole
+  panel. To opt out (e.g. when exposing Peregrine directly on a
+  hostile network with no proxy), set `TRUST_PROXY=false` in
+  your `.env`.
 - **Multi-instance deployments** behind a load balancer: each
   replica has its own counter, so the effective limit is 5 ×
   number of replicas per IP per minute. Still far better than no

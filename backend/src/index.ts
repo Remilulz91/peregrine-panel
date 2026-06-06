@@ -38,6 +38,13 @@ import { startSftpServer } from './services/sftpServer';
 export async function buildServer() {
   const app = Fastify({
     logger: { level: config.isProduction ? 'info' : 'debug' },
+    // v0.23.0+: trust X-Forwarded-For from the reverse proxy so the
+    // rate-limiter sees the real client IP instead of 127.0.0.1.
+    // Caddy / Nginx / Traefik always set this header on
+    // `reverse_proxy` requests. Set `TRUST_PROXY=false` in .env to
+    // opt out (e.g. when exposing the panel directly without a
+    // proxy on a hostile network).
+    trustProxy: process.env.TRUST_PROXY !== 'false',
   });
 
   // Make sure the built-in game templates exist in the database.

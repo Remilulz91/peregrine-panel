@@ -7,12 +7,13 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.23.0** — security hardening: login and SFTP now
+> **Version 0.23.1** — security hardening: login and SFTP now
 > have a per-IP rate-limiter (5 attempts / 1 min for the web
-> login, 5 / 15 min for SFTP), and every authentication event
-> (success, failure, rate-limit) is recorded in a new
-> `auth_events` table for audit. No breaking changes for
-> legitimate users.
+> login, 5 / 15 min for SFTP), and every authentication event is
+> recorded in a new `auth_events` table for audit. Fastify is now
+> proxy-aware (`trustProxy: true`) so the limiter sees the real
+> client IP behind Caddy / Nginx / Traefik. No breaking changes
+> for legitimate users.
 > See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 
