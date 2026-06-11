@@ -64,6 +64,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void refresh();
   }, [refresh]);
 
+  // v0.26.0+: when the server tells us the session was ended on another
+  // device (via the `peregrine:auth-invalidated` custom event dispatched
+  // by `api.ts`), re-run `refresh` so the next render flips to the
+  // Login screen instead of staying stuck on an authenticated page
+  // that would keep firing 401s.
+  useEffect(() => {
+    function onInvalidated() {
+      void refresh();
+    }
+    window.addEventListener('peregrine:auth-invalidated', onInvalidated);
+    return () => {
+      window.removeEventListener('peregrine:auth-invalidated', onInvalidated);
+    };
+  }, [refresh]);
+
   const signIn = useCallback((current: ApiUser) => {
     setUser(current);
     setStatus('authenticated');

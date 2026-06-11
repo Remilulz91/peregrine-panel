@@ -157,6 +157,19 @@ const MIGRATIONS: string[] = [
    );
    CREATE INDEX auth_events_by_created_at ON auth_events(created_at);
    CREATE INDEX auth_events_by_user ON auth_events(user_id);`,
+
+  // Migration 15 - single-session enforcement (v0.26.0+). Each user
+  // carries a `session_id` (random hex) that is rotated on every
+  // successful login / setup / invite-accept / MFA verify / logout.
+  // The JWT cookie embeds the value present at sign time; on every
+  // authenticated request we compare the JWT's `sid` claim to the
+  // current row in `users` — if they differ, the cookie is rejected
+  // with 401, the cookie is cleared, and the frontend redirects to
+  // the login page with an "ended on another device" message.
+  // SQLite's `randomblob(16)` gives us 16 random bytes, `hex(...)`
+  // turns it into 32 hex chars — far more than enough entropy.
+  `ALTER TABLE users ADD COLUMN session_id TEXT NOT NULL DEFAULT '';
+   UPDATE users SET session_id = lower(hex(randomblob(16))) WHERE session_id = '';`,
 ];
 
 /** Applies any migrations that have not been run on this database yet. */

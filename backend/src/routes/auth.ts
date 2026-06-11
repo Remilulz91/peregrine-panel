@@ -7,6 +7,7 @@ import {
   createUser,
   findUserById,
   findUserByUsername,
+  rotateUserSessionId,
   setUserPassword,
   type UserRecord,
 } from '../lib/users';
@@ -144,7 +145,8 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
         passwordHash: await hashPassword(password),
         role: 'ADMIN',
       });
-      setAuthCookie(app, reply, user);
+      const setupSid = rotateUserSessionId(user.id);
+      setAuthCookie(app, reply, { ...user, sessionId: setupSid });
       return { user: publicUser(user) };
     },
   );
@@ -197,21 +199,36 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
         setMfaPendingCookie(app, reply, user);
         return reply.send({ requiresMfa: true });
       }
+      // v0.26.0+: rotate the session id BEFORE issuing the cookie,
+      // so any cookie tied to a previous session is now invalid.
+      const loginSid = rotateUserSessionId(user.id);
       logAuthEvent({
         kind: 'auth.login',
         userId: user.id,
         username: user.username,
         remoteIp: ip,
       });
-      setAuthCookie(app, reply, user);
+      setAuthCookie(app, reply, { ...user, sessionId: loginSid });
       return { user: publicUser(user) };
     },
   );
 
   app.post('/logout', async (request, reply) => {
+    // v0.26.0+: rotate the session id on logout so the freshly-cleared
+    // cookie value cannot be replayed by an attacker who captured it.
+    const subOnLogout = (request.user as { sub?: string } | undefined)?.sub;
+    if (subOnLogout) {
+      try {
+        rotateUserSessionId(subOnLogout);
+      } catch {
+        // Swallow — logout must always succeed, even if the user row
+        // was already deleted (rare race condition during account
+        // deletion).
+      }
+    }
     logAuthEvent({
       kind: 'auth.logout',
-      userId: (request.user as { sub?: string } | undefined)?.sub ?? null,
+      userId: subOnLogout ?? null,
       remoteIp: clientIp(request),
     });
     clearAuthCookie(reply);
@@ -269,7 +286,8 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       const { password } = request.body as AcceptInviteBody;
       setUserPassword(user.id, await hashPassword(password));
       deleteInviteByToken(token);
-      setAuthCookie(app, reply, user);
+      const inviteSid = rotateUserSessionId(user.id);
+      setAuthCookie(app, reply, { ...user, sessionId: inviteSid });
       return { user: publicUser(user) };
     },
   );
@@ -430,7 +448,8 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       const ipOk = clientIp(request);
       clearAttempts(ipOk);
       clearMfaPendingCookie(reply);
-      setAuthCookie(app, reply, user);
+      const mfaSid = rotateUserSessionId(user.id);
+      setAuthCookie(app, reply, { ...user, sessionId: mfaSid });
       logAuthEvent({
         kind: 'auth.login_mfa',
         userId: user.id,

@@ -21,6 +21,19 @@ export default function Login() {
 
   const [stage, setStage] = useState<Stage>('credentials');
 
+  // v0.26.0+: if the user was kicked off because a new login happened
+  // elsewhere, the API layer wrote this flag in sessionStorage. We pick
+  // it up once on mount and clear it so the message only appears once.
+  const [kicked, setKicked] = useState<boolean>(() => {
+    try {
+      const flag = sessionStorage.getItem('peregrine_kicked') === '1';
+      if (flag) sessionStorage.removeItem('peregrine_kicked');
+      return flag;
+    } catch {
+      return false;
+    }
+  });
+
   // Credentials stage
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -36,6 +49,7 @@ export default function Login() {
   async function handleCredentials(event: FormEvent): Promise<void> {
     event.preventDefault();
     setCredentialsError(null);
+    setKicked(false);
     setBusy(true);
     try {
       const result = await api.login({ username, password });
@@ -177,6 +191,11 @@ export default function Login() {
           onChange={(e) => setPassword(e.target.value)}
         />
 
+        {kicked && (
+          <div className="mb-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
+            {t('login.sessionKicked')}
+          </div>
+        )}
         {credentialsError && (
           <p className="text-sm text-rose-400">{credentialsError}</p>
         )}

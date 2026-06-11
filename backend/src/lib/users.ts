@@ -17,6 +17,14 @@ export interface UserRecord {
    * can manage the list (parse / verify / shrink).
    */
   mfaRecoveryCodes: string | null;
+  /**
+   * v0.26.0+: random hex token that uniquely identifies the user's
+   * currently-active session. Rotated on every successful login so a
+   * cookie issued in a previous session becomes invalid the moment a
+   * new one is created — even from the same browser. The JWT cookie
+   * embeds this value in its `sid` claim.
+   */
+  sessionId: string;
 }
 
 interface UserRow {
@@ -28,6 +36,7 @@ interface UserRow {
   created_at: string;
   mfa_secret: string | null;
   mfa_recovery_codes: string | null;
+  session_id: string;
 }
 
 function toRecord(row: UserRow): UserRecord {
@@ -40,7 +49,20 @@ function toRecord(row: UserRow): UserRecord {
     createdAt: row.created_at,
     mfaSecret: row.mfa_secret,
     mfaRecoveryCodes: row.mfa_recovery_codes,
+    sessionId: row.session_id,
   };
+}
+
+/**
+ * Rotates the user's `session_id` to a fresh random value and returns
+ * the new id. Call this on every successful login / setup / invite
+ * acceptance / MFA verify / logout — any cookie issued before this
+ * point will now be rejected by `authenticate` (v0.26.0+).
+ */
+export function rotateUserSessionId(userId: string): string {
+  const next = randomUUID().replace(/-/g, '');
+  db.prepare('UPDATE users SET session_id = ? WHERE id = ?').run(next, userId);
+  return next;
 }
 
 // Placeholder prefix used as the password hash for accounts that were

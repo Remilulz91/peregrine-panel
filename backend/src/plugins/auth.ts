@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { config } from '../config';
+import { findUserById } from '../lib/users';
 
 /** Name of the cookie that carries the authentication token. */
 export const AUTH_COOKIE = 'peregrine_token';
@@ -26,8 +27,10 @@ const MFA_PENDING_MAX_AGE = 5 * 60;
 // `request.user` should only ever see fully authenticated sessions.
 declare module '@fastify/jwt' {
   interface FastifyJWT {
-    payload: { sub: string; role: string; mfa?: 'pending' };
-    user: { sub: string; role: string };
+    // v0.26.0+: `sid` carries the user's current session_id, so the
+    // server can reject cookies issued before the latest login.
+    payload: { sub: string; role: string; mfa?: 'pending'; sid?: string };
+    user: { sub: string; role: string; sid?: string };
   }
 }
 
@@ -42,6 +45,20 @@ export async function authenticate(
     await request.jwtVerify();
   } catch {
     await reply.code(401).send({ error: 'Unauthorized' });
+    return;
+  }
+  // v0.26.0+: single-session enforcement. The JWT must carry the
+  // user's CURRENT session_id, otherwise a previous cookie is being
+  // replayed — typically because the user logged in on another
+  // device. Clear the stale cookie and respond with a stable error
+  // code so the frontend can show a friendly message.
+  const { sub, sid } = request.user as { sub: string; sid?: string };
+  const user = findUserById(sub);
+  if (!user || !sid || user.sessionId !== sid) {
+    clearAuthCookie(reply);
+    await reply
+      .code(401)
+      .send({ error: 'Session ended on another device.', code: 'auth.session_kicked' });
   }
 }
 
@@ -59,6 +76,16 @@ export async function authenticateAdmin(
     await reply.code(401).send({ error: 'Unauthorized' });
     return;
   }
+  // v0.26.0+: same single-session check as `authenticate`.
+  const { sub, sid } = request.user as { sub: string; sid?: string };
+  const user = findUserById(sub);
+  if (!user || !sid || user.sessionId !== sid) {
+    clearAuthCookie(reply);
+    await reply
+      .code(401)
+      .send({ error: 'Session ended on another device.', code: 'auth.session_kicked' });
+    return;
+  }
   if (request.user.role !== 'ADMIN') {
     await reply.code(403).send({ error: 'Forbidden' });
   }
@@ -68,10 +95,12 @@ export async function authenticateAdmin(
 export function setAuthCookie(
   app: FastifyInstance,
   reply: FastifyReply,
-  user: { id: string; role: string },
+  user: { id: string; role: string; sessionId: string },
 ): void {
+  // v0.26.0+: embed the user's CURRENT session_id in the JWT so the
+  // server can detect cookies issued for a previous session.
   const token = app.jwt.sign(
-    { sub: user.id, role: user.role },
+    { sub: user.id, role: user.role, sid: user.sessionId },
     { expiresIn: TOKEN_MAX_AGE },
   );
   reply.setCookie(AUTH_COOKIE, token, {

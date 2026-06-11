@@ -214,6 +214,21 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     } else {
       message = `Request failed (${response.status})`;
     }
+    // v0.26.0+: single-session enforcement. When the backend rejects the
+    // request with `auth.session_kicked`, the user signed in elsewhere
+    // and the cookie we sent is now stale. We mark the page so the
+    // Login screen can show a friendly message after the auth state
+    // flips, then dispatch a custom event so the AuthProvider can
+    // refresh and re-render the login.
+    const code = (data as { code?: string } | undefined)?.code;
+    if (response.status === 401 && code === 'auth.session_kicked') {
+      try {
+        sessionStorage.setItem('peregrine_kicked', '1');
+      } catch {
+        // sessionStorage can be blocked in private mode — best effort.
+      }
+      window.dispatchEvent(new Event('peregrine:auth-invalidated'));
+    }
     throw new ApiError(response.status, message, data);
   }
   return data as T;

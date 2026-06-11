@@ -2,6 +2,47 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.26.0 — 2026-06-11
+
+### Added
+
+- **Single active session per user.** A user can now only be
+  logged in on one device at a time. When you sign in from a
+  second browser/machine, the previous device's cookie becomes
+  invalid on its next request (HTTP 401 with code
+  `auth.session_kicked`), and the panel automatically swaps to
+  the Login screen with the explanation:
+  *"Your session was ended because your account signed in on
+  another device. Please sign in again."*
+  Same behaviour for both administrators and regular users.
+
+### How it works
+
+- **Migration 15** adds a `session_id` column to the `users`
+  table (random 32-char hex per row).
+- The JWT cookie now embeds a `sid` claim. The backend
+  `authenticate` and `authenticateAdmin` guards verify `sid`
+  matches the user's current `session_id` in the database on
+  every request.
+- `session_id` is rotated on every successful login, setup,
+  invite acceptance, MFA verification, and logout.
+
+### Notes
+
+- **No effect on multiple tabs of the same browser.** Tabs in
+  the same browser profile share the cookie, so they all carry
+  the same `sid` and continue to work in parallel.
+- **No effect on backups, schedules, SFTP, or game container
+  control.** Only HTTP authentication is touched. SFTP keeps
+  using its own credentials path.
+- Any active session is automatically migrated on first run:
+  the migration populates each existing user's `session_id`
+  with a fresh random value, and Peregrine remains usable
+  without forcing a logout — the first authenticated request
+  from your existing cookie will fail once and your browser
+  will re-sign-in. (If you prefer, log out and back in once
+  manually after the upgrade.)
+
 ## v0.25.0 — 2026-06-11
 
 ### Changed

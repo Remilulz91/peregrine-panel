@@ -66,6 +66,10 @@ const translations = {
     en: 'Invalid username or password.',
     fr: "Nom d'utilisateur ou mot de passe incorrect.",
   },
+  'login.sessionKicked': {
+    en: 'Your session was ended because your account signed in on another device. Please sign in again.',
+    fr: "Votre session a pris fin car votre compte s'est connecté sur un autre appareil. Veuillez vous reconnecter.",
+  },
 
   'login.mfa.title': { en: 'Two-step verification', fr: 'Vérification en deux étapes' },
   'login.mfa.subtitle': {

@@ -7,9 +7,10 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.25.0** — fresh tab sessions now land on the
-> Dashboard instead of restoring the last URL the user was on.
-> F5 in the same tab still keeps you on the current page.
+> **Version 0.26.0** — single active session per user. Sign in
+> on a new device and the previous device is signed out on its
+> next request, with a friendly "ended on another device"
+> message on the Login screen.
 > See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 
