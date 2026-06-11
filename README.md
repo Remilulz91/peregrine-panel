@@ -7,10 +7,9 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.24.0** — NeoForge joins Vanilla / Paper / Fabric /
-> Forge in the Minecraft Java loader dropdown. Pick it the same
-> way as Forge; the Minecraft version selector and JAVA_VERSION
-> work identically.
+> **Version 0.25.0** — fresh tab sessions now land on the
+> Dashboard instead of restoring the last URL the user was on.
+> F5 in the same tab still keeps you on the current page.
 > See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 

@@ -2,6 +2,27 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.25.0 — 2026-06-11
+
+### Changed
+
+- **Fresh tab sessions now land on the Dashboard.** When you close
+  the panel on, say, `/servers/abc/console` and reopen the browser
+  later, your navigator restores that URL — we now intercept that
+  on first mount and redirect to `/`. F5 in the same tab keeps you
+  on the current page (we use `sessionStorage`, which persists
+  across refreshes but is wiped when the tab is closed).
+- The `/invite/<token>` route is exempt from the redirect, since
+  it's a public link the user is explicitly meant to land on.
+
+### Notes
+
+- Pure frontend change, no backend touch, no database migration.
+- The behaviour only affects the very first mount of a tab. Once
+  you're inside the panel, in-page navigation works exactly as
+  before — clicking a server, switching tabs, opening Account,
+  etc.
+
 ## v0.24.0 — 2026-06-11
 
 ### Added
