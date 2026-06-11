@@ -2,6 +2,26 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.24.0 — 2026-06-11
+
+### Added
+
+- **NeoForge** is now available alongside Vanilla / Paper / Fabric /
+  Forge in the loader dropdown when creating a Minecraft Java
+  server. NeoForge is the community-maintained fork of Forge,
+  supported by the `itzg/minecraft-server` image via
+  `TYPE=NEOFORGE`. Pick it the same way you'd pick Forge — the
+  Minecraft version selector and JAVA_VERSION work identically.
+
+### Notes
+
+- No database migration. The `loader` column already accepts any
+  string; only the validation enum and the UI list were extended.
+- Existing Vanilla / Paper / Fabric / Forge servers are
+  unaffected.
+- The hint under the loader picker has been updated to mention
+  NeoForge in both English and French.
+
 ## v0.23.1 — 2026-06-06
 
 ### Fixed

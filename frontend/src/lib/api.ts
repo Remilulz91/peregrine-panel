@@ -3,7 +3,12 @@
 // sends automatically thanks to `credentials: 'include'`.
 
 /** Supported Minecraft loader types (Java side). Bedrock is always 'vanilla'. */
-export type ServerLoader = 'vanilla' | 'paper' | 'fabric' | 'forge';
+export type ServerLoader =
+  | 'vanilla'
+  | 'paper'
+  | 'fabric'
+  | 'forge'
+  | 'neoforge';
 
 /** A user account, as returned by the API. */
 export interface ApiUser {
@@ -582,6 +587,7 @@ export const JAVA_LOADERS: ServerLoader[] = [
   'paper',
   'fabric',
   'forge',
+  'neoforge',
 ];
 
 /**

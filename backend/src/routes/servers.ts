@@ -163,7 +163,7 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
             minecraftVersion: { type: 'string', maxLength: 32 },
             loader: {
               type: 'string',
-              enum: ['vanilla', 'paper', 'fabric', 'forge'],
+              enum: ['vanilla', 'paper', 'fabric', 'forge', 'neoforge'],
             },
             ownerId: { type: 'string', minLength: 1 },
             autostart: { type: 'boolean' },

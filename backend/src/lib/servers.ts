@@ -1,14 +1,24 @@
 import { randomUUID } from 'node:crypto';
 import { db } from './db';
 
-/** Supported Minecraft loader types (Java side). Bedrock is always 'vanilla'. */
-export type ServerLoader = 'vanilla' | 'paper' | 'fabric' | 'forge';
+/**
+ * Supported Minecraft loader types (Java side). Bedrock is always 'vanilla'.
+ * v0.24.0+: NeoForge is the community fork of Forge maintained since
+ * late 2023; the itzg image accepts it via `TYPE=NEOFORGE`.
+ */
+export type ServerLoader =
+  | 'vanilla'
+  | 'paper'
+  | 'fabric'
+  | 'forge'
+  | 'neoforge';
 
 const LOADER_SET: ReadonlySet<string> = new Set([
   'vanilla',
   'paper',
   'fabric',
   'forge',
+  'neoforge',
 ]);
 
 /** True if the given value is one of the supported loaders. */

@@ -315,13 +315,14 @@ const translations = {
   },
   'create.loaderLabel': { en: 'Loader', fr: 'Loader' },
   'create.loaderHint': {
-    en: 'Vanilla = pure Minecraft. Paper is a high-performance fork. Fabric and Forge let you install mods.',
-    fr: 'Vanilla = Minecraft pur. Paper est un fork plus performant. Fabric et Forge permettent d’installer des mods.',
+    en: 'Vanilla = pure Minecraft. Paper is a high-performance fork. Fabric, Forge and NeoForge let you install mods.',
+    fr: 'Vanilla = Minecraft pur. Paper est un fork plus performant. Fabric, Forge et NeoForge permettent d’installer des mods.',
   },
   'loader.vanilla': { en: 'Vanilla', fr: 'Vanilla' },
   'loader.paper': { en: 'Paper', fr: 'Paper' },
   'loader.fabric': { en: 'Fabric', fr: 'Fabric' },
   'loader.forge': { en: 'Forge', fr: 'Forge' },
+  'loader.neoforge': { en: 'NeoForge', fr: 'NeoForge' },
 
   'console.connecting': { en: 'Connecting...', fr: 'Connexion...' },
   'console.connected': { en: 'Connected', fr: 'Connecté' },

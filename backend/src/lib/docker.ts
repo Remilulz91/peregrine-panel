@@ -92,6 +92,11 @@ function itzgTypeFor(loader: ServerLoader): string {
       return 'FABRIC';
     case 'forge':
       return 'FORGE';
+    case 'neoforge':
+      // v0.24.0+: NeoForge is recognised by the itzg image since
+      // mid-2024. Underlying Minecraft version handling is identical
+      // to Forge, so the rest of the env vars stay the same.
+      return 'NEOFORGE';
     case 'vanilla':
     default:
       return 'VANILLA';
