@@ -340,6 +340,21 @@ const translations = {
   'console.connecting': { en: 'Connecting...', fr: 'Connexion...' },
   'console.connected': { en: 'Connected', fr: 'Connecté' },
   'players.title': { en: 'Players online', fr: 'Joueurs en ligne' },
+  // v0.30.0+: per-player kick / ban buttons in the live player list.
+  'players.kick': { en: 'Kick', fr: 'Kick' },
+  'players.ban': { en: 'Ban', fr: 'Bannir' },
+  'players.kickPrompt': {
+    en: 'Kick {name}? Optional reason (shown to the player):',
+    fr: 'Kick {name} ? Raison facultative (visible par le joueur) :',
+  },
+  'players.banConfirm': {
+    en: 'Permanently ban {name} from this server? They will be added to the banned-players list.',
+    fr: 'Bannir {name} de ce serveur ? Ce joueur sera ajouté à la liste des joueurs bannis.',
+  },
+  'players.banPrompt': {
+    en: 'Ban {name}. Optional reason (shown to the player):',
+    fr: 'Bannir {name}. Raison facultative (visible par le joueur) :',
+  },
   'players.count': {
     en: '{online} / {max} online',
     fr: '{online} / {max} en ligne',

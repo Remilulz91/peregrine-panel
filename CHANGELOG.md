@@ -2,6 +2,45 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.30.0 — 2026-06-12
+
+### Added
+
+- **Kick and Ban buttons in the live online player list**
+  (Console tab, Java only). Each online player now has two
+  small action buttons:
+  - **Kick** — disconnects the player from the running session
+    with an optional reason (`prompt`).
+  - **Ban** — confirms first (`window.confirm`, since the
+    action is permanent), then asks for an optional reason
+    (`prompt`), and fires the RCON `ban` command. The player
+    is kicked immediately and added to the `banned-players`
+    list visible on the Game tab.
+- Both actions are gated by the `players.manage` permission
+  (already introduced in v0.29.0 for whitelist / ops / bans
+  management), so subusers without the permission don't see
+  the buttons at all.
+- Activity feed entries are recorded as `server.player_kick`
+  and `server.player_ban`.
+
+### Backend changes
+
+- New routes `POST /api/servers/:id/players/:name/kick` and
+  `/ban`. Both:
+  - Require the server to be Java (return 501 otherwise).
+  - Require the server to be running (return 409 otherwise).
+  - Validate the player name against the Mojang username
+    pattern.
+  - Execute the corresponding RCON command via the existing
+    `sendConsoleCommand` helper, using the password parsed
+    from `server.properties`.
+
+### Notes
+
+- Pure addition, no breaking changes, no database migration.
+- Bedrock servers don't expose the player list panel at all,
+  so the new buttons are not reachable on them.
+
 ## v0.29.2 — 2026-06-12
 
 ### Fixed

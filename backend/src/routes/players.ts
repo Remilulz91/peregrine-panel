@@ -1,10 +1,12 @@
 import type { FastifyInstance } from 'fastify';
 import { authenticate } from '../plugins/auth';
-import { accessibleServer } from '../lib/acl';
+import { accessibleServer, requirePermission } from '../lib/acl';
+import { PERMISSION } from '../lib/permissions';
 import { getServer } from '../lib/servers';
 import { getTemplate } from '../lib/templates';
 import { getContainerState, sendConsoleCommand } from '../lib/docker';
 import { readRconPassword } from '../lib/properties';
+import { logActivity } from '../lib/activity';
 
 /** Snapshot of the players online on a server. */
 interface PlayerListResponse {
@@ -162,6 +164,122 @@ export async function playerRoutes(app: FastifyInstance): Promise<void> {
         };
         return fallback;
       }
+    },
+  );
+
+  // v0.30.0+: kick a specific online player via RCON.
+  app.post(
+    '/servers/:id/players/:name/kick',
+    {
+      preHandler: authenticate,
+      schema: {
+        body: {
+          type: 'object',
+          additionalProperties: false,
+          properties: { reason: { type: 'string', maxLength: 200 } },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { id, name } = request.params as { id: string; name: string };
+      const server = accessibleServer(request, id);
+      if (!server) {
+        return reply.code(404).send({ error: 'Server not found.' });
+      }
+      const template = getTemplate(server.templateId);
+      if (template?.kind !== 'java') {
+        return reply
+          .code(501)
+          .send({ error: 'Kick is only supported on Minecraft Java servers.' });
+      }
+      if (!/^[A-Za-z0-9_]{1,16}$/.test(name)) {
+        return reply.code(400).send({ error: 'Invalid player name.' });
+      }
+      if (!requirePermission(request, reply, server, PERMISSION.PLAYERS_MANAGE)) {
+        return;
+      }
+      if (!server.containerId) {
+        return reply.code(409).send({ error: 'Server is not running.' });
+      }
+      const state = await getContainerState(server.containerId);
+      if (state !== 'running') {
+        return reply.code(409).send({ error: 'Server is not running.' });
+      }
+      const reason = ((request.body as { reason?: string })?.reason ?? '')
+        .replace(/[\n\r]/g, ' ')
+        .slice(0, 200);
+      const cmd = reason ? `kick ${name} ${reason}` : `kick ${name}`;
+      const output = await sendConsoleCommand(
+        server.containerId,
+        cmd,
+        readRconPassword(server.id) ?? undefined,
+      );
+      logActivity({
+        serverId: server.id,
+        actorId: request.user.sub,
+        kind: 'server.player_kick',
+        details: reason ? `${name}: ${reason}` : name,
+      });
+      return { ok: true, output };
+    },
+  );
+
+  // v0.30.0+: ban a player via RCON. Mirrors the standalone form on
+  // the Game tab's "Banned players" section but takes the player name
+  // from the live online list directly. Ban also implicitly kicks.
+  app.post(
+    '/servers/:id/players/:name/ban',
+    {
+      preHandler: authenticate,
+      schema: {
+        body: {
+          type: 'object',
+          additionalProperties: false,
+          properties: { reason: { type: 'string', maxLength: 200 } },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { id, name } = request.params as { id: string; name: string };
+      const server = accessibleServer(request, id);
+      if (!server) {
+        return reply.code(404).send({ error: 'Server not found.' });
+      }
+      const template = getTemplate(server.templateId);
+      if (template?.kind !== 'java') {
+        return reply
+          .code(501)
+          .send({ error: 'Ban is only supported on Minecraft Java servers.' });
+      }
+      if (!/^[A-Za-z0-9_]{1,16}$/.test(name)) {
+        return reply.code(400).send({ error: 'Invalid player name.' });
+      }
+      if (!requirePermission(request, reply, server, PERMISSION.PLAYERS_MANAGE)) {
+        return;
+      }
+      if (!server.containerId) {
+        return reply.code(409).send({ error: 'Server is not running.' });
+      }
+      const state = await getContainerState(server.containerId);
+      if (state !== 'running') {
+        return reply.code(409).send({ error: 'Server is not running.' });
+      }
+      const reason = ((request.body as { reason?: string })?.reason ?? '')
+        .replace(/[\n\r]/g, ' ')
+        .slice(0, 200);
+      const cmd = reason ? `ban ${name} ${reason}` : `ban ${name}`;
+      const output = await sendConsoleCommand(
+        server.containerId,
+        cmd,
+        readRconPassword(server.id) ?? undefined,
+      );
+      logActivity({
+        serverId: server.id,
+        actorId: request.user.sub,
+        kind: 'server.player_ban',
+        details: reason ? `${name}: ${reason}` : name,
+      });
+      return { ok: true, output };
     },
   );
 }

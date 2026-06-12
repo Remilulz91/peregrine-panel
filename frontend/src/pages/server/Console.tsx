@@ -117,6 +117,7 @@ export default function ConsolePage({
       <PlayerList
         serverId={server.id}
         serverRunning={server.status === 'RUNNING'}
+        myPermissions={myPermissions}
       />
 
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr,260px]">

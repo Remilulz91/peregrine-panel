@@ -660,7 +660,18 @@ export const api = {
       `/api/servers/${serverId}/access/banned-players/${encodeURIComponent(name)}`,
       { method: 'DELETE' },
     ),
-  listBannedIps: (serverId: string) =>
+  // v0.30.0+: kick / ban from the live online player list.
+  kickPlayer: (serverId: string, name: string, reason?: string) =>
+    request<{ ok: true; output: string }>(
+      `/api/servers/${serverId}/players/${encodeURIComponent(name)}/kick`,
+      { method: 'POST', body: JSON.stringify({ reason }) },
+    ),
+  banPlayer: (serverId: string, name: string, reason?: string) =>
+    request<{ ok: true; output: string }>(
+      `/api/servers/${serverId}/players/${encodeURIComponent(name)}/ban`,
+      { method: 'POST', body: JSON.stringify({ reason }) },
+    ),
+    listBannedIps: (serverId: string) =>
     request<{ entries: ApiBannedIpEntry[] }>(
       `/api/servers/${serverId}/access/banned-ips`,
     ),
