@@ -2,6 +2,43 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.29.0 — 2026-06-11
+
+### Added
+
+- **Whitelist / Operators / Banned players / Banned IPs**
+  management on the Game tab (Java only). Below the existing
+  Game settings form, a new "Player access control" section
+  with 4 internal tabs lets you read and edit each of the
+  four `*.json` files that Minecraft uses for access control,
+  without ever touching the file manager.
+- New permission `players.manage` (assignable to subusers via
+  the Users tab) gates every modification. Reading the lists
+  is allowed for any account that can see the server.
+
+### How it works
+
+- Reads parse the on-disk JSON files (`whitelist.json`,
+  `ops.json`, `banned-players.json`, `banned-ips.json`), so
+  you can view the lists even when the server is offline.
+- Writes go through RCON (`whitelist add`, `op`, `ban`,
+  `pardon`, ...) so Minecraft resolves the player name to a
+  UUID via Mojang, applies the change live and rewrites the
+  JSON file for us. The server must therefore be RUNNING for
+  modifications — the route returns 409 with a clear message
+  otherwise and the UI surfaces it inline.
+- 12 new REST routes under `/api/servers/:id/access/{kind}`:
+  `GET` lists, `POST` adds, `DELETE` removes.
+
+### Notes
+
+- Pure addition, no breaking changes, no database migration.
+- Bedrock servers are intentionally not supported (they use
+  `allowlist.json` with a different schema). The routes
+  return 501 for non-Java templates.
+- All modifications are logged in the per-server activity
+  feed (`server.whitelist_add`, `server.player_ban`, ...).
+
 ## v0.28.0 — 2026-06-11
 
 ### Added

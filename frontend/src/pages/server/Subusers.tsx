@@ -58,6 +58,10 @@ const PERMISSION_GROUPS: {
     groupKey: 'perm.group.settings',
     items: [{ perm: 'settings.rename', labelKey: 'perm.settings.rename' }],
   },
+  {
+    groupKey: 'perm.group.players',
+    items: [{ perm: 'players.manage', labelKey: 'perm.players.manage' }],
+  },
 ];
 
 /**

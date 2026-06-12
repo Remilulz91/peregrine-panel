@@ -774,6 +774,51 @@ const translations = {
   'perm.backups.download': { en: 'Download backups', fr: 'Télécharger des sauvegardes' },
   'perm.settings.rename': { en: 'Rename the server', fr: 'Renommer le serveur' },
 
+  // v0.29.0+: whitelist / ops / bans management.
+  'perm.group.players': { en: 'Player access', fr: 'Accès joueurs' },
+  'perm.players.manage': {
+    en: 'Manage whitelist / ops / bans',
+    fr: 'Gérer whitelist / ops / bans',
+  },
+
+  'access.title': { en: 'Player access control', fr: 'Contrôle d’accès des joueurs' },
+  'access.subtitle': {
+    en: 'Manage the whitelist, operators and bans. Changes apply immediately while the server is running.',
+    fr: 'Gérez la whitelist, les opérateurs et les bans. Les changements s’appliquent immédiatement quand le serveur tourne.',
+  },
+  'access.noPermission': {
+    en: 'You do not have permission to modify these lists.',
+    fr: 'Vous n’avez pas la permission de modifier ces listes.',
+  },
+  'access.tab.whitelist': { en: 'Whitelist', fr: 'Whitelist' },
+  'access.tab.ops': { en: 'Operators', fr: 'Opérateurs' },
+  'access.tab.bannedPlayers': { en: 'Banned players', fr: 'Joueurs bannis' },
+  'access.tab.bannedIps': { en: 'Banned IPs', fr: 'IPs bannies' },
+  'access.namePlaceholder': { en: 'Player name', fr: 'Nom du joueur' },
+  'access.ipPlaceholder': { en: 'IP address', fr: 'Adresse IP' },
+  'access.reasonPlaceholder': { en: 'Reason (optional)', fr: 'Raison (facultatif)' },
+  'access.add': { en: 'Add', fr: 'Ajouter' },
+  'access.ban': { en: 'Ban', fr: 'Bannir' },
+  'access.remove': { en: 'Remove', fr: 'Retirer' },
+  'access.pardon': { en: 'Pardon', fr: 'Pardonner' },
+  'access.whitelist.empty': {
+    en: 'No players are whitelisted.',
+    fr: 'Aucun joueur dans la whitelist.',
+  },
+  'access.ops.empty': {
+    en: 'No operators have been set.',
+    fr: 'Aucun opérateur défini.',
+  },
+  'access.ops.level': { en: 'level', fr: 'niveau' },
+  'access.bannedPlayers.empty': {
+    en: 'No players are banned.',
+    fr: 'Aucun joueur banni.',
+  },
+  'access.bannedIps.empty': {
+    en: 'No IPs are banned.',
+    fr: 'Aucune IP bannie.',
+  },
+
   'schedules.title': { en: 'Scheduled tasks', fr: 'Tâches planifiées' },
   'schedules.subtitle': {
     en: 'Run backups automatically on a recurring schedule. The newest backups always replace the oldest once the per-server limit is reached.',

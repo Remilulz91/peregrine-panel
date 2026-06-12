@@ -24,6 +24,8 @@ export const PERMISSION = {
   BACKUPS_DELETE: 'backups.delete',
   BACKUPS_DOWNLOAD: 'backups.download',
   SETTINGS_RENAME: 'settings.rename',
+  /** v0.29.0+: manage whitelist / ops / bans via the Game tab. */
+  PLAYERS_MANAGE: 'players.manage',
 } as const;
 
 /** Type-level union of every valid permission string. */
@@ -42,6 +44,7 @@ export const ALL_PERMISSIONS: readonly Permission[] = [
   PERMISSION.BACKUPS_DELETE,
   PERMISSION.BACKUPS_DOWNLOAD,
   PERMISSION.SETTINGS_RENAME,
+  PERMISSION.PLAYERS_MANAGE,
 ];
 
 const PERMISSION_SET: ReadonlySet<string> = new Set(ALL_PERMISSIONS);

@@ -191,6 +191,36 @@ export interface ApiPlayerList {
   max: number;
   players: string[];
 }
+/** v0.29.0+: player access-control lists (whitelist / ops / bans). */
+export interface ApiWhitelistEntry {
+  uuid: string;
+  name: string;
+}
+
+export interface ApiOpEntry {
+  uuid: string;
+  name: string;
+  level: number;
+  bypassesPlayerLimit?: boolean;
+}
+
+export interface ApiBannedPlayerEntry {
+  uuid: string;
+  name: string;
+  created: string;
+  source: string;
+  expires: string;
+  reason: string;
+}
+
+export interface ApiBannedIpEntry {
+  ip: string;
+  created: string;
+  source: string;
+  expires: string;
+  reason: string;
+}
+
 export class ApiError extends Error {
   readonly status: number;
   readonly payload: unknown;
@@ -591,6 +621,59 @@ export const api = {
       username: string;
       mfaEnabled: boolean;
     }>('/api/sftp'),
+  // v0.29.0+: player access-control lists.
+  listWhitelist: (serverId: string) =>
+    request<{ entries: ApiWhitelistEntry[] }>(`/api/servers/${serverId}/access/whitelist`),
+  addWhitelist: (serverId: string, name: string) =>
+    request<{ ok: true; output: string }>(
+      `/api/servers/${serverId}/access/whitelist`,
+      { method: 'POST', body: JSON.stringify({ name }) },
+    ),
+  removeWhitelist: (serverId: string, name: string) =>
+    request<{ ok: true; output: string }>(
+      `/api/servers/${serverId}/access/whitelist/${encodeURIComponent(name)}`,
+      { method: 'DELETE' },
+    ),
+  listOps: (serverId: string) =>
+    request<{ entries: ApiOpEntry[] }>(`/api/servers/${serverId}/access/ops`),
+  addOp: (serverId: string, name: string) =>
+    request<{ ok: true; output: string }>(
+      `/api/servers/${serverId}/access/ops`,
+      { method: 'POST', body: JSON.stringify({ name }) },
+    ),
+  removeOp: (serverId: string, name: string) =>
+    request<{ ok: true; output: string }>(
+      `/api/servers/${serverId}/access/ops/${encodeURIComponent(name)}`,
+      { method: 'DELETE' },
+    ),
+  listBannedPlayers: (serverId: string) =>
+    request<{ entries: ApiBannedPlayerEntry[] }>(
+      `/api/servers/${serverId}/access/banned-players`,
+    ),
+  addBannedPlayer: (serverId: string, name: string, reason?: string) =>
+    request<{ ok: true; output: string }>(
+      `/api/servers/${serverId}/access/banned-players`,
+      { method: 'POST', body: JSON.stringify({ name, reason }) },
+    ),
+  removeBannedPlayer: (serverId: string, name: string) =>
+    request<{ ok: true; output: string }>(
+      `/api/servers/${serverId}/access/banned-players/${encodeURIComponent(name)}`,
+      { method: 'DELETE' },
+    ),
+  listBannedIps: (serverId: string) =>
+    request<{ entries: ApiBannedIpEntry[] }>(
+      `/api/servers/${serverId}/access/banned-ips`,
+    ),
+  addBannedIp: (serverId: string, ip: string, reason?: string) =>
+    request<{ ok: true; output: string }>(
+      `/api/servers/${serverId}/access/banned-ips`,
+      { method: 'POST', body: JSON.stringify({ ip, reason }) },
+    ),
+  removeBannedIp: (serverId: string, ip: string) =>
+    request<{ ok: true; output: string }>(
+      `/api/servers/${serverId}/access/banned-ips/${encodeURIComponent(ip)}`,
+      { method: 'DELETE' },
+    ),
 };
 
 export const PERM = {
@@ -605,6 +688,7 @@ export const PERM = {
   BACKUPS_DELETE: 'backups.delete',
   BACKUPS_DOWNLOAD: 'backups.download',
   SETTINGS_RENAME: 'settings.rename',
+  PLAYERS_MANAGE: 'players.manage',
 } as const;
 
 export function hasPermission(

@@ -7,9 +7,9 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.28.0** — live host overview on the Dashboard
-> (admins only): a card with CPU %, RAM and disk usage as
-> coloured progress bars, refreshed every 5 seconds.
+> **Version 0.29.0** — Whitelist / Ops / Banned players /
+> Banned IPs management on the Game tab (Java only). Live
+> changes via RCON so updates apply without restart.
 > See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 

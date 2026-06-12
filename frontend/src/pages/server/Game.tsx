@@ -10,6 +10,7 @@ import {
   type ApiTemplate,
 } from '../../lib/api';
 import { useTranslation, type TranslationKey } from '../../lib/i18n';
+import PlayerAccessLists from '../../components/PlayerAccessLists';
 
 interface GamePageProps {
   server: ApiServer;
@@ -344,6 +345,9 @@ export default function GamePage({
           <p className="text-sm text-emerald-400">{t('game.saved')}</p>
         )}
       </form>
+
+      {/* v0.29.0+: whitelist / ops / bans, also Java-only. */}
+      <PlayerAccessLists serverId={server.id} myPermissions={myPermissions} />
     </section>
   );
 }

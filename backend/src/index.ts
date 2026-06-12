@@ -21,6 +21,7 @@ import { updateRoutes } from './routes/updates';
 import { playerRoutes } from './routes/players';
 import { iconRoutes } from './routes/icons';
 import { gameSettingsRoutes } from './routes/properties';
+import { playerAccessRoutes } from './routes/playerAccess';
 import { AUTH_COOKIE } from './plugins/auth';
 import { setupConsole } from './realtime/console';
 import { startScheduleWorker } from './services/scheduleWorker';
@@ -74,6 +75,7 @@ export async function buildServer() {
   await app.register(playerRoutes, { prefix: '/api' });
   await app.register(iconRoutes, { prefix: '/api' });
   await app.register(gameSettingsRoutes, { prefix: '/api' });
+  await app.register(playerAccessRoutes, { prefix: '/api' });
 
   setupConsole(app, app.server);
 
