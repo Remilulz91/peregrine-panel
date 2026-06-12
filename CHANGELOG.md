@@ -2,6 +2,28 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.27.0 — 2026-06-11
+
+### Changed
+
+- **Wider main layout.** The Dashboard and the server-detail
+  page now use `max-w-screen-2xl` (1536px) instead of
+  `max-w-5xl` (1024px) — 50% more horizontal real estate on
+  wide screens. The Account settings page is kept narrower
+  since it's a single small form.
+- **Slightly larger base font** (16px → 17px on `html`). All
+  Tailwind utility classes are rem-based, so the whole UI
+  scales up by ~6% — noticeable on small laptops without
+  breaking the layout on big screens.
+
+### Notes
+
+- Pure CSS/Tailwind changes, no backend touch, no database
+  migration.
+- The server cards now have more breathing room on wide
+  screens, and labels (PORT, MÉMOIRE, CPU, status badges) are
+  easier to read on 13–14" laptops.
+
 ## v0.26.0 — 2026-06-11
 
 ### Added

@@ -223,7 +223,7 @@ export default function ServerDetail({ id, tab }: ServerDetailProps) {
         </button>
       </header>
 
-      <main className="mx-auto max-w-5xl px-6 py-8">
+      <main className="mx-auto max-w-screen-2xl px-6 py-8">
         <button
           type="button"
           onClick={() => navigate('/')}

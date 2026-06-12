@@ -22,3 +22,14 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/*
+ * v0.27.0+: bump the base font size from the browser default (16px)
+ * to 17px. Tailwind utility sizes (text-xs, text-sm, text-base, ...)
+ * are all rem-based, so this scales the whole UI proportionally by
+ * ~6% — noticeable but non-disruptive. Improves readability on
+ * smaller laptops without breaking the layout on big screens.
+ */
+html {
+  font-size: 17px;
+}

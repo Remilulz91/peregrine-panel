@@ -7,10 +7,9 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.26.0** — single active session per user. Sign in
-> on a new device and the previous device is signed out on its
-> next request, with a friendly "ended on another device"
-> message on the Login screen.
+> **Version 0.27.0** — wider main layout (1024 → 1536px max
+> width) and a slightly bigger base font (16 → 17px) for
+> better readability on small laptops.
 > See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 

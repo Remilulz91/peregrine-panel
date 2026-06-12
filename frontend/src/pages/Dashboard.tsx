@@ -109,7 +109,7 @@ export default function Dashboard() {
         </button>
       </header>
 
-      <main className="mx-auto max-w-5xl px-6 py-10">
+      <main className="mx-auto max-w-screen-2xl px-6 py-10">
         {isAdmin && view === 'admin' ? (
           <AdminPanel templates={templates} />
         ) : (
