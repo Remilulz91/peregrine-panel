@@ -3,9 +3,12 @@ import {
   api,
   ApiError,
   hasPermission,
+  JAVA_LOADERS,
   PERM,
   type ApiHostResources,
   type ApiServer,
+  type ApiTemplate,
+  type ServerLoader,
 } from '../../lib/api';
 import { navigate } from '../../lib/router';
 import { useAuth } from '../../lib/auth';
@@ -13,6 +16,8 @@ import { useTranslation, type TranslationKey } from '../../lib/i18n';
 
 interface SettingsPageProps {
   server: ApiServer;
+  /** Null while the parent is still loading templates. Drives Java vs Bedrock UI. */
+  template: ApiTemplate | null;
   myPermissions: string[];
   onRenamed: (server: ApiServer) => void;
 }
@@ -25,6 +30,7 @@ function fmt(s: string, vars: Record<string, string | number>): string {
 
 export default function SettingsPage({
   server,
+  template,
   myPermissions,
   onRenamed,
 }: SettingsPageProps) {
@@ -53,6 +59,14 @@ export default function SettingsPage({
   const [resourcesSavedAt, setResourcesSavedAt] = useState<number>(0);
 
   const [diskQuota, setDiskQuota] = useState(server.diskQuotaMb ?? 0);
+
+  // v0.31.0+: version / loader change on an existing server. Recreates
+  // the container; world / mods / config are preserved on disk.
+  const [versionLoader, setVersionLoader] = useState<ServerLoader>(server.loader);
+  const [versionString, setVersionString] = useState(server.minecraftVersion);
+  const [savingVersion, setSavingVersion] = useState(false);
+  const [versionError, setVersionError] = useState<string | null>(null);
+  const [versionSavedAt, setVersionSavedAt] = useState<number>(0);
   const [savingDiskQuota, setSavingDiskQuota] = useState(false);
   const [diskQuotaError, setDiskQuotaError] = useState<string | null>(null);
   const [host, setHost] = useState<ApiHostResources | null>(null);
@@ -193,6 +207,39 @@ export default function SettingsPage({
       );
     } finally {
       setSavingResources(false);
+    }
+  }
+
+  async function handleVersionChange(event: FormEvent): Promise<void> {
+    event.preventDefault();
+    setVersionError(null);
+    const trimmedVersion = versionString.trim();
+    if (!trimmedVersion) {
+      setVersionError(t('settings.version.emptyVersion'));
+      return;
+    }
+    if (
+      trimmedVersion === server.minecraftVersion &&
+      versionLoader === server.loader
+    ) {
+      return;
+    }
+    if (!window.confirm(t('settings.version.confirm'))) return;
+    setSavingVersion(true);
+    try {
+      const result = await api.updateServerVersion(
+        server.id,
+        trimmedVersion,
+        versionLoader,
+      );
+      onRenamed(result.server);
+      setVersionSavedAt(Date.now());
+    } catch (err) {
+      setVersionError(
+        err instanceof ApiError ? err.message : t('common.errorGeneric'),
+      );
+    } finally {
+      setSavingVersion(false);
     }
   }
 
@@ -428,6 +475,93 @@ export default function SettingsPage({
           )}
         </div>
       )}
+
+      {/* v0.31.0+: change the Minecraft version and/or loader on an
+          existing server. The container is destroyed and recreated;
+          world / mods / config are preserved on the data volume. */}
+      <div className="rounded-2xl border border-peregrine-700 bg-peregrine-900 p-5">
+        <h3 className="text-sm font-semibold text-white">{t('settings.version.title')}</h3>
+        <p className="mt-1 text-sm text-peregrine-400">{t('settings.version.subtitle')}</p>
+        <p className="mt-2 text-xs text-amber-300/90">{t('settings.version.warning')}</p>
+        {isRunning && (
+          <p className="mt-3 text-sm text-falcon">{t('settings.version.needStop')}</p>
+        )}
+        {!hasPermission(myPermissions, PERM.SETTINGS_VERSION) ? (
+          <p className="mt-3 text-sm text-peregrine-400">
+            {t('settings.version.noPermission')}
+          </p>
+        ) : (
+          <form
+            onSubmit={handleVersionChange}
+            className="mt-4 flex flex-wrap items-end gap-3"
+          >
+            {template?.kind === 'java' && (
+              <div className="min-w-[160px]">
+                <label
+                  htmlFor="version-loader"
+                  className="mb-1 block text-xs font-medium text-peregrine-400"
+                >
+                  {t('create.loaderLabel')}
+                </label>
+                <select
+                  id="version-loader"
+                  value={versionLoader}
+                  disabled={savingVersion || isRunning}
+                  onChange={(e) =>
+                    setVersionLoader(e.target.value as ServerLoader)
+                  }
+                  className="w-full rounded-lg border border-peregrine-700 bg-peregrine-950 px-3 py-2 text-sm text-white outline-none transition-colors focus:border-falcon disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {JAVA_LOADERS.map((l) => (
+                    <option key={l} value={l}>
+                      {t(`loader.${l}` as TranslationKey)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div className="min-w-[180px] flex-1">
+              <label
+                htmlFor="version-input"
+                className="mb-1 block text-xs font-medium text-peregrine-400"
+              >
+                {t('settings.version.versionLabel')}
+              </label>
+              <input
+                id="version-input"
+                type="text"
+                value={versionString}
+                disabled={savingVersion || isRunning}
+                placeholder="1.21.4"
+                onChange={(e) => setVersionString(e.target.value)}
+                className="w-full rounded-lg border border-peregrine-700 bg-peregrine-950 px-3 py-2 text-sm text-white outline-none transition-colors focus:border-falcon disabled:cursor-not-allowed disabled:opacity-50"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={
+                savingVersion ||
+                isRunning ||
+                (versionString.trim() === server.minecraftVersion &&
+                  versionLoader === server.loader)
+              }
+              className="rounded-lg bg-falcon px-4 py-2 text-sm font-semibold text-peregrine-950 transition-colors hover:bg-falcon-bright disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {savingVersion
+                ? t('settings.version.applying')
+                : t('settings.version.apply')}
+            </button>
+          </form>
+        )}
+        {versionError && (
+          <p className="mt-3 text-sm text-rose-400">{versionError}</p>
+        )}
+        {versionSavedAt > 0 && !versionError && (
+          <p className="mt-3 text-sm text-emerald-300">
+            {t('settings.version.saved')}
+          </p>
+        )}
+      </div>
 
       {/* v0.31.0+: change the Minecraft version and/or loader on an
           existing server. The container is destroyed and recreated;
