@@ -222,6 +222,39 @@ export function updateServerResources(
   ).run(memoryMb, cpuLimit, id);
 }
 
+/**
+ * v0.31.0+: updates the Minecraft version and loader for an existing
+ * server. Used by the PATCH route when the user changes the version
+ * via the Settings tab; the container itself is destroyed and
+ * recreated by the caller before/after this DB update so its env
+ * vars (VERSION, TYPE) actually pick up the new values.
+ */
+export function updateServerVersion(
+  id: string,
+  minecraftVersion: string,
+  loader: ServerLoader,
+): void {
+  db.prepare(
+    'UPDATE servers SET minecraft_version = ?, loader = ? WHERE id = ?',
+  ).run(minecraftVersion, loader, id);
+}
+
+/**
+ * v0.31.0+: replaces the container id stored for a server. Used after
+ * recreating the container (e.g. when the user changes the version).
+ * Pass `null` to clear it (e.g. when the container has been removed
+ * but not yet re-created).
+ */
+export function setServerContainerId(
+  id: string,
+  containerId: string | null,
+): void {
+  db.prepare('UPDATE servers SET container_id = ? WHERE id = ?').run(
+    containerId,
+    id,
+  );
+}
+
 /** Updates the disk quota (NULL = unlimited). */
 export function updateServerDiskQuota(
   id: string,

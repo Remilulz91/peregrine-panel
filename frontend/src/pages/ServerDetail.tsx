@@ -174,6 +174,7 @@ export default function ServerDetail({ id, tab }: ServerDetailProps) {
         return (
           <SettingsPage
             server={active}
+            template={template}
             myPermissions={myPermissions}
             onRenamed={setServer}
           />

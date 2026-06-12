@@ -463,6 +463,20 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify({ diskQuotaMb }),
     }),
+  /**
+   * v0.31.0+: changes the Minecraft version and/or loader of an
+   * existing server. The container is destroyed and recreated; data
+   * (world, mods, config) is preserved. Server is left stopped.
+   */
+  updateServerVersion: (
+    id: string,
+    minecraftVersion: string,
+    loader: ServerLoader,
+  ) =>
+    request<{ server: ApiServer }>(`/api/servers/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ minecraftVersion, loader }),
+    }),
   hostResources: () =>
     request<{ resources: ApiHostResources }>('/api/host'),
   hostMetrics: () =>
@@ -700,6 +714,7 @@ export const PERM = {
   BACKUPS_DOWNLOAD: 'backups.download',
   SETTINGS_RENAME: 'settings.rename',
   PLAYERS_MANAGE: 'players.manage',
+  SETTINGS_VERSION: 'settings.version',
 } as const;
 
 export function hasPermission(

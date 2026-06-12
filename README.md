@@ -7,9 +7,9 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.30.0** — Kick / Ban buttons next to each
-> online player in the Console tab's live player list (Java
-> only). Gated by the `players.manage` permission.
+> **Version 0.31.0** — change the Minecraft version and / or
+> loader on an existing server from the Settings tab. World,
+> mods and configs are preserved on disk.
 > See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 

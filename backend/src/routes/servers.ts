@@ -9,9 +9,12 @@ import {
   isLoader,
   listServersVisibleTo,
   renameServer,
+  setServerContainerId,
   updateServerDescription,
   updateServerDiskQuota,
   updateServerResources,
+  updateServerStatus,
+  updateServerVersion,
   type ServerLoader,
   type ServerRecord,
 } from '../lib/servers';
@@ -30,7 +33,9 @@ import {
   requirePermission,
 } from '../lib/acl';
 import {
+  createServerContainer,
   getContainerState,
+  removeContainer,
   restartContainer,
   startContainer,
   stopContainer,
@@ -74,6 +79,10 @@ interface RenameServerBody {
   cpuLimit?: number;
   /** Disk quota in MiB. 0 means "remove the quota" (unlimited). */
   diskQuotaMb?: number;
+  /** v0.31.0+: new Minecraft version. Triggers a container recreation. */
+  minecraftVersion?: string;
+  /** v0.31.0+: new loader. Triggers a container recreation. */
+  loader?: string;
 }
 
 async function effectiveStatus(server: ServerRecord): Promise<string> {
@@ -323,6 +332,11 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
             diskQuotaMb: { type: 'integer', minimum: 0, maximum: 1048576 },
             memoryMb: { type: 'integer', minimum: 512, maximum: 65536 },
             cpuLimit: { type: 'number', minimum: 0.5, maximum: 64 },
+            minecraftVersion: { type: 'string', maxLength: 32 },
+            loader: {
+              type: 'string',
+              enum: ['vanilla', 'paper', 'fabric', 'forge', 'neoforge'],
+            },
           },
         },
       },
@@ -342,8 +356,27 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
       const wantsResize =
         typeof body.memoryMb === 'number' || typeof body.cpuLimit === 'number';
       const wantsQuota = typeof body.diskQuotaMb === 'number';
+      // v0.31.0+: detect a version/loader change. Either field changing
+      // alone is enough; both are recreated together via the same flow.
+      const newVersion =
+        typeof body.minecraftVersion === 'string'
+          ? body.minecraftVersion.trim()
+          : '';
+      const newLoader =
+        typeof body.loader === 'string' && isLoader(body.loader)
+          ? (body.loader as ServerLoader)
+          : null;
+      const wantsVersionChange =
+        (newVersion !== '' && newVersion !== server.minecraftVersion) ||
+        (newLoader !== null && newLoader !== server.loader);
 
-      if (!wantsRename && !wantsDescription && !wantsResize && !wantsQuota) {
+      if (
+        !wantsRename &&
+        !wantsDescription &&
+        !wantsResize &&
+        !wantsQuota &&
+        !wantsVersionChange
+      ) {
         // Nothing to change — return current state, no permission check.
         const current = getServer(server.id);
         return {
@@ -482,6 +515,122 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
             newQuota === null
               ? '(unlimited)'
               : `${server.diskQuotaMb ?? 'unlimited'} → ${newQuota} MiB`,
+        });
+      }
+
+      // v0.31.0+: change Minecraft version and/or loader. We
+      // intentionally do this LAST so any earlier rename / resize /
+      // quota change has already been applied before the container is
+      // torn down. The data directory is preserved on disk (the
+      // server's world, mods and configs live there), so this is
+      // non-destructive from the user's point of view. We always
+      // leave the new container STOPPED so the user can inspect logs
+      // on first boot in case of an incompatibility.
+      if (wantsVersionChange) {
+        if (
+          !requirePermission(
+            request,
+            reply,
+            server,
+            PERMISSION.SETTINGS_VERSION,
+          )
+        ) {
+          return;
+        }
+        const template = getTemplate(server.templateId);
+        if (!template) {
+          return reply
+            .code(500)
+            .send({ error: 'The game template for this server is missing.' });
+        }
+        const targetVersion = newVersion || server.minecraftVersion;
+        const targetLoader = newLoader ?? server.loader;
+
+        // Validate the new version BEFORE destroying anything.
+        const versionResult = await validateVersion({
+          kind: template.kind,
+          loader: targetLoader,
+          version: targetVersion,
+        });
+        if (!versionResult.ok) {
+          return reply.code(400).send({
+            error: versionResult.message,
+            code: versionResult.code,
+            data: versionResult.data,
+          });
+        }
+
+        const fresh = getServer(server.id) ?? server;
+
+        // Stop and remove the old container if it exists. If any of
+        // these steps fail (e.g. the container is already gone), we
+        // log but keep going — the goal is to leave the user with a
+        // working recreated container in the end.
+        if (fresh.containerId) {
+          try {
+            const state = await getContainerState(fresh.containerId);
+            if (state === 'running') {
+              await stopContainer(fresh.containerId);
+            }
+          } catch (err) {
+            // eslint-disable-next-line no-console
+            console.warn(
+              `[servers] stop before recreate failed for ${fresh.id}:`,
+              err,
+            );
+          }
+          try {
+            await removeContainer(fresh.containerId);
+          } catch (err) {
+            // eslint-disable-next-line no-console
+            console.warn(
+              `[servers] remove before recreate failed for ${fresh.id}:`,
+              err,
+            );
+          }
+          setServerContainerId(fresh.id, null);
+        }
+
+        // Update the DB with the new version/loader BEFORE recreating
+        // the container so `createServerContainer` reads the new values
+        // straight from the persisted record's env-var derivation.
+        updateServerVersion(fresh.id, targetVersion, targetLoader);
+
+        // Recreate the container with the new env vars. Same image,
+        // same data dir — only VERSION / TYPE change.
+        try {
+          const newContainerId = await createServerContainer({
+            serverId: fresh.id,
+            image: template.dockerImage,
+            kind: template.kind,
+            loader: targetLoader,
+            version: targetVersion,
+            memoryMb: fresh.memoryMb,
+            cpuLimit: fresh.cpuLimit,
+            internalPort: template.internalPort,
+            portProtocol: template.portProtocol,
+            port: fresh.port,
+            dataDir: `${config.serversPath}/${fresh.id}`,
+          });
+          updateServerStatus(fresh.id, 'OFFLINE', newContainerId);
+        } catch (err) {
+          updateServerStatus(fresh.id, 'INSTALL_FAILED');
+          // eslint-disable-next-line no-console
+          console.error(
+            `[servers] recreate failed for ${fresh.id}:`,
+            err,
+          );
+          return reply.code(500).send({
+            error:
+              'Failed to recreate the container with the new version. The server has been left in INSTALL_FAILED state; you may retry from the Settings tab.',
+          });
+        }
+
+        logActivity({
+          serverId: server.id,
+          actorId: request.user.sub,
+          kind: 'server.version_change',
+          details: `${server.loader} ${server.minecraftVersion} → ${targetLoader} ${targetVersion}`,
         });
       }
 

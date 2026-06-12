@@ -429,6 +429,93 @@ export default function SettingsPage({
         </div>
       )}
 
+      {/* v0.31.0+: change the Minecraft version and/or loader on an
+          existing server. The container is destroyed and recreated;
+          world / mods / config are preserved on the data volume. */}
+      <div className="rounded-2xl border border-peregrine-700 bg-peregrine-900 p-5">
+        <h3 className="text-sm font-semibold text-white">{t('settings.version.title')}</h3>
+        <p className="mt-1 text-sm text-peregrine-400">{t('settings.version.subtitle')}</p>
+        <p className="mt-2 text-xs text-amber-300/90">{t('settings.version.warning')}</p>
+        {isRunning && (
+          <p className="mt-3 text-sm text-falcon">{t('settings.version.needStop')}</p>
+        )}
+        {!hasPermission(myPermissions, PERM.SETTINGS_VERSION) ? (
+          <p className="mt-3 text-sm text-peregrine-400">
+            {t('settings.version.noPermission')}
+          </p>
+        ) : (
+          <form
+            onSubmit={handleVersionChange}
+            className="mt-4 flex flex-wrap items-end gap-3"
+          >
+            {template?.kind === 'java' && (
+              <div className="min-w-[160px]">
+                <label
+                  htmlFor="version-loader"
+                  className="mb-1 block text-xs font-medium text-peregrine-400"
+                >
+                  {t('create.loaderLabel')}
+                </label>
+                <select
+                  id="version-loader"
+                  value={versionLoader}
+                  disabled={savingVersion || isRunning}
+                  onChange={(e) =>
+                    setVersionLoader(e.target.value as ServerLoader)
+                  }
+                  className="w-full rounded-lg border border-peregrine-700 bg-peregrine-950 px-3 py-2 text-sm text-white outline-none transition-colors focus:border-falcon disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {JAVA_LOADERS.map((l) => (
+                    <option key={l} value={l}>
+                      {t(`loader.${l}` as TranslationKey)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div className="min-w-[180px] flex-1">
+              <label
+                htmlFor="version-input"
+                className="mb-1 block text-xs font-medium text-peregrine-400"
+              >
+                {t('settings.version.versionLabel')}
+              </label>
+              <input
+                id="version-input"
+                type="text"
+                value={versionString}
+                disabled={savingVersion || isRunning}
+                placeholder="1.21.4"
+                onChange={(e) => setVersionString(e.target.value)}
+                className="w-full rounded-lg border border-peregrine-700 bg-peregrine-950 px-3 py-2 text-sm text-white outline-none transition-colors focus:border-falcon disabled:cursor-not-allowed disabled:opacity-50"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={
+                savingVersion ||
+                isRunning ||
+                (versionString.trim() === server.minecraftVersion &&
+                  versionLoader === server.loader)
+              }
+              className="rounded-lg bg-falcon px-4 py-2 text-sm font-semibold text-peregrine-950 transition-colors hover:bg-falcon-bright disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {savingVersion
+                ? t('settings.version.applying')
+                : t('settings.version.apply')}
+            </button>
+          </form>
+        )}
+        {versionError && (
+          <p className="mt-3 text-sm text-rose-400">{versionError}</p>
+        )}
+        {versionSavedAt > 0 && !versionError && (
+          <p className="mt-3 text-sm text-emerald-300">
+            {t('settings.version.saved')}
+          </p>
+        )}
+      </div>
+
       {/* Disk usage / quota (v0.15.0+). Visible to anyone with access;
           quota editing is admin-only. */}
       <div className="rounded-2xl border border-peregrine-700 bg-peregrine-900 p-5">

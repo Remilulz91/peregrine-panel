@@ -2,6 +2,46 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.31.0 — 2026-06-12
+
+### Added
+
+- **Change the Minecraft version and / or loader on an
+  existing server.** A new "Game version" section in the
+  Settings tab lets you switch from e.g. Vanilla 1.21.2 to
+  Vanilla 1.21.4, or from Fabric 1.21.1 to NeoForge 1.21.4,
+  without recreating the server from scratch.
+- New permission `settings.version` (assignable to subusers
+  via the Users tab). The action is admin-only by default;
+  subusers must be explicitly granted the permission.
+
+### How it works
+
+- The container is stopped, removed, and re-created with the
+  new `VERSION` / `TYPE` env vars. The data volume on the
+  dedicated disk (world, mods, configs, server.properties,
+  whitelist, ops, bans, etc.) is **fully preserved**.
+- The new version is validated against Mojang's manifest
+  **before** the old container is removed, so a typo never
+  leaves the server in a broken state.
+- The server is intentionally left **stopped** after the
+  change so the user can review the first-boot logs (mods may
+  be incompatible with a new Minecraft version, for example).
+- Failure modes: if container recreation fails, the server is
+  marked as `INSTALL_FAILED` and the user can retry from the
+  same Settings section. The new version is still recorded in
+  the DB.
+
+### Notes
+
+- Works for **both Java and Bedrock** servers (loader picker
+  only shown for Java since Bedrock has no loaders).
+- Activity feed records every version change as
+  `server.version_change` with a `old loader/version → new
+  loader/version` detail.
+- **No database migration.** The change reuses the existing
+  `minecraft_version` and `loader` columns.
+
 ## v0.30.0 — 2026-06-12
 
 ### Added

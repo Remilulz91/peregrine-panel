@@ -26,6 +26,8 @@ export const PERMISSION = {
   SETTINGS_RENAME: 'settings.rename',
   /** v0.29.0+: manage whitelist / ops / bans via the Game tab. */
   PLAYERS_MANAGE: 'players.manage',
+  /** v0.31.0+: change the Minecraft version / loader on an existing server. */
+  SETTINGS_VERSION: 'settings.version',
 } as const;
 
 /** Type-level union of every valid permission string. */
@@ -45,6 +47,7 @@ export const ALL_PERMISSIONS: readonly Permission[] = [
   PERMISSION.BACKUPS_DOWNLOAD,
   PERMISSION.SETTINGS_RENAME,
   PERMISSION.PLAYERS_MANAGE,
+  PERMISSION.SETTINGS_VERSION,
 ];
 
 const PERMISSION_SET: ReadonlySet<string> = new Set(ALL_PERMISSIONS);

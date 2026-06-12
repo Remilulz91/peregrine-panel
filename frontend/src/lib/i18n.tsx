@@ -796,6 +796,51 @@ const translations = {
     fr: 'Gérer whitelist / ops / bans',
   },
 
+  // v0.31.0+: change the Minecraft version / loader of an existing server.
+  'perm.group.version': { en: 'Game version', fr: 'Version du jeu' },
+  'perm.settings.version': {
+    en: 'Change Minecraft version / loader',
+    fr: 'Changer la version Minecraft / le loader',
+  },
+  'settings.version.title': {
+    en: 'Game version',
+    fr: 'Version du jeu',
+  },
+  'settings.version.subtitle': {
+    en: 'Switch this server to a different Minecraft version or loader. The container is destroyed and recreated; your world, mods and configuration are kept on disk.',
+    fr: 'Basculer ce serveur sur une autre version Minecraft ou un autre loader. Le conteneur est détruit et recréé ; votre monde, vos mods et votre configuration sont conservés sur le disque.',
+  },
+  'settings.version.warning': {
+    en: 'Mods are version-specific - switching loaders or major versions may make them unloadable. We recommend a backup first.',
+    fr: 'Les mods dépendent de la version - changer de loader ou de version majeure peut les rendre inutilisables. Un backup préalable est recommandé.',
+  },
+  'settings.version.needStop': {
+    en: 'Stop the server before changing its version.',
+    fr: 'Arrêtez le serveur avant de changer sa version.',
+  },
+  'settings.version.noPermission': {
+    en: 'You do not have permission to change the version.',
+    fr: "Vous n'avez pas la permission de changer la version.",
+  },
+  'settings.version.versionLabel': {
+    en: 'Minecraft version',
+    fr: 'Version Minecraft',
+  },
+  'settings.version.emptyVersion': {
+    en: 'Please enter a version.',
+    fr: 'Veuillez saisir une version.',
+  },
+  'settings.version.confirm': {
+    en: 'The container will be recreated. Your world and mods are preserved on disk; the server stays stopped after the change so you can verify the first boot. Continue?',
+    fr: 'Le conteneur va être recréé. Votre monde et vos mods sont conservés sur le disque ; le serveur restera arrêté après le changement pour que vous puissiez vérifier le premier démarrage. Continuer ?',
+  },
+  'settings.version.apply': { en: 'Apply', fr: 'Appliquer' },
+  'settings.version.applying': { en: 'Recreating...', fr: 'Recréation...' },
+  'settings.version.saved': {
+    en: 'Version updated. Start the server from the header to boot it with the new version.',
+    fr: "Version mise à jour. Démarrez le serveur depuis l'en-tête pour le booter avec la nouvelle version.",
+  },
+
   'access.title': { en: 'Player access control', fr: 'Contrôle d’accès des joueurs' },
   'access.subtitle': {
     en: 'Manage the whitelist, operators and bans. Changes apply immediately while the server is running.',

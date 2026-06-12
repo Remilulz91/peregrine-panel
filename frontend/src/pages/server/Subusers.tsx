@@ -62,6 +62,10 @@ const PERMISSION_GROUPS: {
     groupKey: 'perm.group.players',
     items: [{ perm: 'players.manage', labelKey: 'perm.players.manage' }],
   },
+  {
+    groupKey: 'perm.group.version',
+    items: [{ perm: 'settings.version', labelKey: 'perm.settings.version' }],
+  },
 ];
 
 /**
