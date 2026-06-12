@@ -136,9 +136,12 @@ export default function ServerDetail({ id, tab }: ServerDetailProps) {
     : 'bg-peregrine-700 text-peregrine-200';
 
   function renderTab(active: ApiServer): ReactNode {
-    const safeTab =
-      visibleTabs.find((entry) => entry.id === tab)?.id ?? 'console';
-    switch (safeTab) {
+    // v0.29.1+: trust the `tab` prop directly. The router already
+    // validates it against the `ServerTab` enum at parse time, so we
+    // do not need a fallback to 'console' here — and the fallback
+    // used to flash the Console tab briefly during the re-render
+    // window where `visibleTabs` was transiently recomputed.
+    switch (tab) {
       case 'console':
         return (
           <ConsolePage
@@ -177,6 +180,8 @@ export default function ServerDetail({ id, tab }: ServerDetailProps) {
         );
       case 'activity':
         return <ActivityPage server={active} />;
+      default:
+        return null;
     }
   }
 
@@ -307,7 +312,7 @@ export default function ServerDetail({ id, tab }: ServerDetailProps) {
               ))}
             </div>
 
-            <div className="mt-6">{renderTab(server)}</div>
+            <div key={tab} className="mt-6">{renderTab(server)}</div>
           </>
         )}
       </main>

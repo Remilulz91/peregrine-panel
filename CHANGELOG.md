@@ -2,6 +2,30 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.29.1 — 2026-06-12
+
+### Fixed
+
+- **Brief Console flash when switching tabs.** The
+  server-detail page used to fall back to the Console tab via
+  `visibleTabs.find(...) ?? 'console'` during transient
+  re-renders (typically while the 4-second polling refresh
+  was in flight). That caused a 1-frame flash of `ConsolePage`
+  (with LiveStats and the server-state badge) before the new
+  tab settled. Two changes together fix this:
+  - The render switch now reads `tab` directly instead of
+    `safeTab`. The router already validates `tab` against the
+    `ServerTab` enum at parse time, so the fallback was
+    redundant and only added a failure mode.
+  - The tab content wrapper gets `key={tab}`, forcing React
+    to fully unmount the previous tab component before
+    mounting the new one — no leftover state, no diff
+    confusion between e.g. `SchedulesPage` and `ConsolePage`.
+
+### Notes
+
+- Pure frontend change, no backend touch, no database migration.
+
 ## v0.29.0 — 2026-06-11
 
 ### Added

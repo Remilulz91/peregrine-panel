@@ -7,9 +7,8 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.29.0** — Whitelist / Ops / Banned players /
-> Banned IPs management on the Game tab (Java only). Live
-> changes via RCON so updates apply without restart.
+> **Version 0.29.1** — fix a brief Console flash when
+> switching tabs on the server-detail page.
 > See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 
