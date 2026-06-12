@@ -2,6 +2,25 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.31.1 — 2026-06-12
+
+### Fixed
+
+- **Frontend build failure on v0.31.0.** The Settings tab's
+  state hooks and `handleVersionChange` function were missing
+  from the published v0.31.0 due to a file-write race
+  condition during release. The new "Game version" JSX was in
+  place but referenced symbols that didn't exist, so
+  `tsc --noEmit` rejected the build with ~18 errors.
+  v0.31.1 ships the complete, working implementation.
+
+### Notes
+
+- Pure frontend fix, no backend change, no database migration.
+- If you tried to deploy v0.31.0 and the build failed, this
+  is the version that actually works. Pull and rebuild as
+  usual.
+
 ## v0.31.0 — 2026-06-12
 
 ### Added
