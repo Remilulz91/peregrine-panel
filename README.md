@@ -7,8 +7,9 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.29.1** — fix a brief Console flash when
-> switching tabs on the server-detail page.
+> **Version 0.29.2** — fix a brief flash of the page header
+> when switching sub-tabs inside Whitelist / Ops / Bans on
+> the Game tab.
 > See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 

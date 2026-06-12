@@ -71,16 +71,30 @@ export default function PlayerAccessLists({
         ))}
       </div>
 
-      {tab === 'whitelist' && (
-        <WhitelistTab serverId={serverId} canEdit={canEdit} />
-      )}
-      {tab === 'ops' && <OpsTab serverId={serverId} canEdit={canEdit} />}
-      {tab === 'banned-players' && (
-        <BannedPlayersTab serverId={serverId} canEdit={canEdit} />
-      )}
-      {tab === 'banned-ips' && (
-        <BannedIpsTab serverId={serverId} canEdit={canEdit} />
-      )}
+      {/*
+        v0.29.2+: every sub-tab stays mounted in the DOM and we hide the
+        inactive ones with the `hidden` class instead of conditionally
+        rendering them. This keeps the page's content height stable
+        between switches — otherwise the new tab briefly renders empty
+        before its fetch resolves, the page collapses, the user's
+        scroll position jumps to the top, and the main header flashes
+        into view for a frame. We also pin a min-height on the
+        container as a safety net for the initial mount.
+      */}
+      <div className="min-h-[320px]">
+        <div className={tab === 'whitelist' ? '' : 'hidden'}>
+          <WhitelistTab serverId={serverId} canEdit={canEdit} />
+        </div>
+        <div className={tab === 'ops' ? '' : 'hidden'}>
+          <OpsTab serverId={serverId} canEdit={canEdit} />
+        </div>
+        <div className={tab === 'banned-players' ? '' : 'hidden'}>
+          <BannedPlayersTab serverId={serverId} canEdit={canEdit} />
+        </div>
+        <div className={tab === 'banned-ips' ? '' : 'hidden'}>
+          <BannedIpsTab serverId={serverId} canEdit={canEdit} />
+        </div>
+      </div>
     </section>
   );
 }

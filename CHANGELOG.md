@@ -2,6 +2,32 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.29.2 — 2026-06-12
+
+### Fixed
+
+- **Header flash when switching sub-tabs inside the
+  Whitelist / Ops / Bans section.** When the user was
+  scrolled to the bottom of the Game tab and switched
+  between the internal sub-tabs (e.g. Whitelist → Operators),
+  the newly mounted tab briefly rendered an empty list (before
+  its API fetch resolved). The page collapsed in height for a
+  frame, the browser's scroll position got pinned to the now
+  shorter content area, and the top of the page — server
+  name, status badge, and the main tab bar with "Console" as
+  the first entry — flashed into view.
+  - Every sub-tab is now kept mounted in the DOM; inactive
+    ones are simply hidden with `hidden` (Tailwind's
+    `display: none`). State and fetched entries are preserved
+    across switches, no remount, no API re-fetch.
+  - A `min-h-[320px]` is pinned on the container as a safety
+    net for the very first mount (when all 4 tabs are
+    fetching in parallel).
+
+### Notes
+
+- Pure frontend change, no backend touch, no database migration.
+
 ## v0.29.1 — 2026-06-12
 
 ### Fixed
