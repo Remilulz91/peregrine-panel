@@ -118,6 +118,15 @@ const translations = {
   },
 
   'dashboard.logout': { en: 'Log out', fr: 'Déconnexion' },
+
+  // v0.28.0+: live host monitoring card on the Dashboard.
+  'host.title': { en: 'Host overview', fr: 'Aperçu de la machine' },
+  'host.loading': { en: 'Reading host metrics...', fr: 'Lecture des métriques machine...' },
+  'host.cpu': { en: 'CPU', fr: 'CPU' },
+  'host.ram': { en: 'RAM', fr: 'RAM' },
+  'host.disk': { en: 'Disk', fr: 'Disque' },
+  'host.cpuDetail': { en: '{cores} cores', fr: '{cores} cœurs' },
+  'host.loadAvg': { en: 'Load avg', fr: 'Charge moy.' },
   'dashboard.viewServers': { en: 'Servers', fr: 'Serveurs' },
   'dashboard.viewAdmin': { en: 'Admin', fr: 'Admin' },
   'dashboard.sharedBy': { en: 'shared by', fr: 'partagé par' },

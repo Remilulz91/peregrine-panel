@@ -1,5 +1,7 @@
+import fs from 'node:fs';
 import os from 'node:os';
 import { config } from '../config';
+import { getDiskUsage, type DiskUsage } from './disk';
 import { listAllServers } from './servers';
 
 /**
@@ -134,4 +136,117 @@ export function assertEnoughHostResources(input: {
     };
     throw new HostResourcesError(resources, memoryMb, cpuLimit);
   }
+}
+
+/**
+ * Live host metrics (v0.28.0+). Unlike `HostResources` which expresses
+ * what is *promised* to existing servers, this snapshot shows what is
+ * *actually being consumed right now* on the machine — CPU load,
+ * memory pressure, and disk fill. The Dashboard polls this every few
+ * seconds to render a small "machine at a glance" widget so the
+ * operator can spot a saturated host without diving into each server.
+ */
+export interface HostMetrics {
+  cpuPercent: number;
+  cpuCount: number;
+  /** 1 / 5 / 15-minute load average from the kernel. */
+  loadAvg: [number, number, number];
+  memUsedMb: number;
+  memTotalMb: number;
+  memPercent: number;
+  diskUsedBytes: number;
+  diskTotalBytes: number;
+  diskPercent: number;
+  /** Server timestamp at snapshot time (ms since epoch). */
+  capturedAt: number;
+}
+
+/** Sums `idle` and total CPU time across all cores. */
+function sampleCpuTimes(): { idle: number; total: number } {
+  let idle = 0;
+  let total = 0;
+  for (const cpu of os.cpus()) {
+    for (const value of Object.values(cpu.times)) {
+      total += value;
+    }
+    idle += cpu.times.idle;
+  }
+  return { idle, total };
+}
+
+/**
+ * Returns the host CPU usage as a percentage, computed from two
+ * `os.cpus()` snapshots 200 ms apart. Blocks the event loop briefly,
+ * which is acceptable for a metrics endpoint that runs at most once
+ * every few seconds.
+ */
+async function getCpuPercent(): Promise<number> {
+  const first = sampleCpuTimes();
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  const second = sampleCpuTimes();
+  const totalDelta = second.total - first.total;
+  const idleDelta = second.idle - first.idle;
+  if (totalDelta <= 0) return 0;
+  const percent = ((totalDelta - idleDelta) / totalDelta) * 100;
+  return Math.max(0, Math.min(100, Math.round(percent)));
+}
+
+/**
+ * Reads `/proc/meminfo` for an accurate "available" memory figure on
+ * Linux (which accounts for reclaimable caches). Falls back to
+ * `os.freemem()` (the very conservative "MemFree" value) when the
+ * file is not available — e.g. running the panel on macOS or Windows
+ * in dev.
+ */
+function getMemoryUsage(): { totalMb: number; usedMb: number } {
+  try {
+    const content = fs.readFileSync('/proc/meminfo', 'utf8');
+    const totalKb = parseInt(/MemTotal:\s+(\d+)/.exec(content)?.[1] ?? '0', 10);
+    const availableKb = parseInt(/MemAvailable:\s+(\d+)/.exec(content)?.[1] ?? '0', 10);
+    if (totalKb > 0 && availableKb > 0) {
+      const totalMb = Math.floor(totalKb / 1024);
+      const usedMb = Math.floor((totalKb - availableKb) / 1024);
+      return { totalMb, usedMb };
+    }
+  } catch {
+    // Fall through to the os.freemem() fallback.
+  }
+  const totalMb = Math.floor(os.totalmem() / (1024 * 1024));
+  const freeMb = Math.floor(os.freemem() / (1024 * 1024));
+  return { totalMb, usedMb: Math.max(0, totalMb - freeMb) };
+}
+
+/** Builds the Dashboard's live host-metrics snapshot. */
+export async function getHostMetrics(): Promise<HostMetrics> {
+  const [cpuPercent, mem, disk] = await Promise.all([
+    getCpuPercent(),
+    Promise.resolve(getMemoryUsage()),
+    getDiskUsage(config.serversPath).catch(
+      (): DiskUsage => ({
+        totalBytes: 0,
+        freeBytes: 0,
+        usedBytes: 0,
+        reservedBytes: 0,
+      }),
+    ),
+  ]);
+  const loadAvg = os.loadavg() as [number, number, number];
+  const memPercent =
+    mem.totalMb > 0 ? Math.round((mem.usedMb / mem.totalMb) * 100) : 0;
+  const diskPercent =
+    disk.totalBytes > 0
+      ? Math.round((disk.usedBytes / disk.totalBytes) * 100)
+      : 0;
+  return {
+    cpuPercent,
+    cpuCount: os.cpus().length,
+    loadAvg,
+    memUsedMb: mem.usedMb,
+    memTotalMb: mem.totalMb,
+    memPercent,
+    diskUsedBytes: disk.usedBytes,
+    diskTotalBytes: disk.totalBytes,
+    diskPercent,
+    capturedAt: Date.now(),
+  };
 }

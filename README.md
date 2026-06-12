@@ -7,9 +7,9 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.27.0** — wider main layout (1024 → 1536px max
-> width) and a slightly bigger base font (16 → 17px) for
-> better readability on small laptops.
+> **Version 0.28.0** — live host overview on the Dashboard
+> (admins only): a card with CPU %, RAM and disk usage as
+> coloured progress bars, refreshed every 5 seconds.
 > See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 

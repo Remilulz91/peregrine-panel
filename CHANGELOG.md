@@ -2,6 +2,41 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.28.0 — 2026-06-11
+
+### Added
+
+- **Live host overview on the Dashboard** (admins only). A new
+  card sits above the server list and refreshes every 5 s,
+  showing the host's current CPU usage (%), RAM usage
+  (used / total) and disk usage on the data volume. Each
+  metric is rendered as a coloured progress bar — green up to
+  75 %, amber from 75 % to 90 %, red beyond 90 % — so a
+  saturated machine is instantly visible.
+- Load average (1 / 5 / 15 min) is shown in the card header
+  for users who want a deeper read of how the machine is
+  holding up.
+
+### Backend changes
+
+- `lib/host.ts` gains `getHostMetrics()` which computes CPU %
+  from two `os.cpus()` snapshots 200 ms apart, reads
+  `/proc/meminfo` for an accurate available-memory figure
+  (with `os.freemem()` fallback for non-Linux dev), and reuses
+  the existing `getDiskUsage()` helper for the data volume.
+- New route `GET /api/host/metrics` (the existing `GET /api/host`
+  is unchanged — it still returns the allocation snapshot used
+  by the create-server preflight).
+
+### Notes
+
+- The metrics route is admin-only by virtue of the Dashboard
+  widget being mounted behind `isAdmin`. The API itself only
+  checks the user is authenticated, so a non-admin who knows
+  the URL can still poll it. We may tighten this to
+  admin-only at the API level in a future release if needed.
+- Pure addition, no breaking changes, no database migration.
+
 ## v0.27.0 — 2026-06-11
 
 ### Changed

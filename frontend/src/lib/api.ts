@@ -156,6 +156,24 @@ export interface ApiHostResources {
   allocatableCpus: number;
 }
 
+/**
+ * Live host metrics surfaced on the Dashboard widget (v0.28.0+).
+ * Refreshed by polling every few seconds while the Dashboard is open.
+ */
+export interface ApiHostMetrics {
+  cpuPercent: number;
+  cpuCount: number;
+  /** 1 / 5 / 15-minute load average from the kernel. */
+  loadAvg: [number, number, number];
+  memUsedMb: number;
+  memTotalMb: number;
+  memPercent: number;
+  diskUsedBytes: number;
+  diskTotalBytes: number;
+  diskPercent: number;
+  capturedAt: number;
+}
+
 export interface ApiUpdateInfo {
   currentVersion: string;
   /** null when the GitHub check has not succeeded yet (no badge). */
@@ -417,6 +435,8 @@ export const api = {
     }),
   hostResources: () =>
     request<{ resources: ApiHostResources }>('/api/host'),
+  hostMetrics: () =>
+    request<{ metrics: ApiHostMetrics }>('/api/host/metrics'),
   updateInfo: () => request<ApiUpdateInfo>('/api/updates'),
   serverPlayers: (id: string) =>
     request<ApiPlayerList>(`/api/servers/${id}/players`),

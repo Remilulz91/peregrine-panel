@@ -4,6 +4,7 @@ import FalconMark from '../components/FalconMark';
 import LanguageToggle from '../components/LanguageToggle';
 import UpdateBadge from '../components/UpdateBadge';
 import ServerCard from '../components/ServerCard';
+import HostMetricsCard from '../components/HostMetricsCard';
 import CreateServerDialog from '../components/CreateServerDialog';
 import { api, type ApiServer, type ApiTemplate } from '../lib/api';
 import { useAuth } from '../lib/auth';
@@ -114,6 +115,8 @@ export default function Dashboard() {
           <AdminPanel templates={templates} />
         ) : (
           <>
+            {/* v0.28.0+: live host overview (CPU / RAM / disk), admins only. */}
+            {isAdmin && <HostMetricsCard />}
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h1 className="text-2xl font-semibold text-white">
