@@ -2,6 +2,30 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.35.2 — 2026-06-13
+
+### Fixed
+
+- **`scripts/setup-dev.sh`** no longer crashes ungracefully when run
+  on a machine without Node / npm. It now:
+  - detects the absence of `node` and `npm`, prints a clear message
+    explaining that the script is for **dev machines, not the
+    production server** (which uses Docker to bundle its own Node),
+    and exits cleanly with code 0;
+  - detects a wrong Node major version (anything other than 22.x)
+    and refuses to continue, pointing the user at nodejs.org;
+  - reports backend or frontend install failures with a clearer
+    "see the npm output above" hint instead of bailing silently.
+- **`CONTRIBUTING.md`** now opens its *Development setup* section
+  with a callout making the dev/prod distinction explicit, so
+  contributors don't run the script on their production server by
+  accident.
+
+### Notes
+
+- Pure docs / tooling. No code change, no behaviour change for
+  operators.
+
 ## v0.35.1 — 2026-06-13
 
 ### Documentation

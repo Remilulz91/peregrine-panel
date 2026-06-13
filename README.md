@@ -7,11 +7,11 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.35.1** — documents how contributors activate the
-> v0.35.0 dev hooks (`bash scripts/setup-dev.sh`). New
-> `scripts/setup-dev.sh` one-shot setup, expanded
-> `CONTRIBUTING.md`, README pointer. Pure docs / tooling, no
-> code change.
+> **Version 0.35.2** — `scripts/setup-dev.sh` no longer crashes
+> when run on a production server (no Node/npm installed); it
+> now bails cleanly with a clear "this script is for your dev
+> machine, not the server" message. Same warning callout added
+> to `CONTRIBUTING.md`.
 > See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 

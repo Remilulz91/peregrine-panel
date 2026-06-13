@@ -38,6 +38,11 @@ be accepted.
 
 ## Development setup
 
+> **Run these steps on your developer machine — the laptop or PC you use
+> to edit the source. The production server (the one that runs
+> `docker compose up -d`) needs none of this: Docker builds the panel
+> inside its container, with its own bundled Node.**
+
 Peregrine ships with a few opt-in safety nets for contributors. Activating them
 takes one command after cloning the repo:
 
