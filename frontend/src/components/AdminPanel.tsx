@@ -9,6 +9,7 @@ import {
 import { useAuth } from '../lib/auth';
 import { useTranslation, type TranslationKey } from '../lib/i18n';
 import CreateUserDialog from './CreateUserDialog';
+import EditUserDialog from './EditUserDialog';
 import ServerCard from './ServerCard';
 
 interface AdminPanelProps {
@@ -29,6 +30,8 @@ export default function AdminPanel({ templates }: AdminPanelProps) {
   const [usersLoaded, setUsersLoaded] = useState(false);
   const [usersError, setUsersError] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+
+  const [editing, setEditing] = useState<ApiAdminUser | null>(null);
 
   const loadUsers = useCallback(async () => {
     try {
@@ -246,6 +249,13 @@ export default function AdminPanel({ templates }: AdminPanelProps) {
                             )}
                             <button
                               type="button"
+                              onClick={() => setEditing(row)}
+                              className="rounded-lg border border-peregrine-700 px-2.5 py-1 text-xs font-medium text-peregrine-200 transition-colors hover:bg-peregrine-800"
+                            >
+                              {t('admin.users.edit')}
+                            </button>
+                            <button
+                              type="button"
                               disabled={isSelf}
                               onClick={() => void deleteUser(row)}
                               className="rounded-lg border border-peregrine-700 px-2.5 py-1 text-xs font-medium text-rose-400 transition-colors hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-40"
@@ -302,6 +312,14 @@ export default function AdminPanel({ templates }: AdminPanelProps) {
         <CreateUserDialog
           onClose={() => setCreateOpen(false)}
           onCreated={() => void loadUsers()}
+        />
+      )}
+      {editing && (
+        <EditUserDialog
+          user={editing}
+          isSelf={editing.id === user?.id}
+          onClose={() => setEditing(null)}
+          onSaved={() => void loadUsers()}
         />
       )}
     </div>

@@ -160,6 +160,16 @@ const translations = {
   'admin.users.statusPending': { en: 'Invitation pending', fr: 'Invitation en attente' },
   'admin.users.regenerate': { en: 'Regenerate invite', fr: "Régénérer l'invitation" },
   'admin.users.delete': { en: 'Delete', fr: 'Supprimer' },
+  'admin.users.edit': { en: 'Edit', fr: 'Modifier' },
+  'admin.edit.title': { en: 'Edit user', fr: 'Modifier l’utilisateur' },
+  'admin.edit.subtitle': {
+    en: 'Change the username, email or role of this account. The password can only be reset by deleting the account and re-inviting.',
+    fr: "Modifiez le nom d'utilisateur, l'email ou le rôle de ce compte. Le mot de passe ne peut être réinitialisé qu'en supprimant et ré-invitant le compte.",
+  },
+  'admin.edit.cannotDemoteSelf': {
+    en: 'You cannot change your own role.',
+    fr: 'Vous ne pouvez pas changer votre propre rôle.',
+  },
   'admin.users.deleteConfirm': {
     en: 'Delete this account? All of their servers (containers and files) will also be removed.',
     fr: 'Supprimer ce compte ? Tous ses serveurs (conteneurs et fichiers) seront également supprimés.',

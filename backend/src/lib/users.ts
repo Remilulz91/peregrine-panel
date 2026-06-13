@@ -159,6 +159,36 @@ export function setUserPassword(userId: string, passwordHash: string): void {
   );
 }
 
+/**
+ * v0.33.0+: updates an admin-editable subset of a user's profile —
+ * username, email and role. Pass `undefined` for any field that
+ * should be left unchanged. The caller is responsible for uniqueness
+ * checks and role-related guards (last-admin, self-demote).
+ */
+export function updateUser(
+  userId: string,
+  fields: { username?: string; email?: string; role?: string },
+): void {
+  if (fields.username !== undefined) {
+    db.prepare('UPDATE users SET username = ? WHERE id = ?').run(
+      fields.username,
+      userId,
+    );
+  }
+  if (fields.email !== undefined) {
+    db.prepare('UPDATE users SET email = ? WHERE id = ?').run(
+      fields.email,
+      userId,
+    );
+  }
+  if (fields.role !== undefined) {
+    db.prepare('UPDATE users SET role = ? WHERE id = ?').run(
+      fields.role,
+      userId,
+    );
+  }
+}
+
 /** Removes a user row. The caller must delete dependent servers first. */
 export function deleteUserById(userId: string): void {
   db.prepare('DELETE FROM users WHERE id = ?').run(userId);

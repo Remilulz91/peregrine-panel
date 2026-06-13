@@ -13,6 +13,7 @@ import {
   listAllUsers,
   needsActivation,
   pendingPasswordHash,
+  updateUser,
   type UserRecord,
 } from '../lib/users';
 import {
@@ -168,6 +169,88 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
       user: publicUser(user, findInviteByUserId(user.id)),
     };
   });
+
+  // v0.33.0+: admin can edit a user's username, email and role.
+  app.patch(
+    '/users/:id',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            username: {
+              type: 'string',
+              minLength: 3,
+              maxLength: 32,
+              pattern: USERNAME_PATTERN,
+            },
+            email: { type: 'string', pattern: EMAIL_PATTERN, maxLength: 254 },
+            role: { type: 'string', enum: ['USER', 'ADMIN'] },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const target = findUserById(id);
+      if (!target) {
+        return reply.code(404).send({ error: 'Account not found.' });
+      }
+      const body = request.body as {
+        username?: string;
+        email?: string;
+        role?: string;
+      };
+      const newUsername =
+        typeof body.username === 'string' ? body.username.trim() : undefined;
+      const newEmail =
+        typeof body.email === 'string'
+          ? body.email.trim().toLowerCase()
+          : undefined;
+      const newRole = typeof body.role === 'string' ? body.role : undefined;
+
+      // Username uniqueness (skip if unchanged).
+      if (newUsername && newUsername !== target.username) {
+        const existing = findUserByUsername(newUsername);
+        if (existing && existing.id !== target.id) {
+          return reply.code(409).send({ error: 'This username is already taken.' });
+        }
+      }
+      // Email uniqueness.
+      if (newEmail && newEmail !== target.email) {
+        const existing = findUserByEmail(newEmail);
+        if (existing && existing.id !== target.id) {
+          return reply.code(409).send({ error: 'This email is already in use.' });
+        }
+      }
+      // Role guards.
+      if (newRole && newRole !== target.role) {
+        // Demoting yourself from admin would lock you out of /api/admin.
+        if (target.id === request.user.sub && newRole !== 'ADMIN') {
+          return reply
+            .code(403)
+            .send({ error: 'You cannot demote yourself.' });
+        }
+        // Demoting the last admin would leave the panel without one.
+        if (target.role === 'ADMIN' && newRole !== 'ADMIN' && countAdmins() <= 1) {
+          return reply
+            .code(409)
+            .send({ error: 'Cannot demote the last administrator.' });
+        }
+      }
+
+      updateUser(target.id, {
+        username: newUsername,
+        email: newEmail,
+        role: newRole,
+      });
+      const updated = findUserById(target.id);
+      return {
+        user: updated ? publicUser(updated, findInviteByUserId(updated.id)) : null,
+      };
+    },
+  );
 
   app.delete('/users/:id', async (request, reply) => {
     const { id } = request.params as { id: string };

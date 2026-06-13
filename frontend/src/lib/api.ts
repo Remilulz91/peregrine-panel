@@ -428,6 +428,19 @@ export const api = {
     request<{ ok: boolean }>(`/api/admin/users/${userId}`, {
       method: 'DELETE',
     }),
+  /**
+   * v0.33.0+: update a user's username / email / role from the
+   * admin panel. Omitted fields are left unchanged. Returns the
+   * updated user.
+   */
+  updateAdminUser: (
+    userId: string,
+    body: { username?: string; email?: string; role?: 'USER' | 'ADMIN' },
+  ) =>
+    request<{ user: ApiAdminUser }>(`/api/admin/users/${userId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
   listAdminServers: () =>
     request<{ servers: ApiAdminServer[] }>('/api/admin/servers'),
 

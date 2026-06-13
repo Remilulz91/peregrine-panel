@@ -7,11 +7,10 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.32.0** — the Resources (RAM / CPU) and Disk
-> usage sections in the server's Settings tab are now
-> admin-only, in addition to the existing admin-only
-> backend routes. Defence-in-depth against host-info leaks
-> to non-admin users.
+> **Version 0.33.0** — admins can now edit user accounts
+> (username, email, role) directly from the Administration
+> panel via a new "Modifier / Edit" button on each row.
+> Self-demote and last-admin-demote are blocked server-side.
 > See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 

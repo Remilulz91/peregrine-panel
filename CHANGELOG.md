@@ -2,6 +2,45 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.33.0 — 2026-06-13
+
+### Added
+
+- **Edit user accounts from the Admin panel.** Each row in
+  the Users table now has a **Modifier / Edit** button that
+  opens a dialog where an admin can update:
+  - the **username** (subject to uniqueness)
+  - the **email** address (subject to uniqueness)
+  - the **role** (USER ↔ ADMIN)
+
+  Password is intentionally NOT editable — accounts that have
+  lost their password should be deleted and re-invited
+  through the existing "Regenerate invite" flow.
+
+### Safety guards
+
+- **Self-demote blocked**: the role dropdown is disabled when
+  the admin is editing their own account, preventing the only
+  admin from accidentally locking themselves out.
+- **Last-admin protection**: the backend rejects (HTTP 409)
+  any attempt to demote the last remaining ADMIN account.
+- **Uniqueness enforced**: backend returns HTTP 409 if the
+  new username or email conflicts with another account.
+
+### Backend changes
+
+- New helper `updateUser(id, { username?, email?, role? })`
+  in `lib/users.ts`.
+- New route `PATCH /api/admin/users/:id` accepting the same
+  field shape, gated by the existing admin preHandler.
+
+### Notes
+
+- No database migration, no breaking change.
+- Username pattern (`^[A-Za-z0-9._-]+$`) and length range
+  (3-32) are reused from the create-user route for
+  consistency.
+
 ## v0.32.0 — 2026-06-13
 
 ### Security
