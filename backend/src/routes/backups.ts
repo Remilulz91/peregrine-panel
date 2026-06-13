@@ -1,4 +1,6 @@
 import fs from 'node:fs';
+import { logAuditEvent } from '../lib/auditEvents';
+import { sanitizeFreeText, SanitizeError } from '../lib/sanitize';
 import type { FastifyInstance } from 'fastify';
 import { authenticate } from '../plugins/auth';
 import { accessibleServer, requirePermission } from '../lib/acl';
@@ -210,6 +212,14 @@ export async function backupRoutes(app: FastifyInstance): Promise<void> {
         return reply.code(404).send({ error: 'Backup file is missing.' });
       }
       const safeName = backup.name.replace(/[^A-Za-z0-9._-]/g, '_');
+      // v0.34.0+: audit the backup download for forensic reconstruction.
+      logAuditEvent({
+        kind: 'audit.backup_download',
+        actorId: request.user.sub,
+        serverId: server.id,
+        remoteIp: request.ip,
+        details: backup.name,
+      });
       reply
         .header('Content-Type', 'application/gzip')
         .header(

@@ -7,10 +7,15 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.33.0** — admins can now edit user accounts
-> (username, email, role) directly from the Administration
-> panel via a new "Modifier / Edit" button on each row.
-> Self-demote and last-admin-demote are blocked server-side.
+> **Version 0.34.0** — massive security hardening release.
+> 5 CVEs patched (incl. critical `@fastify/jwt`). JWT_SECRET
+> fail-fast in prod. Explicit Argon2id. HTTP security headers
+> + CSP. Tor exit-node detection (HTTP + SFTP). Anti-symlink
+> escape in file manager. Zero Trust input sanitisation
+> library (Unicode + bidi + zero-width). RCON colour-code
+> stripping. Audit event log (migration 16). Container
+> hardening: anti-LOLBin Dockerfile + docker-compose
+> security_opt + cap_drop + read_only.
 > See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 

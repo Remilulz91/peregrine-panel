@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { hashPassword, verifyPassword } from '../lib/password';
 import { isRateLimited, recordAttempt, clearAttempts, retryAfterSeconds } from '../lib/rateLimit';
 import { logAuthEvent } from '../lib/authEvents';
+import { handleTorAttempt } from '../lib/torExitNodes';
 import {
   countUsers,
   createUser,
@@ -168,6 +169,9 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request, reply) => {
       const ip = clientIp(request);
+      if (handleTorAttempt(ip, 'login', (request.body as LoginBody)?.username)) {
+        return reply.code(403).send({ error: 'Login from Tor exit nodes is not allowed.' });
+      }
       if (isRateLimited(ip, LOGIN_LIMIT)) {
         logAuthEvent({
           kind: 'auth.login_rate_limited',

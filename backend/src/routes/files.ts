@@ -1,4 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import { logAuditEvent } from '../lib/auditEvents';
+import { sanitizeFilename, SanitizeError } from '../lib/sanitize';
 import { authenticate } from '../plugins/auth';
 import { accessibleServer, requirePermission } from '../lib/acl';
 import { PERMISSION } from '../lib/permissions';

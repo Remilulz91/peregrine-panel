@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import { sanitizeRconReason, SanitizeError } from '../lib/sanitize';
 import { authenticate } from '../plugins/auth';
 import { accessibleServer, requirePermission } from '../lib/acl';
 import { PERMISSION } from '../lib/permissions';

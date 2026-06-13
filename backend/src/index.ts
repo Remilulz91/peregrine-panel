@@ -27,6 +27,7 @@ import { setupConsole } from './realtime/console';
 import { startScheduleWorker } from './services/scheduleWorker';
 import { startDiskQuotaWorker } from './services/diskQuotaWorker';
 import { startSftpServer } from './services/sftpServer';
+import { startTorList } from './lib/torExitNodes';
 
 /**
  * Builds and configures the Peregrine HTTP server.
@@ -39,13 +40,44 @@ import { startSftpServer } from './services/sftpServer';
 export async function buildServer() {
   const app = Fastify({
     logger: { level: config.isProduction ? 'info' : 'debug' },
-    // v0.23.0+: trust X-Forwarded-For from the reverse proxy so the
-    // rate-limiter sees the real client IP instead of 127.0.0.1.
-    // Caddy / Nginx / Traefik always set this header on
-    // `reverse_proxy` requests. Set `TRUST_PROXY=false` in .env to
-    // opt out (e.g. when exposing the panel directly without a
-    // proxy on a hostile network).
     trustProxy: process.env.TRUST_PROXY !== 'false',
+    // v0.34.0+: tighter limits to mitigate slow-loris / resource
+    // exhaustion DoS.
+    bodyLimit: 1024 * 1024,           // 1 MiB for JSON bodies (multipart has its own limit)
+    keepAliveTimeout: 5_000,          // close idle keepalive sockets
+    connectionTimeout: 30_000,        // abandon requests that stall this long
+    requestTimeout: 30_000,
+  });
+
+  // v0.34.0+: defence-in-depth HTTP security headers on every response.
+  // - HSTS forces HTTPS for 1 year (with preload, ready for the Chromium HSTS list)
+  // - X-Content-Type-Options blocks MIME sniffing
+  // - X-Frame-Options blocks clickjacking
+  // - Referrer-Policy minimises Referer leakage cross-origin
+  // - Permissions-Policy disables browser features the panel does not use
+  // - CSP locks down what scripts / styles / images / sockets can be loaded
+  app.addHook('onSend', async (_request, reply) => {
+    reply.header('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+    reply.header('X-Content-Type-Options', 'nosniff');
+    reply.header('X-Frame-Options', 'DENY');
+    reply.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+    reply.header(
+      'Permissions-Policy',
+      'camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()',
+    );
+    reply.header(
+      'Content-Security-Policy',
+      [
+        "default-src 'self'",
+        "img-src 'self' data: blob:",
+        "style-src 'self' 'unsafe-inline'",
+        "script-src 'self'",
+        "connect-src 'self' wss: ws:",
+        "frame-ancestors 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+      ].join('; '),
+    );
   });
 
   // Make sure the built-in game templates exist in the database.
@@ -107,6 +139,8 @@ async function start(): Promise<void> {
   const app = await buildServer();
   // The schedule worker runs alongside the HTTP server. It's started
   // unconditionally because it does nothing until a schedule is due.
+  // v0.34.0+: bootstrap the Tor exit node list (refreshes every 12 h).
+  startTorList();
   startScheduleWorker();
   // The disk quota worker measures every server's data folder size
   // every minute and enforces per-server quotas.

@@ -31,7 +31,27 @@ export const config = {
   appUrl: process.env.APP_URL ?? 'http://localhost:3000',
 
   /** Secret key used to sign authentication tokens (JWT). */
-  jwtSecret: process.env.JWT_SECRET ?? 'peregrine-development-secret-change-me',
+  // v0.34.0+: in production we REFUSE to fall back to the hardcoded
+  // development secret. If JWT_SECRET is not set when NODE_ENV is
+  // 'production', we throw — the panel will not start. Better to
+  // crash loudly than to run with a publicly-known secret that
+  // anyone reading the source code can use to forge admin tokens.
+  jwtSecret: (() => {
+    const envSecret = process.env.JWT_SECRET;
+    if (envSecret && envSecret.length > 0) return envSecret;
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(
+        '[FATAL] JWT_SECRET is required in production. ' +
+          'Generate one with: openssl rand -hex 32',
+      );
+    }
+    // eslint-disable-next-line no-console
+    console.warn(
+      '[WARN] JWT_SECRET not set, using a known development fallback. ' +
+        'NEVER deploy with this value.',
+    );
+    return 'peregrine-development-secret-change-me';
+  })(),
 
   /** Path to the SQLite database file. */
   databasePath:

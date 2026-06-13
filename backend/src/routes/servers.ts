@@ -46,6 +46,7 @@ import { listActivityForServer, logActivity } from '../lib/activity';
 import { assertEnoughFreeSpace, DiskFullError } from '../lib/disk';
 import { deleteAllBackupsForServer } from '../services/backups';
 import { config } from '../config';
+import { sanitizeFreeText, sanitizeFreeTextOptional, SanitizeError } from '../lib/sanitize';
 
 interface CreateServerBody {
   name: string;
@@ -195,6 +196,16 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
       }
 
       const body = request.body as CreateServerBody;
+      // v0.34.0+: Zero Trust sanitisation on free-text fields.
+      try {
+        body.name = sanitizeFreeText(body.name, 48);
+        body.description = sanitizeFreeTextOptional(body.description, 200);
+      } catch (err) {
+        if (err instanceof SanitizeError) {
+          return reply.code(400).send({ error: err.message });
+        }
+        throw err;
+      }
 
       const template = getTemplate(body.templateId);
       if (!template) {
@@ -348,6 +359,17 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
         return reply.code(404).send({ error: 'Server not found.' });
       }
       const body = request.body as RenameServerBody;
+      try {
+        if (typeof body.name === 'string') body.name = sanitizeFreeText(body.name, 48);
+        if (typeof body.description === 'string') {
+          body.description = sanitizeFreeText(body.description, 200);
+        }
+      } catch (err) {
+        if (err instanceof SanitizeError) {
+          return reply.code(400).send({ error: err.message });
+        }
+        throw err;
+      }
       const wantsRename =
         typeof body.name === 'string' && body.name.trim() !== server.name;
       const wantsDescription =

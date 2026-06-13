@@ -6,6 +6,29 @@ services:
     build: .
     container_name: peregrine
     restart: unless-stopped
+    # v0.34.0+: hardening. Apply minimum-privilege defaults so a panel
+    # RCE has fewer LOLBin / privesc paths. `read_only` keeps the
+    # filesystem immutable except mounted volumes + tmpfs. Drop all
+    # caps and re-add only CHOWN/SETUID/SETGID (needed for the SFTP
+    # 1000:1000 chown) and DAC_OVERRIDE (needed to manage /data perms).
+    security_opt:
+      - "no-new-privileges:true"
+    read_only: true
+    tmpfs:
+      - /tmp:size=50m,mode=1777
+      - /run:size=10m
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+      - FOWNER
+    pids_limit: 1024
+    ulimits:
+      nproc: 1024
+      nofile: 4096
     ports:
       - "${PEREGRINE_BIND:-127.0.0.1}:${HOST_PORT:-3000}:3000"
       # SFTP — exposed on every interface so users can connect from

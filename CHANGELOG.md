@@ -2,6 +2,105 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.34.0 — 2026-06-13
+
+### Security — CVE patches
+
+- **`@fastify/jwt`** 9.0.4 → 10.1.0 — closes 6 CVEs on `fast-jwt`
+  including a critical JWT auth bypass via empty HMAC secret and
+  algorithm confusion (Peregrine was not exploitable thanks to
+  explicit HS256 + non-empty secret, but the vulnerable code is now
+  gone).
+- **`@fastify/static`** 8.0.4 → 9.1.3 — closes path traversal in
+  directory listing and route-guard bypass via encoded path
+  separators (Peregrine did not use listing; still patched).
+- **`dockerode`** 4.0.2 → 5.0.0 — pulls in `uuid` 11 with the
+  missing buffer-bounds-check fix.
+- **`vite`** 6.0.7 → 7.1.5 (latest 7.x) + `esbuild` forced via
+  npm `overrides` to ^0.28.1 — closes the dev-server RCE
+  (`NPM_CONFIG_REGISTRY` integrity bypass) and Windows arbitrary
+  file read. Production builds were not exploitable; dev mode now
+  patched too.
+- Bumps: `fastify` 5.2.1 → 5.8.5, `socket.io` 4.8.1 → 4.8.3,
+  `ssh2` 1.16.0 → 1.17.0.
+
+Result: `npm audit` reports **0 vulnerabilities** in both backend
+and frontend.
+
+### Security — Hardening
+
+- **JWT_SECRET fail-fast in production**: the panel now refuses to
+  start when `NODE_ENV=production` and `JWT_SECRET` is missing,
+  rather than silently using the public development fallback
+  (`peregrine-development-secret-change-me`). Loud crash + clear
+  error message pointing to `openssl rand -hex 32`.
+- **Argon2id** explicit + tuned parameters (64 MiB / 3 iterations /
+  parallelism 4, RFC 9106 / OWASP). Existing hashes (any Argon2
+  variant) keep verifying via the embedded `$argon2X$` prefix; new
+  hashes are written as Argon2id.
+- **HTTP security headers** on every response:
+  - `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`
+  - `X-Content-Type-Options: nosniff`
+  - `X-Frame-Options: DENY` (anti-clickjacking)
+  - `Referrer-Policy: strict-origin-when-cross-origin`
+  - `Permissions-Policy: camera=(), microphone=(), geolocation=()`...
+  - `Content-Security-Policy: default-src 'self'; script-src 'self'; ...`
+  - **Anti-XSS even if React's escaping is bypassed**.
+- **Anti-DoS Fastify limits**: 1 MiB JSON body, 5 s keep-alive,
+  30 s request timeout, 30 s connection timeout. Mitigates
+  slow-loris and small resource-exhaustion attacks.
+- **Tor exit node detection** on `/api/auth/login` and SFTP auth.
+  Refreshes the official Tor list every 12 h, rejects connections
+  from listed IPs with HTTP 403 / SSH disconnect. `BLOCK_TOR=false`
+  in `.env` to disable.
+- **Anti-symlink-escape** in `lib/files.ts`: `realpath` + `lstat`
+  checks block any symlink (file-manager + SFTP previously followed
+  symlinks pointing outside the server's data directory).
+- **Zero Trust input sanitisation library** (`lib/sanitize.ts` on
+  both backend and frontend):
+  - NFC Unicode normalisation
+  - Reject C0 control chars, DEL, bidi override (RTL `‮`), zero-width
+    chars (anti-`Remi​lulz` impersonation)
+  - Length enforcement
+  - Applied to server name, server description, schedule name,
+    backup name, RCON `kick`/`ban`/`ban-ip` reasons.
+- **RCON-specific sanitisation** also strips Minecraft chat colour
+  codes (`§`) — prevents fake server messages in ban reasons.
+- **Audit event log** (`audit_events` table, migration 16):
+  forensic-grade tracking of backup downloads, file writes,
+  file deletes (and extensible to RCON commands, permission
+  changes, etc.). Queryable via SQL on the SQLite DB for
+  post-compromise reconstruction.
+
+### Security — Container hardening
+
+- **Dockerfile runtime stage** purges `apt`, `dpkg`, `find`,
+  `xargs`, `curl`, `wget`, `tar`, `gzip`, `ssh`, `scp`, `nc`,
+  `ncat`, `xxd`, `base32`, `sftp` from the final image. The only
+  significant binary an attacker can leverage post-RCE is `node`
+  itself. **Anti-LOLBin defence**.
+- **`docker-compose.yml` hardening**:
+  - `security_opt: no-new-privileges:true` — blocks privilege
+    escalation.
+  - `read_only: true` — root filesystem immutable, only `/tmp`
+    (50 MiB tmpfs) writable.
+  - `cap_drop: ALL` + `cap_add: CHOWN, SETUID, SETGID,
+    DAC_OVERRIDE, FOWNER` — minimum-privilege capability set.
+  - `pids_limit: 1024`, `ulimits: nproc/nofile` — anti fork bomb.
+
+### Notes
+
+- Existing user passwords keep verifying — no forced password
+  reset.
+- The Tor list is fetched at startup over HTTPS from
+  `check.torproject.org`. Sites behind strict egress filters
+  should allow this destination, or set `BLOCK_TOR=false`.
+- The CSP is restrictive. If you intend to add inline scripts
+  later or third-party fonts, you'll need to relax it. The
+  current panel ships entirely from self.
+- This is the largest hardening release Peregrine has shipped.
+  Test thoroughly before deploying to a production install.
+
 ## v0.33.0 — 2026-06-13
 
 ### Added

@@ -27,6 +27,24 @@ WORKDIR /app
 COPY backend/package*.json ./backend/
 RUN npm --prefix backend ci --omit=dev && npm cache clean --force
 
+# v0.34.0+: anti-LOLBin. We aggressively remove binaries that have no
+# legitimate use at runtime but are commonly used for post-compromise
+# exfiltration / persistence. `node` remains the sole significant
+# binary an attacker could leverage. Specifically removed: apt + dpkg
+# (no further package installs), find/xargs (discovery), curl/wget
+# (HTTP exfil — not in slim by default but defence in depth), tar
+# (mass archiving), gzip, ssh client, base64 + xxd if present.
+# We keep coreutils minimal (rm, mv, cat, ls — needed by the entrypoint
+# and HEALTHCHECK). If something we removed is required, the container
+# crashes immediately on start which is what we want.
+RUN apt-get update -y && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -f /usr/bin/apt /usr/bin/apt-get /usr/bin/dpkg /usr/bin/dpkg-deb /usr/bin/dpkg-query 2>/dev/null || true \
+    && rm -f /usr/bin/find /usr/bin/xargs /usr/bin/curl /usr/bin/wget 2>/dev/null || true \
+    && rm -f /usr/bin/tar /usr/bin/gzip /usr/bin/gunzip /bin/tar /bin/gzip 2>/dev/null || true \
+    && rm -f /usr/bin/ssh /usr/bin/scp /usr/bin/nc /usr/bin/ncat 2>/dev/null || true \
+    && rm -f /usr/bin/xxd /usr/bin/base32 /usr/bin/sftp 2>/dev/null || true \
+    && rm -rf /var/lib/apt/lists/* /var/cache/apt 2>/dev/null || true
+
 # Compiled backend + compiled frontend
 COPY --from=backend-build /app/backend/dist ./backend/dist
 COPY --from=frontend-build /app/frontend/dist ./frontend/dist

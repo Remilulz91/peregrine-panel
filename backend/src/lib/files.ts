@@ -29,6 +29,34 @@ export function resolveServerPath(
   if (resolved !== root && !resolved.startsWith(root + path.sep)) {
     throw new Error('Path is outside the server directory.');
   }
+  // v0.34.0+: anti-symlink-escape. A user can place a symlink in their
+  // server's data dir (via SFTP or file-manager upload) that points
+  // outside; without this check the HTTP file-manager would follow it
+  // and read /etc/passwd. We realpath the resolved path, then verify
+  // the realpath is still rooted in the server's data dir. realpath
+  // throws ENOENT on non-existent paths (legit for write/create) — in
+  // that case we check the parent dir instead.
+  try {
+    const real = fs.realpathSync(resolved);
+    if (real !== root && !real.startsWith(root + path.sep)) {
+      throw new Error('Path resolves outside the server directory.');
+    }
+    const lst = fs.lstatSync(real);
+    if (lst.isSymbolicLink()) {
+      throw new Error('Symlinks are not allowed.');
+    }
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
+      throw err;
+    }
+    const parent = path.dirname(resolved);
+    if (parent !== resolved && fs.existsSync(parent)) {
+      const realParent = fs.realpathSync(parent);
+      if (realParent !== root && !realParent.startsWith(root + path.sep)) {
+        throw new Error('Parent resolves outside the server directory.');
+      }
+    }
+  }
   return resolved;
 }
 

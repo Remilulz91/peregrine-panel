@@ -18,6 +18,7 @@ import { PERMISSION } from '../lib/permissions';
 import { logActivity } from '../lib/activity';
 import { logAuthEvent } from '../lib/authEvents';
 import { isRateLimited, recordAttempt, clearAttempts } from '../lib/rateLimit';
+import { handleTorAttempt } from '../lib/torExitNodes';
 
 const { STATUS_CODE, OPEN_MODE } = sshUtils.sftp;
 
@@ -452,6 +453,9 @@ export function startSftpServer(): () => void {
 
       client.on('authentication', (ctx: AuthContext) => {
         const ip = info?.ip ?? '?';
+        if (handleTorAttempt(ip, 'sftp', ctx.username)) {
+          return ctx.reject(['password']);
+        }
         if (isRateLimited(ip, SFTP_LIMIT)) {
           logAuthEvent({
             kind: 'auth.sftp_rate_limited',

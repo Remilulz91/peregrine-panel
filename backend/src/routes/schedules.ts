@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { sanitizeFreeText, SanitizeError } from '../lib/sanitize';
 import { authenticate } from '../plugins/auth';
 import { accessibleServer, requireOwner } from '../lib/acl';
 import {
@@ -99,6 +100,14 @@ export async function scheduleRoutes(app: FastifyInstance): Promise<void> {
       if (!requireOwner(request, reply, server)) return;
 
       const body = request.body as ScheduleBody;
+      try {
+        if (typeof body.name === 'string') body.name = sanitizeFreeText(body.name, 48);
+      } catch (err) {
+        if (err instanceof SanitizeError) {
+          return reply.code(400).send({ error: err.message });
+        }
+        throw err;
+      }
       if (!isFrequency(body.frequency)) {
         return reply.code(400).send({ error: 'Unknown frequency.' });
       }
@@ -144,6 +153,14 @@ export async function scheduleRoutes(app: FastifyInstance): Promise<void> {
         return reply.code(404).send({ error: 'Schedule not found.' });
       }
       const body = request.body as ScheduleBody;
+      try {
+        if (typeof body.name === 'string') body.name = sanitizeFreeText(body.name, 48);
+      } catch (err) {
+        if (err instanceof SanitizeError) {
+          return reply.code(400).send({ error: err.message });
+        }
+        throw err;
+      }
       if (!isFrequency(body.frequency)) {
         return reply.code(400).send({ error: 'Unknown frequency.' });
       }
