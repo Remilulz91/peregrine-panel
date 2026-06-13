@@ -1,0 +1,20 @@
+#!/bin/sh
+# Peregrine pre-commit hook (v0.35.0+).
+#
+# Activate with: git config core.hooksPath .githooks
+# Runs gitleaks on staged changes before each commit. If gitleaks
+# is not installed locally, the hook prints a warning and lets the
+# commit through — the CI will catch it server-side.
+
+if command -v gitleaks >/dev/null 2>&1; then
+  echo "==> gitleaks pre-commit scan"
+  if ! gitleaks protect --staged --redact --no-banner; then
+    echo
+    echo "Gitleaks detected a possible secret. If this is a false"
+    echo "positive, add the path to .gitleaksignore and re-commit."
+    exit 1
+  fi
+else
+  echo "==> gitleaks not installed locally — CI will scan on push."
+  echo "    Install: https://github.com/gitleaks/gitleaks"
+fi

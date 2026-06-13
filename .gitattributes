@@ -1,0 +1,7 @@
+# Normalise line endings to LF for all text files (v0.35.0+).
+# Prevents the CRLF/LF noise that has bitten the repo before.
+* text=auto eol=lf
+
+# Lockfiles: never converted
+*.lock binary
+package-lock.json binary

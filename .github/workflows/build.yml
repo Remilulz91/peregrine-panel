@@ -1,0 +1,57 @@
+name: Build
+
+# v0.35.0+: typecheck and build both backend and frontend on every
+# PR. Catches breakage from Dependabot-proposed upgrades before
+# they get merged.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend (typecheck + build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install (no scripts, strict lockfile)
+        run: npm ci --ignore-scripts
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build
+        run: npm run build
+      - name: Audit
+        run: npm audit --audit-level=moderate
+
+  frontend:
+    name: Frontend (typecheck + build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install (no scripts, strict lockfile)
+        run: npm ci --ignore-scripts
+      - name: Build
+        run: npm run build
+      - name: Audit
+        run: npm audit --audit-level=moderate

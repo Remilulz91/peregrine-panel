@@ -2,6 +2,94 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.35.0 — 2026-06-13
+
+### Security — Supply chain hardening
+
+- **`.npmrc` strict** at repo root + per-project (backend, frontend):
+  - `save-exact=true` — `npm install <pkg>` always pins the exact
+    version, no more `^`.
+  - `engine-strict=true` — install fails if the local Node does
+    not match `engines` in `package.json`.
+  - `audit-level=moderate` — `npm audit` exits non-zero on
+    moderate-or-higher CVE.
+  - `fund=false`, `loglevel=warn` — cleaner CI output.
+- **Exact version pinning** in both `package.json` files. Every
+  direct dependency now uses a fixed version (e.g. `"5.8.5"`
+  instead of `"^5.8.5"`). The `package-lock.json` already pinned
+  the full tree, but the source `package.json` previously allowed
+  silent minor upgrades on `npm install`. Now both source and
+  lockfile are pinned.
+- **`engines: { "node": ">=22 <23" }`** declared in both
+  `package.json`s. Builds and installs on Node 21 / 23 fail
+  immediately rather than silently producing a different binary.
+- **`npm ci --ignore-scripts`** in the Dockerfile (both build and
+  runtime stages). Blocks the classic supply-chain payload via
+  postinstall scripts (`event-stream`, `colors.js`,
+  `ua-parser-js`-style attacks). No native module in the current
+  dep tree requires a script; if one is ever added it must be
+  re-allowlisted with an explicit `npm rebuild <pkg>`.
+- **`overrides`** force-patches transitive deps:
+  - `backend`: `esbuild` 0.28.1 (the version tsx ships with
+    bundled is older and CVE-affected; the override applies even
+    though tsx is dev-only).
+  - `frontend`: `esbuild` 0.28.1 (same vector via vite).
+- **Additional CVE patches**:
+  - `tsx` 4.19.2 → 4.22.4 — drops vulnerable bundled esbuild.
+  - `postcss` 8.4.49 → 8.5.15 — closes XSS in CSS stringify
+    output.
+  - `autoprefixer` 10.4.20 → 10.4.21 — postcss-8.5 compat.
+  - `vite` 7.1.5 → 7.3.5 — closes dev-server CORS bypass that
+    could let a malicious website read responses from the running
+    dev server.
+- Result: **`npm audit` reports 0 vulnerabilities** on both
+  backend and frontend.
+
+### Security — Anti-secret-leak
+
+- **GitHub Dependabot** (`.github/dependabot.yml`): weekly checks
+  on Mondays at 04:00 Europe/Paris for backend, frontend, GitHub
+  Actions and Docker base image. Open PRs are grouped per
+  ecosystem to avoid spam.
+- **CI workflow `secret-scan.yml`** runs **gitleaks** on every
+  push and PR. Catches accidental secret commits before they make
+  it past CI. Pairs with GitHub's native Secret Scanning + Push
+  Protection (enabled in repo Settings, see also
+  `docs/SECURITY.md`).
+- **CI workflow `build.yml`** typechecks and builds both backend
+  and frontend on every PR. `npm audit --audit-level=moderate`
+  blocks merges that introduce vulnerable deps.
+- **Pre-commit hook** at `.githooks/pre-commit` runs gitleaks
+  locally before each commit. Activate with
+  `git config core.hooksPath .githooks`.
+- **`.gitleaksignore`** allows the known-safe paths
+  (`.env.example`, `docs/HARDENING.md`, `CHANGELOG.md`) to mention
+  secret-looking patterns without firing false positives.
+- **`.gitattributes`** forces LF line endings on all text files
+  (CRLF was creating noise on every commit when the repo was
+  edited from Windows; this fixes it at the git layer).
+
+### Documentation
+
+- **`docs/SECURITY.md`** — formal vulnerability disclosure policy
+  (private reporting via GitHub Advisories or email), scope, and
+  90-day coordinated disclosure window.
+- **`docs/SUPPLY-CHAIN.md`** — a defender-facing map of every
+  control in the chain, the threat model they protect against,
+  and a "how to add a new dependency" runbook.
+
+### Notes
+
+- The `.npmrc` strict settings affect anyone who runs `npm install`
+  locally, not just CI. If you previously did `npm install <pkg>`
+  on a dev machine and got a `^x.y.z` line, it will now be `x.y.z`
+  exact — expected.
+- Pre-commit hook is opt-in: it only fires after the operator runs
+  `git config core.hooksPath .githooks`. Done once per clone.
+- Dependabot will start opening PRs the Monday after this is
+  merged. Review them carefully — that is the supply-chain
+  inspection step.
+
 ## v0.34.0 — 2026-06-13
 
 ### Security — CVE patches

@@ -7,15 +7,12 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.34.0** — massive security hardening release.
-> 5 CVEs patched (incl. critical `@fastify/jwt`). JWT_SECRET
-> fail-fast in prod. Explicit Argon2id. HTTP security headers
-> + CSP. Tor exit-node detection (HTTP + SFTP). Anti-symlink
-> escape in file manager. Zero Trust input sanitisation
-> library (Unicode + bidi + zero-width). RCON colour-code
-> stripping. Audit event log (migration 16). Container
-> hardening: anti-LOLBin Dockerfile + docker-compose
-> security_opt + cap_drop + read_only.
+> **Version 0.35.0** — supply chain hardening + anti-secret
+> leak. `.npmrc` strict, exact version pinning,
+> `--ignore-scripts` install, 4 more CVEs patched, GitHub
+> Dependabot + CI workflows (gitleaks + build verification),
+> pre-commit hook, vulnerability disclosure policy, supply
+> chain documentation. `npm audit` = 0 vulnerabilities.
 > See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 

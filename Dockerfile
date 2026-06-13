@@ -6,7 +6,7 @@
 FROM node:22-slim AS frontend-build
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
-RUN npm ci
+RUN npm ci --ignore-scripts
 COPY frontend/ ./
 RUN npm run build
 
@@ -14,7 +14,7 @@ RUN npm run build
 FROM node:22-slim AS backend-build
 WORKDIR /app/backend
 COPY backend/package*.json ./
-RUN npm ci
+RUN npm ci --ignore-scripts
 COPY backend/ ./
 RUN npm run build
 
@@ -25,7 +25,7 @@ WORKDIR /app
 
 # Backend production dependencies only
 COPY backend/package*.json ./backend/
-RUN npm --prefix backend ci --omit=dev && npm cache clean --force
+RUN npm --prefix backend ci --omit=dev --ignore-scripts && npm cache clean --force
 
 # v0.34.0+: anti-LOLBin. We aggressively remove binaries that have no
 # legitimate use at runtime but are commonly used for post-compromise

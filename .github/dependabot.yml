@@ -1,0 +1,67 @@
+version: 2
+# v0.35.0+: Dependabot config. Weekly security checks on both
+# backend and frontend npm projects, grouped PRs to avoid spam.
+updates:
+  - package-ecosystem: npm
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Europe/Paris
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - backend
+    commit-message:
+      prefix: "deps(backend)"
+    groups:
+      backend-deps:
+        patterns:
+          - "*"
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Europe/Paris
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - frontend
+    commit-message:
+      prefix: "deps(frontend)"
+    groups:
+      frontend-deps:
+        patterns:
+          - "*"
+
+  # GitHub Actions versions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Europe/Paris
+    labels:
+      - dependencies
+      - ci
+    commit-message:
+      prefix: "deps(ci)"
+
+  # Docker base image
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Europe/Paris
+    labels:
+      - dependencies
+      - docker
+    commit-message:
+      prefix: "deps(docker)"

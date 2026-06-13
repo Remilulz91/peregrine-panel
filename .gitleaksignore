@@ -1,0 +1,11 @@
+# Files allowed to contain "secret-looking" patterns (v0.35.0+).
+# Format: one path or commit-hash per line.
+
+# Example env file — placeholders, never real secrets.
+.env.example
+
+# Hardening docs reference dummy keys for illustration.
+docs/HARDENING.md
+
+# Changelog mentions JWT_SECRET as a string but never the value.
+CHANGELOG.md
