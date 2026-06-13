@@ -2,6 +2,36 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.35.1 — 2026-06-13
+
+### Documentation
+
+- **`scripts/setup-dev.sh`** — one-shot developer setup script.
+  Run `bash scripts/setup-dev.sh` once after cloning to:
+  - activate the pre-commit gitleaks hook
+    (`git config core.hooksPath .githooks`),
+  - install backend dependencies with `npm ci --ignore-scripts`,
+  - install frontend dependencies with `npm ci --ignore-scripts`.
+- **`CONTRIBUTING.md`** gets a "Development setup" section
+  explaining the script, what it does, the manual fallback, and
+  how to install `gitleaks` itself.
+- **`README.md`** gets a small "Development" section pointing at
+  the script + `CONTRIBUTING.md`.
+
+### Why
+
+The v0.35.0 release shipped the `.githooks/pre-commit` hook and
+the supply-chain flags, but did not tell contributors how to
+activate them on their clone (`git config core.hooksPath` is
+not automatic — git deliberately refuses to do that for security
+reasons). v0.35.1 closes that documentation gap.
+
+### Notes
+
+- Pure docs / tooling. Zero code change, zero behaviour change
+  for existing operators. Skip this version if you do not
+  contribute to the source.
+
 ## v0.35.0 — 2026-06-13
 
 ### Security — Supply chain hardening

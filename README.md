@@ -7,12 +7,11 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.35.0** — supply chain hardening + anti-secret
-> leak. `.npmrc` strict, exact version pinning,
-> `--ignore-scripts` install, 4 more CVEs patched, GitHub
-> Dependabot + CI workflows (gitleaks + build verification),
-> pre-commit hook, vulnerability disclosure policy, supply
-> chain documentation. `npm audit` = 0 vulnerabilities.
+> **Version 0.35.1** — documents how contributors activate the
+> v0.35.0 dev hooks (`bash scripts/setup-dev.sh`). New
+> `scripts/setup-dev.sh` one-shot setup, expanded
+> `CONTRIBUTING.md`, README pointer. Pure docs / tooling, no
+> code change.
 > See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 
@@ -156,6 +155,12 @@ contribute. You may not resell it, redistribute it, or present it as your own
 product.
 
 See the [`LICENSE`](LICENSE) file for the full terms.
+
+## Development
+
+Cloning the repo for development? Run `bash scripts/setup-dev.sh` once to
+activate the pre-commit secret-scan hook and install dependencies with the
+strict supply-chain flags. See [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## Contributing & reporting bugs
 
