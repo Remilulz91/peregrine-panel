@@ -2,6 +2,31 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.32.0 — 2026-06-13
+
+### Security
+
+- **Resources (RAM / CPU) section** in the server's Settings
+  tab is now **admin-only**. Previously it was visible to
+  any owner, which leaked host-capacity information (max
+  allocatable RAM / cores).
+- **Disk usage section** in the server's Settings tab is now
+  also **admin-only**. Previously visible to anyone with
+  access to the server. The quota editor inside was already
+  admin-only; the entire panel (usage bar, used MiB total)
+  is now hidden from non-admins.
+
+### Notes
+
+- Pure frontend visibility change. The backend routes that
+  modify resources / quota were already admin-only, so this
+  is defence-in-depth: removing UI temptation in addition to
+  the existing API rejection.
+- For Remilulz_91 (admin) the UI is unchanged. For any
+  non-admin owner or subuser, the two sections simply do
+  not appear in the Settings tab.
+- No database migration, no backend touch.
+
 ## v0.31.2 — 2026-06-13
 
 ### Fixed

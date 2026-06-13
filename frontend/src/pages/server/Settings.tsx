@@ -89,7 +89,11 @@ export default function SettingsPage({
 
   const canRename = hasPermission(myPermissions, PERM.SETTINGS_RENAME);
   const isRunning = server.status === 'RUNNING';
-  const isOwner = server.isOwner;
+  // v0.32.0+: `isOwner` was used to gate the Resources section; that
+  // section is now admin-only, so the local helper is dropped to keep
+  // the type-checker happy. The host-resource fetch effect still uses
+  // `server.isOwner` directly above to skip the call for non-owners.
+
 
   const maxMem = host ? host.allocatableMemMb + server.memoryMb : 65536;
   const maxCpu = host ? host.allocatableCpus + server.cpuLimit : 64;
@@ -405,7 +409,11 @@ export default function SettingsPage({
         </div>
       )}
 
-      {isOwner && (
+      {/* v0.32.0+: Resources section is admin-only. Non-admin users
+          must not see CPU/RAM limits — both for security (info-leak
+          about host capacity) and because the API rejects changes
+          from non-admins anyway. */}
+      {isAdmin && (
         <div className="rounded-2xl border border-peregrine-700 bg-peregrine-900 p-5">
           <h3 className="text-sm font-semibold text-white">{t('settings.resourcesTitle')}</h3>
           <p className="mt-1 text-sm text-peregrine-400">{t('settings.resourcesSubtitle')}</p>
@@ -563,8 +571,11 @@ export default function SettingsPage({
         )}
       </div>
 
-      {/* Disk usage / quota (v0.15.0+). Visible to anyone with access;
-          quota editing is admin-only. */}
+      {/* v0.32.0+: Disk usage section is now admin-only. Users
+          should not see the server's disk footprint or quota — it
+          leaks hosting info that has no value for end users. */}
+      {isAdmin && (
+        <>
       <div className="rounded-2xl border border-peregrine-700 bg-peregrine-900 p-5">
         <h3 className="text-sm font-semibold text-white">{t('settings.diskTitle')}</h3>
         <p className="mt-1 text-sm text-peregrine-400">{t('settings.diskSubtitle')}</p>
@@ -643,6 +654,8 @@ export default function SettingsPage({
         )}
         {diskQuotaError && <p className="mt-2 text-sm text-rose-400">{diskQuotaError}</p>}
       </div>
+        </>
+      )}
 
       <div className="rounded-2xl border border-rose-500/30 bg-rose-500/5 p-5">
         <h3 className="text-sm font-semibold text-rose-300">{t('settings.dangerZone')}</h3>

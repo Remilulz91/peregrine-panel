@@ -7,9 +7,11 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.31.2** — hotfix removing a duplicate "Game
-> version" section on the Settings tab introduced during the
-> v0.31.1 restore. The feature itself is unchanged.
+> **Version 0.32.0** — the Resources (RAM / CPU) and Disk
+> usage sections in the server's Settings tab are now
+> admin-only, in addition to the existing admin-only
+> backend routes. Defence-in-depth against host-info leaks
+> to non-admin users.
 > See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 
