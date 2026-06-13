@@ -2,6 +2,22 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.31.2 — 2026-06-13
+
+### Fixed
+
+- **Duplicate "Game version" section on the Settings tab.**
+  The block was rendered twice because the JSX got inserted
+  twice during the v0.31.1 file-restore. Both copies were
+  byte-identical and functionally interchangeable; this
+  release removes the duplicate so only one section is
+  visible.
+
+### Notes
+
+- Pure frontend cleanup, no backend change, no database
+  migration.
+
 ## v0.31.1 — 2026-06-12
 
 ### Fixed

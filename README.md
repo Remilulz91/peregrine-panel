@@ -7,10 +7,9 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.31.1** — hotfix for the v0.31.0 frontend build
-> failure (missing state hooks in the Settings tab). The
-> feature itself is unchanged: change the Minecraft version
-> and / or loader on an existing server from the Settings tab.
+> **Version 0.31.2** — hotfix removing a duplicate "Game
+> version" section on the Settings tab introduced during the
+> v0.31.1 restore. The feature itself is unchanged.
 > See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 
