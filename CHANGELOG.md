@@ -2,6 +2,49 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.36.2 — 2026-06-14
+
+### Fixed
+
+- **`npm ci` no longer crashes with `TypeError: Invalid Version:`**
+  during the Docker build. Root cause was the v0.36.1
+  `backend/package-lock.json` (regenerated from an empty starting
+  point with `npm install --package-lock-only`) which silently
+  produced a lockfile missing the `resolved` URL and `integrity`
+  hash on 174 of its 212 entries. With those fields missing, `npm
+  ci` re-resolves every transitive dep against the live registry
+  on each run, hitting a separate `npm@10` arborist bug that
+  crashes inside `semver.compare()` while deduplicating
+  `@grpc/grpc-js@1.14.4` (the registry metadata of that package
+  contains a literal `file:../proto-loader` reference in its
+  devDependencies, which is not a valid semver target).
+- Backend `package-lock.json` regenerated **incrementally** on
+  top of the last known-good v0.35.2 lockfile, so every package
+  carries its `resolved` URL + `integrity` hash. Verified locally:
+  `rm -rf node_modules && npm ci --ignore-scripts` completes
+  successfully with the new lockfile.
+- Frontend `package-lock.json` regenerated the same way for
+  consistency; no actual lockfile content change beyond the root
+  version bump.
+- Root versions in both lockfiles are now in sync with their
+  respective `package.json` (`0.36.2`).
+
+### Notes
+
+- Pure lockfile / metadata fix. **No source code change** anywhere
+  in `backend/src/` or `frontend/src/`. The Picocrypt-format
+  encryption implementation from v0.36.0 and the libsodium-sumo
+  switch from v0.36.1 are untouched.
+- Anyone whose `docker compose build` failed on v0.36.0 or v0.36.1
+  with either `Missing: <pkg> from lock file` or
+  `Invalid Version:` should pull v0.36.2 and rebuild — no manual
+  intervention needed.
+- Lesson learned: in supply-chain hardened setups
+  (`--ignore-scripts`, `engine-strict`, `audit-level=moderate`),
+  ALWAYS regenerate lockfiles by running a real `npm install`
+  (which fetches the tarballs and records hashes), never `npm
+  install --package-lock-only` from an empty starting point.
+
 ## v0.36.1 — 2026-06-14
 
 ### Fixed
