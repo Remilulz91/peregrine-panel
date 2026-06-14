@@ -7,13 +7,14 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.36.0** — every backup can now be downloaded **encrypted
-> in the Picocrypt v1.48 file format**. Pick a password in the
-> Backups tab → the panel encrypts the archive with XChaCha20 +
-> BLAKE2b and Argon2id (1 GiB / 4 iters), and you get a `.pcv`
-> file decryptable with the official, free, cross-platform
-> [Picocrypt desktop app](https://github.com/Picocrypt/Picocrypt).
-> See the changelog in
+> **Version 0.36.1** — build-time patch on top of v0.36.0: the
+> Picocrypt-format encryptor now correctly imports the
+> `libsodium-wrappers-sumo` build (the standard `libsodium-wrappers`
+> does **not** ship the raw XChaCha20 stream primitive we need —
+> only Poly1305-tagged AEAD variants, which would make the output
+> incompatible with Picocrypt desktop). No behaviour change vs
+> v0.36.0; this is purely the version of the source that actually
+> builds and runs. See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features

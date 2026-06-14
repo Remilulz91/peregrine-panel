@@ -2,6 +2,46 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.36.1 — 2026-06-14
+
+### Fixed
+
+- **Backend build no longer fails** on `npm ci` and runtime. The
+  v0.36.0 release pinned `libsodium-wrappers@0.7.15`, but that
+  build of the library does **not** expose
+  `crypto_stream_xchacha20_xor_ic` — only the Poly1305-tagged AEAD
+  variants. The Picocrypt v1.48 format uses the **raw** XChaCha20
+  stream cipher (paired with a separate global BLAKE2b MAC), not
+  AEAD, so the missing primitive made the backend either fail to
+  import or, worse, encrypt with a different construction and
+  produce files Picocrypt desktop could not decrypt.
+- **Switched to `libsodium-wrappers-sumo@0.7.15`** (the "full
+  symbols" build of the same library) which does expose the raw
+  stream cipher. The two packages share the same WASM core; the
+  sumo build is ~1 MB larger on disk, no other cost.
+- **Replaced `@types/libsodium-wrappers`** (which did not type the
+  sumo-only functions anyway) with a local ambient declaration at
+  `backend/src/types/libsodium-wrappers-sumo.d.ts`. The deprecated
+  `@types/libsodium-wrappers-sumo` stub is **not** used (it has no
+  actual `.d.ts` content despite its claim).
+- **Lockfile regenerated** so `npm ci --ignore-scripts` in the
+  Dockerfile passes again.
+
+### Notes
+
+- Pure build / dependency fix. No new feature, no API change, no
+  behavioural change vs the design described in v0.36.0. Anyone
+  who tried to build v0.36.0 will hit the npm-ci error from the
+  release notes — pull v0.36.1 and rebuild.
+- Smoke-tested end-to-end on a 4 KiB plaintext: Argon2id 1 GiB
+  derivation, HKDF-SHA3-256, XChaCha20 streaming via libsodium-sumo,
+  BLAKE2b-512 keyed MAC, header back-patch — all primitives wire up
+  cleanly, file is exactly 789 + plaintext bytes, header starts
+  with the ASCII bytes `v1.48` post-RS-decode, MAC slot is
+  populated.
+- The user-side interop verification with the official Picocrypt
+  desktop app is still the gating step for declaring v0.36.x done.
+
 ## v0.36.0 — 2026-06-14
 
 ### Added
