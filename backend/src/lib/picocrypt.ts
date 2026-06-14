@@ -71,7 +71,14 @@ import { hashRaw, Algorithm } from '@node-rs/argon2';
 import { blake2b } from '@noble/hashes/blake2b';
 import { sha3_512, sha3_256 } from '@noble/hashes/sha3';
 import { hkdf } from '@noble/hashes/hkdf';
-import _sodium from 'libsodium-wrappers';
+// The standard `libsodium-wrappers` build does NOT expose the raw
+// `crypto_stream_xchacha20_xor_ic` primitive — only the AEAD variants
+// (which would add Poly1305 tags and break Picocrypt compatibility).
+// The "-sumo" build is the same WASM module compiled with the full
+// libsodium symbol set, including the low-level stream cipher we need
+// for byte-perfect interop. (+~1 MB on disk; one-time cost on a
+// backend container, unimportant in practice.)
+import _sodium from 'libsodium-wrappers-sumo';
 import {
   RS5,
   RS16,
