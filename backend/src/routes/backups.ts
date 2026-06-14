@@ -1,8 +1,5 @@
 import fs from 'node:fs';
-import path from 'node:path';
-import { randomUUID } from 'node:crypto';
 import { logAuditEvent } from '../lib/auditEvents';
-import { sanitizeFreeText, SanitizeError } from '../lib/sanitize';
 import type { FastifyInstance } from 'fastify';
 import { authenticate } from '../plugins/auth';
 import { accessibleServer, requirePermission } from '../lib/acl';
@@ -23,11 +20,6 @@ import {
   MAX_BACKUPS_PER_SERVER,
   type BackupRecord,
 } from '../lib/backups';
-import {
-  encryptFileToPicocrypt,
-  isAcceptablePassword,
-  PICOCRYPT_EXTENSION,
-} from '../lib/picocrypt';
 
 interface CreateBackupBody {
   name?: string;
@@ -234,101 +226,6 @@ export async function backupRoutes(app: FastifyInstance): Promise<void> {
           `attachment; filename="${safeName || 'backup'}.tar.gz"`,
         );
       return reply.send(fs.createReadStream(backup.filePath));
-    },
-  );
-
-  app.post(
-    '/servers/:id/backups/:backupId/download-encrypted',
-    {
-      schema: {
-        body: {
-          type: 'object',
-          required: ['password'],
-          additionalProperties: false,
-          properties: {
-            password: { type: 'string', minLength: 8, maxLength: 1024 },
-          },
-        },
-      },
-    },
-    async (request, reply) => {
-      const { id, backupId } = request.params as {
-        id: string;
-        backupId: string;
-      };
-      const server = accessibleServer(request, id);
-      if (!server) return reply.code(404).send({ error: 'Server not found.' });
-      if (!requirePermission(request, reply, server, PERMISSION.BACKUPS_DOWNLOAD)) return;
-      const backup = getBackupForServer(backupId, server.id);
-      if (!backup) {
-        return reply.code(404).send({ error: 'Backup not found.' });
-      }
-      if (!fs.existsSync(backup.filePath)) {
-        return reply.code(404).send({ error: 'Backup file is missing.' });
-      }
-
-      const { password } = request.body as { password: string };
-      if (!isAcceptablePassword(password)) {
-        return reply.code(400).send({
-          error: 'Encryption password must be between 8 and 1024 characters.',
-        });
-      }
-
-      // v0.36.0: encrypt the backup at request time into a Picocrypt
-      // v1.48-format file, stream it to the client, then delete the
-      // intermediate. We never persist the encrypted file — only the
-      // plaintext .tar.gz on the backups disk is durable.
-      const tmpDir = path.join(config.backupsPath, 'tmp');
-      try {
-        fs.mkdirSync(tmpDir, { recursive: true });
-      } catch (err) {
-        request.log.error({ err }, 'failed to create encrypted-backup tmp dir');
-        return reply.code(500).send({ error: 'Server storage error.' });
-      }
-      const tmpPath = path.join(tmpDir, `${randomUUID()}.pcv`);
-
-      const safeName = backup.name.replace(/[^A-Za-z0-9._-]/g, '_');
-
-      try {
-        await encryptFileToPicocrypt({
-          inputPath: backup.filePath,
-          outputPath: tmpPath,
-          password,
-        });
-      } catch (err) {
-        request.log.error({ err }, 'picocrypt encryption failed');
-        // Best-effort cleanup; ignore errors (file may not exist).
-        fs.rm(tmpPath, { force: true }, () => undefined);
-        return reply
-          .code(500)
-          .send({ error: 'Failed to encrypt the backup.' });
-      }
-
-      logAuditEvent({
-        kind: 'audit.backup_download_encrypted',
-        actorId: request.user.sub,
-        serverId: server.id,
-        remoteIp: request.ip,
-        details: backup.name,
-      });
-
-      const stream = fs.createReadStream(tmpPath);
-      // Always remove the encrypted temp file once the stream is
-      // done — whether the client got the whole file or dropped the
-      // connection mid-way.
-      const cleanup = () => {
-        fs.rm(tmpPath, { force: true }, () => undefined);
-      };
-      stream.on('close', cleanup);
-      stream.on('error', cleanup);
-
-      reply
-        .header('Content-Type', 'application/octet-stream')
-        .header(
-          'Content-Disposition',
-          `attachment; filename="${safeName || 'backup'}.tar.gz${PICOCRYPT_EXTENSION}"`,
-        );
-      return reply.send(stream);
     },
   );
 }

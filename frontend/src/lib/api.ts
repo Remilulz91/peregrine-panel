@@ -613,45 +613,6 @@ export const api = {
     ),
   backupDownloadUrl: (serverId: string, backupId: string) =>
     `/api/servers/${serverId}/backups/${backupId}/download`,
-  /**
-   * v0.36.0: download a backup encrypted with Picocrypt v1.48 format.
-   * Uses POST so the password never appears in URLs / access logs.
-   * Returns the encrypted bytes as a Blob; the caller is responsible
-   * for triggering the actual file save (e.g. via an anchor + URL.createObjectURL).
-   *
-   * The server-side Argon2id derivation takes ~5–10 s with the format's
-   * hardcoded 1 GiB / 4-iter params, so callers should show a spinner.
-   */
-  downloadBackupEncrypted: async (
-    serverId: string,
-    backupId: string,
-    password: string,
-  ): Promise<{ blob: Blob; filename: string }> => {
-    const response = await fetch(
-      `/api/servers/${serverId}/backups/${backupId}/download-encrypted`,
-      {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
-      },
-    );
-    if (!response.ok) {
-      let message = `HTTP ${response.status}`;
-      try {
-        const body = (await response.json()) as { error?: string };
-        if (body.error) message = body.error;
-      } catch {
-        // body might not be JSON (e.g. HTML error page)
-      }
-      throw new ApiError(response.status, message);
-    }
-    const disposition = response.headers.get('Content-Disposition') ?? '';
-    // Best-effort filename extraction; falls back to a sensible default.
-    const match = disposition.match(/filename="([^"]+)"/);
-    const filename = match?.[1] ?? `backup.tar.gz.pcv`;
-    return { blob: await response.blob(), filename };
-  },
 
   listFiles: (serverId: string, dirPath: string) =>
     request<{ path: string; entries: ApiFileEntry[] }>(

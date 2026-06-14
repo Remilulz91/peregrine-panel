@@ -21,6 +21,13 @@ RUN npm run build
 # --- Stage 3: final image run in production ---
 FROM node:22-slim AS runtime
 ENV NODE_ENV=production
+# v0.37.0: cap the V8 old-space heap at 512 MiB. The panel itself
+# (Fastify + node:sqlite + socket.io + a handful of workers) needs
+# well under 200 MiB at steady state, so 512 MiB is generous but
+# still small enough that a runaway leak crashes the container fast
+# instead of suffocating a small VPS. Operators on tight hosts can
+# lower this via docker-compose's `environment:` override.
+ENV NODE_OPTIONS=--max-old-space-size=512
 WORKDIR /app
 
 # Backend production dependencies only

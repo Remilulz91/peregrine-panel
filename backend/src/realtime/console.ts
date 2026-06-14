@@ -43,7 +43,13 @@ export function setupConsole(
   app: FastifyInstance,
   httpServer: HttpServer,
 ): void {
-  const io = new SocketIOServer(httpServer);
+  // v0.37.0 — disable per-message deflate. Minecraft console traffic
+  // is small text bursts; the deflate CPU cost (~10 % of socket I/O
+  // CPU) is not worth the marginal bandwidth saving on a control
+  // panel that nobody is paying for bandwidth on.
+  const io = new SocketIOServer(httpServer, {
+    perMessageDeflate: false,
+  });
 
   // Authenticate every socket with the JWT cookie before allowing it in.
   io.use((socket, next) => {

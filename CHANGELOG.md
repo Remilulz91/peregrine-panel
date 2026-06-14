@@ -2,6 +2,83 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.37.0 — 2026-06-14
+
+### Removed
+
+- **Encrypted backup download (Picocrypt v1.48 format).** The
+  feature added in v0.36.0 has been **rolled back in its entirety**.
+  Reason: the format's hardcoded Argon2id parameters (1 GiB memory,
+  4 iterations, parallelism 4) mean every concurrent encrypted
+  download requests an extra **1 GiB of RAM** for ~5–10 s on the
+  panel container. 64 simultaneous downloads = 64 GiB of RAM, which
+  is not a realistic budget on a self-hosted VPS. The plaintext
+  `.tar.gz` download is unchanged and remains the way to take a
+  copy of a backup off the panel. Anyone who needs at-rest
+  encryption should encrypt with their own tool (Picocrypt
+  desktop, age, gpg, …) **after** downloading.
+- Files deleted: `backend/src/lib/picocrypt.ts`,
+  `backend/src/lib/picocryptReedSolomon.ts`,
+  `backend/src/types/libsodium-wrappers-sumo.d.ts`.
+- Route removed: `POST
+  /api/servers/:id/backups/:backupId/download-encrypted`.
+- UI removed: the "Encrypted download" button + password modal in
+  the Backups tab; 10 EN/FR i18n keys (`backups.encrypt*`).
+- Dependencies removed from `backend/package.json`:
+  `libsodium-wrappers-sumo@0.7.15`, `@noble/hashes@1.6.1`. Lockfile
+  shrinks by 3 entries (sumo + libsodium + @noble/hashes).
+- Audit event kind `audit.backup_download_encrypted` will no longer
+  be emitted, but historical rows in `audit_events` are preserved
+  (no destructive migration).
+
+### Performance (VPS-friendly)
+
+- **Frontend polling reduced.** Dashboard server-list refresh:
+  4 s → **10 s** (−60 % XHRs). Host metrics card: 5 s → **15 s**
+  (−70 % XHRs). The UI does not feel any staler at typical Minecraft
+  server reaction times.
+- **Node V8 heap capped at 512 MiB** via
+  `ENV NODE_OPTIONS=--max-old-space-size=512` in the Dockerfile.
+  Peregrine's steady-state heap is well under 200 MiB; capping at
+  512 MiB means a leak crashes the container fast rather than slowly
+  starving the rest of the VPS.
+- **Socket.IO `perMessageDeflate: false`** in
+  `backend/src/realtime/console.ts`. Console log streams are small
+  text bursts where the deflate CPU cost (~5–10 % of socket I/O CPU
+  on busy panels) was not worth the marginal bandwidth saving.
+- **New SQLite index** `servers_by_owner` on `servers(owner_id)`
+  (migration #17). Speeds up the dashboard's
+  `SELECT … FROM servers WHERE owner_id = ?` and the subuser-aware
+  outer-join variant from O(n) full scans to O(log n).
+- Backend `node_modules` is ~5 MiB smaller (sumo + libsodium + @noble
+  removed).
+
+### Verified preserved
+
+- Argon2id login params unchanged: 64 MiB / 3 iters / parallelism 4
+  (RFC 9106).
+- Zero Trust input sanitization (`sanitizeFreeText` — 14 call sites)
+  unchanged.
+- Audit event pipeline (`logAuditEvent` — 4 call sites) unchanged.
+- Tor exit-node blocking unchanged.
+- JWT cookie auth + `requirePermission` ACL — 96 hook attachments
+  across the routes, none touched.
+- HSTS, X-Content-Type-Options, X-Frame-Options, CSP, Referrer-Policy
+  response headers unchanged.
+- Supply-chain hardening (`.npmrc`, `--ignore-scripts`, Dependabot,
+  gitleaks, CodeQL, secret-scan workflow) all intact.
+- Container hardening (`no-new-privileges`, `read_only`, `cap_drop:
+  ALL`, `pids_limit`) all intact.
+
+### Migration notes
+
+- Database migration #17 (the new `servers_by_owner` index) applies
+  automatically on first startup.
+- No environment variable / `.env` change required. Heap cap is
+  overridable from `docker-compose.yml` with
+  `environment: NODE_OPTIONS=--max-old-space-size=256` if the
+  operator wants to go even leaner.
+
 ## v0.36.2 — 2026-06-14
 
 ### Fixed

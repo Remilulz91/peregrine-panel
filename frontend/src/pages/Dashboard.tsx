@@ -46,7 +46,10 @@ export default function Dashboard() {
       .listTemplates()
       .then((result) => setTemplates(result.templates))
       .catch(() => undefined);
-    const interval = setInterval(() => void loadServers(), 4000);
+    // v0.37.0: was 4 s — too aggressive for a panel where servers
+    // rarely change state in under 10 s. 10 s polling cuts ~60 % of
+    // useless XHRs without making the UI feel stale.
+    const interval = setInterval(() => void loadServers(), 10000);
     return () => clearInterval(interval);
   }, [loadServers]);
 

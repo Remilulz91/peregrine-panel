@@ -179,6 +179,13 @@ const MIGRATIONS: string[] = [
    );
    CREATE INDEX audit_events_by_created_at ON audit_events(created_at);
    CREATE INDEX audit_events_by_kind ON audit_events(kind);`,
+
+  // v0.37.0 — index on servers(owner_id). The dashboard runs
+  // `SELECT … FROM servers WHERE owner_id = ?` and an outer-join
+  // variant for subusers on every page load; both did a full table
+  // scan until now. Tiny SQLite write cost, big read win once the
+  // panel has more than a handful of servers.
+  `CREATE INDEX servers_by_owner ON servers(owner_id);`,
 ];
 
 /** Applies any migrations that have not been run on this database yet. */

@@ -3,12 +3,16 @@ import { api, ApiError, type ApiHostMetrics } from '../lib/api';
 import { useTranslation } from '../lib/i18n';
 
 /**
- * Live host overview shown on the Dashboard (v0.28.0+). Refreshed every
- * 5 seconds while the widget is mounted. Three columns: CPU %, RAM in
- * GiB, disk usage on the data volume. A small bar coloured from green
- * → amber → red gives an instant "is my machine OK" read.
+ * Live host overview shown on the Dashboard (v0.28.0+). Refreshed
+ * every 15 seconds while the widget is mounted. Three columns: CPU %,
+ * RAM in GiB, disk usage on the data volume. A small bar coloured
+ * from green → amber → red gives an instant "is my machine OK" read.
+ *
+ * v0.37.0: was 5 s. Host CPU / RAM / disk don't move enough in 5–15 s
+ * to be worth the request overhead, especially on a small VPS where
+ * the panel itself competes for the same resources it's measuring.
  */
-const POLL_INTERVAL_MS = 5000;
+const POLL_INTERVAL_MS = 15000;
 
 function formatGiB(mb: number): string {
   if (mb <= 0) return '0';
