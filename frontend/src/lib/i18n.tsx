@@ -238,6 +238,32 @@ const translations = {
   'admin.security.col.when': { en: 'When', fr: 'Quand' },
   'admin.security.col.kind': { en: 'Kind', fr: 'Type' },
   'admin.security.col.details': { en: 'Details', fr: 'Détails' },
+
+  // v0.40.0 — log retention + manual clear.
+  'admin.security.retentionTitle': {
+    en: 'Log retention',
+    fr: 'Rétention des journaux',
+  },
+  'admin.security.retentionHint': {
+    en: 'Failed-auth events, audit events, and per-server activity are pruned automatically after LOG_RETENTION_DAYS (default 30 days). Use the button to clear failed logins right now; successful logins are kept either way.',
+    fr: 'Les échecs d’authentification, les événements d’audit et l’activité par serveur sont purgés automatiquement après LOG_RETENTION_DAYS (par défaut 30 jours). Le bouton permet d’effacer immédiatement les échecs ; les connexions réussies sont conservées dans tous les cas.',
+  },
+  'admin.security.clearButton': {
+    en: 'Clear failed logins',
+    fr: 'Effacer les échecs',
+  },
+  'admin.security.clearInProgress': {
+    en: 'Clearing…',
+    fr: 'Effacement…',
+  },
+  'admin.security.clearConfirm': {
+    en: 'Delete every failed-authentication row from the database? Successful logins, MFA setup, and SFTP successes will be preserved. This action is itself audit-logged.',
+    fr: 'Supprimer toutes les lignes d’échec d’authentification ? Les connexions réussies, l’activation 2FA et les sessions SFTP réussies seront conservées. L’action elle-même est journalisée dans l’audit.',
+  },
+  'admin.security.clearResult': {
+    en: '{n} failed-auth rows deleted.',
+    fr: '{n} lignes d’échec d’authentification supprimées.',
+  },
   'admin.users.title': { en: 'User accounts', fr: 'Comptes utilisateurs' },
   'admin.users.create': { en: 'Create user', fr: 'Créer un utilisateur' },
   'admin.users.empty': { en: 'No accounts yet.', fr: 'Aucun compte pour le moment.' },

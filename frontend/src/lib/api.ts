@@ -498,6 +498,16 @@ export const api = {
     ),
   adminSecurityBannedIps: () =>
     request<{ status: ApiFail2banStatus }>('/api/admin/security/banned-ips'),
+  /**
+   * v0.40.0+: deletes only the failed-auth rows (login_failed,
+   * login_rate_limited, mfa_failed, sftp_failed,
+   * sftp_rate_limited). Successful logins are preserved. The
+   * action is audit-logged server-side.
+   */
+  adminClearFailedLogins: () =>
+    request<{ deleted: number }>('/api/admin/security/clear-failed-logins', {
+      method: 'POST',
+    }),
 
   listTemplates: () =>
     request<{ templates: ApiTemplate[] }>('/api/templates'),

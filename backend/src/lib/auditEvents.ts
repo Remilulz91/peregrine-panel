@@ -15,6 +15,11 @@ export type AuditEventKind =
   | 'audit.rcon_command'         // an RCON command was sent
   | 'audit.subuser_perm_change'  // a subuser's permission set was updated
   | 'audit.docker_exec'          // docker exec was called (other than RCON list)
+  // v0.40.0+: log-retention events. These rows survive their own
+  // retention cutoff because they are inserted AFTER the delete
+  // pass — i.e. they're always strictly newer than the cutoff.
+  | 'audit.logs_cleared_manual'  // an admin clicked "Clear failed logins"
+  | 'audit.logs_retention_auto'  // the daily retention worker ran a delete
   | (string & {});
 
 export interface AuditEventInput {

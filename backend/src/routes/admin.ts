@@ -31,11 +31,13 @@ import { getContainerState } from '../lib/docker';
 import { deprovisionServer } from '../services/provisioning';
 import { disableMfa, userHasMfa } from '../lib/mfa';
 import {
+  clearFailedAuthEvents,
   failedLoginStats,
   listRecentFailedLogins,
   topFailedLoginOffenders,
 } from '../services/securityLog';
 import { readFail2banStatus } from '../lib/fail2ban';
+import { logAuditEvent } from '../lib/auditEvents';
 
 interface CreateUserBody {
   username: string;
@@ -341,5 +343,21 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
 
   app.get('/security/banned-ips', async () => {
     return { status: readFail2banStatus() };
+  });
+
+  // v0.40.0+: manual "Clear failed logins" button. Deletes only the
+  // failed-auth kinds; successful logins are kept because they're
+  // useful for forensics ("when did this account last log in
+  // legitimately"). The action itself is audited so the deletion
+  // leaves a trace.
+  app.post('/security/clear-failed-logins', async (request) => {
+    const deleted = clearFailedAuthEvents();
+    logAuditEvent({
+      kind: 'audit.logs_cleared_manual',
+      actorId: request.user.sub,
+      remoteIp: request.ip,
+      details: `failed-auth rows deleted: ${deleted}`,
+    });
+    return { deleted };
   });
 }

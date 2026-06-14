@@ -7,14 +7,16 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.39.0** — new admin-only **Security** dashboard in
-> the panel. Three live views: failed-auth stats (24 h / 7 d /
-> distinct usernames + IPs), top offenders grouped by
-> (username, IP) over the last 7 days, the last 100 raw failed
-> attempts, and the **currently banned IPs from fail2ban**
-> (read-only mount of `/var/lib/fail2ban` — optional, the
-> dashboard renders a "not configured" callout gracefully if
-> fail2ban isn't installed on the host). See the changelog in
+> **Version 0.40.0** — log retention + manual cleanup. A daily
+> background worker now deletes every row older than
+> `LOG_RETENTION_DAYS` (default **30 days**) across the three
+> log tables (`auth_events`, `audit_events`, `server_activity`).
+> Set the env var to `0` to disable, or to `90` / `180` / `365`
+> for a longer forensic window. The admin Security dashboard
+> also gains a **"Clear failed logins"** button that wipes
+> failed-auth rows immediately (successful logins are kept).
+> Both manual and automatic deletions are themselves
+> audit-logged. See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features

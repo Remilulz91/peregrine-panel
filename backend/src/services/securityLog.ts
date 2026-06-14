@@ -179,6 +179,90 @@ export function topFailedLoginOffenders(
   });
 }
 
+// --------------------------------------------------------------------
+// Write-side: manual clear + retention worker delete helpers (v0.40.0+)
+// --------------------------------------------------------------------
+
+/** Result row for any delete-batch operation. */
+export interface DeleteResult {
+  authEvents: number;
+  auditEvents: number;
+  serverActivity: number;
+}
+
+/**
+ * Wipes every failed-auth row from `auth_events`. Used by the admin
+ * "Clear failed logins" button on the Security dashboard. Successful
+ * logins (`auth.login`, `auth.login_mfa`, `auth.logout`, etc.) and
+ * MFA-setup events are PRESERVED — they're useful for forensics
+ * ("when did this account last log in legitimately") and they don't
+ * grow at attacker speed.
+ *
+ * Returns the row count. Never throws — silently returns 0 on a DB
+ * error so the route stays responsive.
+ */
+export function clearFailedAuthEvents(): number {
+  try {
+    const r = db
+      .prepare(
+        `DELETE FROM auth_events
+          WHERE kind IN (${FAILED_PLACEHOLDERS})`,
+      )
+      .run(...FAILED_KINDS);
+    return Number(r.changes ?? 0);
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Deletes every log row older than the given number of days across
+ * the three log tables the panel maintains. Used by the daily
+ * retention worker. Returns per-table counts so the worker can audit
+ * a single accurate "X rows deleted" event.
+ *
+ * Runs each delete in its own statement (no transaction wrapper)
+ * because the queries are independent and one failing should not
+ * roll back the others. Errors are swallowed per-table; the worker
+ * is best-effort.
+ */
+export function deleteLogsOlderThan(days: number): DeleteResult {
+  const safeDays = Math.max(1, Math.min(3650, Math.floor(days)));
+  const window = `-${safeDays} days`;
+  const result: DeleteResult = {
+    authEvents: 0,
+    auditEvents: 0,
+    serverActivity: 0,
+  };
+  try {
+    const r = db
+      .prepare(`DELETE FROM auth_events WHERE created_at < datetime('now', ?)`)
+      .run(window);
+    result.authEvents = Number(r.changes ?? 0);
+  } catch {
+    // Ignored.
+  }
+  try {
+    const r = db
+      .prepare(`DELETE FROM audit_events WHERE created_at < datetime('now', ?)`)
+      .run(window);
+    result.auditEvents = Number(r.changes ?? 0);
+  } catch {
+    // Ignored.
+  }
+  try {
+    const r = db
+      .prepare(
+        `DELETE FROM server_activity WHERE created_at < datetime('now', ?)`,
+      )
+      .run(window);
+    result.serverActivity = Number(r.changes ?? 0);
+  } catch {
+    // Ignored.
+  }
+  return result;
+}
+
 /** High-level counts for the dashboard header. One round-trip total. */
 export function failedLoginStats(): FailedLoginStats {
   const row = db

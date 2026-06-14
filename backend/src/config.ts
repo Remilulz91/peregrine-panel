@@ -129,6 +129,21 @@ export const config = {
     process.env.SFTP_HOST_KEY_PATH ??
     path.resolve(__dirname, '../../data/sftp_host_key'),
 
+  /**
+   * v0.40.0+: how many days of log rows to keep in `auth_events`,
+   * `audit_events`, and `server_activity` before the daily retention
+   * worker deletes them. Default 30 days — balances disk usage on a
+   * small VPS against having enough recent history for the admin
+   * Security dashboard to be useful. Operators who need long-term
+   * forensics should ALSO export audit_events to an external system
+   * (no built-in exporter yet), since this worker WILL delete the
+   * rows once they pass the cutoff.
+   *
+   * Set to 0 to disable automatic cleanup entirely (rows accumulate
+   * forever; manual clear-buttons still work). Maximum 3650 (10 y).
+   */
+  logRetentionDays: Math.max(0, Math.min(3650, readNumber('LOG_RETENTION_DAYS', 30))),
+
   /** True when running the production build. */
   get isProduction(): boolean {
     return this.nodeEnv === 'production';

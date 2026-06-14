@@ -2,6 +2,68 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.40.0 — 2026-06-14
+
+### Added
+
+- **Automatic log retention worker.** Once per day (and once on
+  startup, to catch up after long downtimes), Peregrine now
+  DELETEs every row older than `LOG_RETENTION_DAYS` (default
+  **30 days**) across the three log tables:
+  - `auth_events` (login attempts, MFA, SFTP)
+  - `audit_events` (sensitive backend operations)
+  - `server_activity` (user-visible server actions per server)
+  
+  The worker is best-effort: a failing DELETE on one table does
+  NOT roll back the others. Each non-zero run emits exactly one
+  `audit.logs_retention_auto` row with the per-table deletion
+  counts in its `details` (e.g. `auth=42 audit=7 activity=128
+  retention_days=30`).
+- **Manual "Clear failed logins" button** on the admin Security
+  dashboard. Deletes only the failed-auth kinds
+  (`auth.login_failed`, `auth.login_rate_limited`,
+  `auth.mfa_failed`, `auth.sftp_failed`,
+  `auth.sftp_rate_limited`). Successful logins, MFA setup,
+  logout events, and SFTP success rows are PRESERVED — they're
+  useful for "when did this account last log in legitimately"
+  questions and don't grow at attacker speed. The action is
+  audit-logged (`audit.logs_cleared_manual`).
+- New env var `LOG_RETENTION_DAYS` (default 30, clamped 0..3650).
+  Value `0` disables the worker entirely; manual button still
+  works.
+- New audit kinds:
+  - `audit.logs_cleared_manual` — emitted on each manual button click
+  - `audit.logs_retention_auto` — emitted once per daily worker run with non-zero deletions
+- New backend module `backend/src/services/logRetentionWorker.ts`.
+- New backend route `POST /api/admin/security/clear-failed-logins`
+  (admin-only, returns `{ deleted: number }`).
+- New service helpers in `backend/src/services/securityLog.ts`:
+  `clearFailedAuthEvents()` and `deleteLogsOlderThan(days)`.
+
+### Changed
+
+- `.env.example` documents `LOG_RETENTION_DAYS` with the
+  recommended bumps to 90/180/365 days for longer forensic
+  windows, and explains the `0` disable value.
+- Admin Security dashboard gains a header card explaining the
+  retention policy and the right-hand red "Clear failed logins"
+  button.
+
+### Notes
+
+- **No database migration.** The worker only DELETEs from
+  existing tables; no schema change.
+- **No data is gone forever for operators who care about
+  long-term forensics** — they should either (a) bump
+  `LOG_RETENTION_DAYS` to a high value, (b) export rows to an
+  external SIEM before they age out (no built-in exporter yet),
+  or (c) set `LOG_RETENTION_DAYS=0` and accept unbounded growth.
+- Manual deletion of `audit_events` rows is intentionally NOT
+  exposed via a UI button: those rows are the forensic record of
+  every sensitive panel action, and offering a one-click wipe
+  would be a footgun. Use SQL directly if you really need to
+  scrub them.
+
 ## v0.39.0 — 2026-06-14
 
 ### Added

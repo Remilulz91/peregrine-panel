@@ -76,6 +76,9 @@ export default function SecurityPanel() {
   const [data, setData] = useState<ApiSecurityFailedLogins | null>(null);
   const [bans, setBans] = useState<ApiFail2banStatus | null>(null);
   const [loadError, setLoadError] = useState(false);
+  // v0.40.0 — Clear failed logins state.
+  const [clearing, setClearing] = useState(false);
+  const [lastClearedCount, setLastClearedCount] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -99,6 +102,22 @@ export default function SecurityPanel() {
     const id = setInterval(() => void load(), POLL_MS);
     return () => clearInterval(id);
   }, [load]);
+
+  async function handleClearFailedLogins(): Promise<void> {
+    if (!window.confirm(t('admin.security.clearConfirm'))) return;
+    setClearing(true);
+    try {
+      const r = await api.adminClearFailedLogins();
+      setLastClearedCount(r.deleted);
+      await load();
+    } catch (err) {
+      window.alert(
+        err instanceof ApiError ? err.message : t('common.errorGeneric'),
+      );
+    } finally {
+      setClearing(false);
+    }
+  }
 
   if (loadError && data === null) {
     return (
@@ -135,6 +154,36 @@ export default function SecurityPanel() {
           label={t('admin.security.stat.distinctIps')}
           value={data.stats.distinctIps7d}
         />
+      </div>
+
+      {/* -------- Clear / retention controls (v0.40.0+) -------- */}
+      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-peregrine-800 bg-peregrine-900 px-4 py-3 text-xs text-peregrine-300">
+        <div className="flex-1 min-w-[200px]">
+          <p className="font-medium text-peregrine-100">
+            {t('admin.security.retentionTitle')}
+          </p>
+          <p className="mt-0.5">
+            {t('admin.security.retentionHint')}
+          </p>
+          {lastClearedCount !== null && (
+            <p className="mt-1 text-emerald-400">
+              {t('admin.security.clearResult').replace(
+                '{n}',
+                String(lastClearedCount),
+              )}
+            </p>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={() => void handleClearFailedLogins()}
+          disabled={clearing}
+          className="rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs font-semibold text-rose-300 transition-colors hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {clearing
+            ? t('admin.security.clearInProgress')
+            : t('admin.security.clearButton')}
+        </button>
       </div>
 
       {/* -------- fail2ban -------- */}

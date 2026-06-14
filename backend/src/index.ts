@@ -28,6 +28,7 @@ import { startScheduleWorker } from './services/scheduleWorker';
 import { startDiskQuotaWorker } from './services/diskQuotaWorker';
 import { startSftpServer } from './services/sftpServer';
 import { startTorList } from './lib/torExitNodes';
+import { startLogRetentionWorker } from './services/logRetentionWorker';
 
 /**
  * Builds and configures the Peregrine HTTP server.
@@ -145,6 +146,10 @@ async function start(): Promise<void> {
   // The disk quota worker measures every server's data folder size
   // every minute and enforces per-server quotas.
   startDiskQuotaWorker();
+  // v0.40.0+: log-retention worker. Once per day, deletes rows
+  // older than LOG_RETENTION_DAYS from auth_events, audit_events,
+  // and server_activity. Disabled when LOG_RETENTION_DAYS=0.
+  startLogRetentionWorker();
   // The SFTP server runs in-process on its own TCP port. SFTP_PORT=0
   // disables it (handy for development environments where the port is
   // already taken).
