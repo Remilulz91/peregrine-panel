@@ -7,14 +7,16 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.40.1** — UX / accessibility polish. Every button,
-> link, role=button, and form input now gets a **visible amber
-> focus ring** when reached by keyboard navigation
-> (`:focus-visible`, so mouse clicks are unchanged). `cursor:
-> pointer` is restored on `<button>` (Tailwind v3 removed it from
-> preflight) and `user-select: none` prevents accidental text
-> selection on click. All applied via one `@layer base` rule in
-> `index.css` — no component file was edited, no design altered.
+> **Version 0.40.2** — typographic hierarchy fix. Inside a card
+> with a "title ➜ description" pattern, the title was rendered
+> at the same `text-xs` size as the body with just a slightly
+> brighter colour — visually indistinguishable from the
+> paragraph beneath it. Promoted to `text-sm font-semibold
+> text-white` (one notch larger + heading weight + max contrast)
+> so the eye now lands on the section name first. Applied to
+> the two affected blocks in the admin Security dashboard
+> ("Log retention" and the fail2ban "not configured" callout);
+> other titles in the panel were already correctly sized.
 > See the changelog in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features

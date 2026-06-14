@@ -159,10 +159,18 @@ export default function SecurityPanel() {
       {/* -------- Clear / retention controls (v0.40.0+) -------- */}
       <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-peregrine-800 bg-peregrine-900 px-4 py-3 text-xs text-peregrine-300">
         <div className="flex-1 min-w-[200px]">
-          <p className="font-medium text-peregrine-100">
+          {/*
+           * v0.40.2: feature-intro title pattern — one notch larger
+           * than the surrounding body (text-sm vs text-xs) + a real
+           * heading weight (font-semibold) + max-contrast text-white.
+           * Same treatment is used for every other "title ➜ description"
+           * card inside the panel so users can scan section names
+           * without reading line-by-line.
+           */}
+          <p className="text-sm font-semibold text-white">
             {t('admin.security.retentionTitle')}
           </p>
-          <p className="mt-0.5">
+          <p className="mt-1">
             {t('admin.security.retentionHint')}
           </p>
           {lastClearedCount !== null && (
@@ -197,7 +205,8 @@ export default function SecurityPanel() {
 
         {!bans || !bans.available ? (
           <div className="mt-4 rounded-2xl border border-dashed border-peregrine-700 p-4 text-sm text-peregrine-400">
-            <p className="font-medium text-peregrine-200">
+            {/* v0.40.2: same feature-intro title treatment — text-sm + font-semibold + white. */}
+            <p className="text-sm font-semibold text-white">
               {t(
                 bans?.reason === 'unreadable'
                   ? 'admin.security.bansUnreadable'

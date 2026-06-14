@@ -1,6 +1,6 @@
 {
   "name": "peregrine-backend",
-  "version": "0.40.1",
+  "version": "0.40.2",
   "private": true,
   "description": "Peregrine - panel API (Fastify, TypeScript)",
   "license": "SEE LICENSE IN ../LICENSE",

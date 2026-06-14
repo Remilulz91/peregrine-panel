@@ -2,6 +2,46 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.40.2 — 2026-06-14
+
+### Fixed (typography)
+
+- **Feature-intro titles now visually outrank their description.**
+  Inside the admin Security dashboard, the "Log retention" card
+  and the fail2ban "not configured" callout used
+  `<p className="font-medium text-peregrine-100">` for the
+  title — which inherited the container's `text-xs` body size,
+  producing two visually identical paragraphs and forcing the
+  eye to read both before realising the first was a heading.
+  Both titles are now `text-sm font-semibold text-white` (one
+  notch larger than the body + heading weight + max contrast).
+  Spacing between the title and the supporting paragraph also
+  goes from `mt-0.5` (2 px) to `mt-1` (4 px) for breathing room.
+
+### Audit notes
+
+- A grep pass across `frontend/src/` found exactly two instances
+  matching the buggy pattern. Other occurrences of
+  `<p className="…font-medium…">` are legitimate:
+  - `HostMetricsCard.tsx:45` — uppercase tiny stat labels
+    (CPU / RAM / DISK), already correctly styled for that role.
+  - `PlayerAccessLists.tsx:342` — player name in a list row,
+    not a category title.
+  - `Subusers.tsx:202` — form-field label, not a section
+    header.
+  - `Game.tsx:151` — warning callout already using
+    `font-semibold` + amber accent.
+- This document now records the recommended pattern so future
+  additions follow it: inside a card, **title** is `text-sm
+  font-semibold text-white`, **body** is `text-xs
+  text-peregrine-300/400`, **spacing** is `mt-1`.
+
+### Notes
+
+- Pure typography polish. Two `<p>` className strings changed in
+  one file. No new dependency, no API change, no behavioural
+  change.
+
 ## v0.40.1 — 2026-06-14
 
 ### Fixed (UX / accessibility)
