@@ -53,6 +53,13 @@ export default function BackupsPage({
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
+  // v0.36.0 — Picocrypt-format encrypted download dialog state.
+  const [encryptBackup, setEncryptBackup] = useState<ApiBackup | null>(null);
+  const [encryptPassword, setEncryptPassword] = useState('');
+  const [encryptConfirm, setEncryptConfirm] = useState('');
+  const [encrypting, setEncrypting] = useState(false);
+  const [encryptError, setEncryptError] = useState<string | null>(null);
+
   const canCreate = hasPermission(myPermissions, PERM.BACKUPS_CREATE);
   const canRestorePerm = hasPermission(myPermissions, PERM.BACKUPS_RESTORE);
   const canDelete = hasPermission(myPermissions, PERM.BACKUPS_DELETE);
@@ -114,6 +121,64 @@ export default function BackupsPage({
       const message =
         err instanceof ApiError ? err.message : t('common.errorGeneric');
       window.alert(message);
+    }
+  }
+
+  function openEncryptDialog(backup: ApiBackup): void {
+    setEncryptBackup(backup);
+    setEncryptPassword('');
+    setEncryptConfirm('');
+    setEncryptError(null);
+  }
+
+  function closeEncryptDialog(): void {
+    if (encrypting) return; // don't allow cancel while crypto is running
+    setEncryptBackup(null);
+    setEncryptPassword('');
+    setEncryptConfirm('');
+    setEncryptError(null);
+  }
+
+  async function handleEncryptedDownload(event: FormEvent): Promise<void> {
+    event.preventDefault();
+    if (!encryptBackup) return;
+    setEncryptError(null);
+
+    if (encryptPassword.length < 8) {
+      setEncryptError(t('backups.encryptPasswordTooShort'));
+      return;
+    }
+    if (encryptPassword !== encryptConfirm) {
+      setEncryptError(t('backups.encryptPasswordMismatch'));
+      return;
+    }
+
+    setEncrypting(true);
+    try {
+      const { blob, filename } = await api.downloadBackupEncrypted(
+        server.id,
+        encryptBackup.id,
+        encryptPassword,
+      );
+      // Trigger browser save via a synthetic anchor click.
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
+      setEncryptBackup(null);
+      setEncryptPassword('');
+      setEncryptConfirm('');
+    } catch (err) {
+      setEncryptError(
+        err instanceof ApiError ? err.message : t('common.errorGeneric'),
+      );
+    } finally {
+      setEncrypting(false);
     }
   }
 
@@ -218,6 +283,16 @@ export default function BackupsPage({
                           {t('backups.download')}
                         </a>
                       )}
+                      {canDownload && (
+                        <button
+                          type="button"
+                          onClick={() => openEncryptDialog(backup)}
+                          title={t('backups.encryptHint')}
+                          className="rounded-lg border border-peregrine-700 px-2.5 py-1 text-xs font-medium text-falcon transition-colors hover:bg-peregrine-800"
+                        >
+                          {t('backups.encryptDownload')}
+                        </button>
+                      )}
                       {canRestorePerm && (
                         <button
                           type="button"
@@ -246,6 +321,91 @@ export default function BackupsPage({
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {encryptBackup && (
+        <div
+          className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-4"
+          onClick={closeEncryptDialog}
+        >
+          <form
+            onSubmit={(e) => void handleEncryptedDownload(e)}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md space-y-4 rounded-2xl border border-peregrine-700 bg-peregrine-900 p-5"
+          >
+            <div>
+              <h3 className="text-base font-semibold text-white">
+                {t('backups.encryptTitle')}
+              </h3>
+              <p className="mt-1 text-xs text-peregrine-400">
+                {t('backups.encryptDescription').replace(
+                  '{name}',
+                  encryptBackup.name,
+                )}
+              </p>
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-xs font-medium text-peregrine-300">
+                {t('backups.encryptPasswordLabel')}
+              </label>
+              <input
+                type="password"
+                value={encryptPassword}
+                onChange={(e) => setEncryptPassword(e.target.value)}
+                disabled={encrypting}
+                autoComplete="new-password"
+                minLength={8}
+                maxLength={1024}
+                className="w-full rounded-lg border border-peregrine-700 bg-peregrine-950 px-3 py-2 text-sm text-white outline-none transition-colors placeholder:text-peregrine-600 focus:border-falcon disabled:opacity-50"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-xs font-medium text-peregrine-300">
+                {t('backups.encryptConfirmLabel')}
+              </label>
+              <input
+                type="password"
+                value={encryptConfirm}
+                onChange={(e) => setEncryptConfirm(e.target.value)}
+                disabled={encrypting}
+                autoComplete="new-password"
+                minLength={8}
+                maxLength={1024}
+                className="w-full rounded-lg border border-peregrine-700 bg-peregrine-950 px-3 py-2 text-sm text-white outline-none transition-colors placeholder:text-peregrine-600 focus:border-falcon disabled:opacity-50"
+              />
+            </div>
+
+            <p className="rounded-lg border border-peregrine-800 bg-peregrine-950 p-2 text-[11px] leading-snug text-peregrine-400">
+              {t('backups.encryptNotice')}
+            </p>
+
+            {encryptError && (
+              <p className="text-sm text-rose-400">{encryptError}</p>
+            )}
+
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={closeEncryptDialog}
+                disabled={encrypting}
+                className="rounded-lg border border-peregrine-700 px-3 py-2 text-xs font-medium text-peregrine-200 transition-colors hover:bg-peregrine-800 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                type="submit"
+                disabled={encrypting}
+                className="rounded-lg bg-falcon px-4 py-2 text-xs font-semibold text-peregrine-950 transition-colors hover:bg-falcon-bright disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {encrypting
+                  ? t('backups.encryptInProgress')
+                  : t('backups.encryptAction')}
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </section>

@@ -7,11 +7,12 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.35.2** — `scripts/setup-dev.sh` no longer crashes
-> when run on a production server (no Node/npm installed); it
-> now bails cleanly with a clear "this script is for your dev
-> machine, not the server" message. Same warning callout added
-> to `CONTRIBUTING.md`.
+> **Version 0.36.0** — every backup can now be downloaded **encrypted
+> in the Picocrypt v1.48 file format**. Pick a password in the
+> Backups tab → the panel encrypts the archive with XChaCha20 +
+> BLAKE2b and Argon2id (1 GiB / 4 iters), and you get a `.pcv`
+> file decryptable with the official, free, cross-platform
+> [Picocrypt desktop app](https://github.com/Picocrypt/Picocrypt).
 > See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 

@@ -728,6 +728,52 @@ const translations = {
     fr: 'Vous n’avez pas la permission de créer des sauvegardes.',
   },
 
+  // v0.36.0 — Picocrypt-format encrypted-download dialog.
+  'backups.encryptDownload': {
+    en: 'Encrypted download',
+    fr: 'Télécharger (chiffré)',
+  },
+  'backups.encryptHint': {
+    en: 'Download an encrypted copy, decryptable with the Picocrypt desktop app.',
+    fr: 'Télécharger une copie chiffrée, déchiffrable avec l’app Picocrypt.',
+  },
+  'backups.encryptTitle': {
+    en: 'Download backup encrypted with Picocrypt',
+    fr: 'Télécharger la sauvegarde chiffrée Picocrypt',
+  },
+  'backups.encryptDescription': {
+    en: 'The backup "{name}" will be encrypted with your password before download. You can then decrypt it on any computer with the free Picocrypt app (Windows / macOS / Linux).',
+    fr: 'La sauvegarde « {name} » sera chiffrée avec votre mot de passe avant téléchargement. Vous pourrez la déchiffrer sur n’importe quel ordinateur avec l’app Picocrypt (Windows / macOS / Linux).',
+  },
+  'backups.encryptPasswordLabel': {
+    en: 'Encryption password (min. 8 characters)',
+    fr: 'Mot de passe de chiffrement (8 caractères minimum)',
+  },
+  'backups.encryptConfirmLabel': {
+    en: 'Confirm password',
+    fr: 'Confirmation du mot de passe',
+  },
+  'backups.encryptNotice': {
+    en: 'The encryption takes about 5–10 seconds (the format uses 1 GiB of RAM during key derivation). Lose this password and the backup is unrecoverable — there is no reset.',
+    fr: 'Le chiffrement prend environ 5 à 10 secondes (le format utilise 1 Go de RAM lors de la dérivation de clé). Si vous perdez ce mot de passe, la sauvegarde est irrécupérable — il n’y a aucune réinitialisation possible.',
+  },
+  'backups.encryptPasswordTooShort': {
+    en: 'Password must be at least 8 characters long.',
+    fr: 'Le mot de passe doit comporter au moins 8 caractères.',
+  },
+  'backups.encryptPasswordMismatch': {
+    en: 'The two passwords do not match.',
+    fr: 'Les deux mots de passe ne correspondent pas.',
+  },
+  'backups.encryptAction': {
+    en: 'Encrypt and download',
+    fr: 'Chiffrer et télécharger',
+  },
+  'backups.encryptInProgress': {
+    en: 'Encrypting…',
+    fr: 'Chiffrement en cours…',
+  },
+
   'disk.title': { en: 'Disk usage', fr: 'Utilisation du disque' },
   'disk.used': { en: 'Used', fr: 'Utilisé' },
   'disk.free': { en: 'Free', fr: 'Libre' },

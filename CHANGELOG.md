@@ -2,6 +2,94 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.36.0 — 2026-06-14
+
+### Added
+
+- **Picocrypt-format encrypted backup download.** Every backup in the
+  per-server Backups tab now gets a second action next to *Download*:
+  **Encrypted download**. The user is asked for a password (with a
+  confirmation field), and the panel produces a file in the
+  [Picocrypt v1.48 file format](https://github.com/Picocrypt/Picocrypt)
+  — byte-for-byte compatible with the official, free, cross-platform
+  Picocrypt desktop app for Windows, macOS, and Linux. Decryption
+  therefore needs **no proprietary tool, no Peregrine running**, and
+  no internet access. The output filename ends in `.tar.gz.pcv`.
+- New backend module `backend/src/lib/picocrypt.ts` implementing the
+  baseline Picocrypt mode:
+  - **Argon2id** key derivation with the format's hardcoded params
+    (time=4, memory=1 GiB, parallelism=4, 32-byte output);
+  - **HKDF-SHA3-256** to split the master key into a BLAKE2b MAC
+    subkey and a Serpent key (consumed but unused in non-paranoid
+    mode — kept on the wire so the HKDF stream stays aligned with
+    the reference impl);
+  - **XChaCha20** raw stream cipher (NOT XChaCha20-Poly1305), via
+    `libsodium-wrappers`' `crypto_stream_xchacha20_xor_ic`, streamed
+    in 1 MiB chunks;
+  - **Keyed BLAKE2b-512** global MAC over the post-XChaCha20
+    ciphertext, computed incrementally and back-patched into the
+    192-byte header slot once the body is fully written.
+- New backend module `backend/src/lib/picocryptReedSolomon.ts`: a
+  pure-TypeScript Reed-Solomon encoder over GF(2⁸) (irreducible
+  polynomial `0x11D`, generator α=2), bit-compatible with the
+  `github.com/Picocrypt/infectious` library Picocrypt uses for
+  header forward-error-correction. Implements the encoding side
+  only (we never need to decode our own output) for the FEC sizes
+  Picocrypt actually uses on the wire: `FEC(5,15)`, `FEC(16,48)`,
+  `FEC(24,72)`, `FEC(32,96)`, `FEC(64,192)`.
+- New API route `POST /api/servers/:id/backups/:backupId/download-encrypted`
+  taking `{ password }` in the body (passwords stay out of URLs and
+  access logs), gated by the existing `backups.download` permission.
+  Streams a Picocrypt-format ciphertext, then deletes the temp file
+  whether the client got the whole stream or dropped mid-way.
+- New audit event `audit.backup_download_encrypted` recorded in the
+  `audit_events` table for forensic reconstruction.
+- New frontend dialog in the Backups tab (`Backups.tsx`) with password
+  + confirm fields, an in-progress state, a "1 GiB RAM during key
+  derivation, ~5–10 s, password loss is unrecoverable" notice, and
+  bilingual EN/FR i18n keys (`backups.encrypt*`).
+
+### Dependencies
+
+- `backend/package.json` — added:
+  - `libsodium-wrappers@0.7.15` (raw XChaCha20 stream cipher with
+    explicit initial-counter for streaming);
+  - `@noble/hashes@1.6.1` (keyed BLAKE2b-512, SHA3-256, SHA3-512,
+    HKDF — pure JS, audited);
+  - `@types/libsodium-wrappers@0.7.14` (devDep).
+- No new frontend dependencies. The browser handles the file save
+  with `URL.createObjectURL` + a synthetic anchor click.
+
+### Verification
+
+- Argon2id and BLAKE2b are deterministic and well-tested upstream;
+  the file format itself is the part that needs cross-checking. The
+  intended verification flow is to encrypt a small file in Peregrine,
+  open it in the official Picocrypt desktop app, and confirm the
+  decrypted plaintext is identical to the original.
+- The Reed-Solomon port follows the standard Vandermonde construction
+  used by `infectious`. If a byte differs from the reference, the
+  Picocrypt decryptor will either flag the header as corrupt or
+  refuse to verify the MAC — both fail closed, never silently produce
+  garbage plaintext.
+
+### Notes
+
+- **Format is intentionally narrow.** Only the most common Picocrypt
+  mode is produced: no paranoid (Serpent cascade), no keyfiles, no
+  Reed-Solomon body encoding, no deniability mode, no comments. All
+  flag bits are zero in the header. Adding the other flags is a
+  pure extension — files produced today stay decryptable by all
+  future Picocrypt versions.
+- **Server-side cost.** The format mandates **Argon2id with 1 GiB of
+  memory** for key derivation; that's a per-request RAM spike on
+  the panel container during the ~5–10 s derivation. Stays within
+  `pids_limit: 1024` since it's a single Argon2 call per backup
+  download.
+- **`docker-compose.yml`** does not need editing: the encrypted
+  temp file is written under the same `peregrine-data` volume as
+  the rest of the backups, inside a `tmp/` subfolder.
+
 ## v0.35.2 — 2026-06-13
 
 ### Fixed
