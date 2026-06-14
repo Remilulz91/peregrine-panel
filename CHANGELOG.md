@@ -2,6 +2,52 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.40.1 — 2026-06-14
+
+### Fixed (UX / accessibility)
+
+- **Visible keyboard focus ring on every interactive element.**
+  An audit found **zero** `focus-visible:ring-*` classes across
+  the entire `frontend/src/` tree (~120 buttons). Tailwind v3's
+  preflight removes the browser-default `outline` on buttons,
+  and nothing replaced it — meaning a user navigating the panel
+  with Tab / Shift+Tab had no idea which button was focused.
+  Fixed via a single `@layer base` rule in `frontend/src/index.css`
+  that paints a 2 px amber (`ring-falcon`) ring with a 2 px dark
+  offset (`ring-offset-peregrine-950`) on every focused
+  `<button>`, `<a>`, `[role="button"]`, and `[type="submit"]` /
+  `[type="reset"]` element. Inputs / textareas / selects get a
+  subtler 1 px tinted ring as a complement to the existing
+  `focus:border-falcon` style.
+- **`cursor: pointer` restored on `<button>`.** Tailwind v3
+  removed this from its preflight (browsers historically
+  disagreed). Re-added via the same `@layer base` rule.
+  `:disabled` buttons still get `cursor: not-allowed` from their
+  per-button utilities.
+- **`user-select: none` on buttons.** Clicking a button used to
+  occasionally select its label text — annoying and unexpected.
+  Inputs, textareas, and prose still allow selection (the rule
+  only targets `<button>` and `[role="button"]`).
+
+### Notes
+
+- **Zero component-file edits.** All ~120 buttons across
+  AdminPanel, SecurityPanel, ServerCard, file manager, console,
+  backups, schedules, account settings, etc. now have visible
+  focus indicators without any individual file having been
+  touched. The rule lives in one place (`index.css`) and
+  any component that ever needs to opt out can add
+  `focus-visible:ring-0` to override.
+- **No new dependency, no database migration, no API change.**
+  Pure CSS polish.
+- Border-radius inconsistencies investigated and judged
+  intentional: `rounded` on small badges (text-[10px]) is the
+  proportional choice, `rounded-md` on Dashboard tabs is correct
+  nesting (parent `rounded-lg` container → smaller inner radius
+  produces the "matryoshka" effect modern UIs use). The dominant
+  `rounded-lg` (117 uses) and `rounded-2xl` (67 uses) remain the
+  primary radii for buttons and panels respectively.
+
 ## v0.40.0 — 2026-06-14
 
 ### Added

@@ -33,3 +33,60 @@ body {
 html {
   font-size: 17px;
 }
+
+/*
+ * v0.40.1+: project-wide UX polish, applied via @layer base so it
+ * affects every interactive element without touching the 100+
+ * component files. Three concerns, all keyboard / accessibility:
+ *
+ *   1. **Visible focus ring.** Tailwind v3's preflight removes the
+ *      browser-default outline on buttons, and the codebase did not
+ *      add a replacement (zero `focus-visible:ring-*` classes across
+ *      all of src/). Result: keyboard-only users had no way to tell
+ *      which button was focused. We now paint a 2 px amber ring with
+ *      a 2 px offset that matches the panel's dark theme. The
+ *      `:focus-visible` selector (NOT plain `:focus`) means the ring
+ *      only appears for keyboard navigation, never on mouse clicks —
+ *      no visual change for mouse users.
+ *
+ *   2. **`cursor: pointer` on buttons.** Tailwind v3.0 removed this
+ *      from preflight (browsers historically disagreed about it).
+ *      We put it back: a button that doesn't change the cursor is a
+ *      30-year-old UX foot-gun. `:disabled` still keeps
+ *      `cursor: not-allowed` from the per-button utilities.
+ *
+ *   3. **`user-select: none` on buttons.** Clicking a button and
+ *      accidentally selecting its label text feels broken. Inputs
+ *      and prose still allow selection because this only targets
+ *      <button> + role=button.
+ *
+ * If a specific component ever needs to OPT OUT of the focus ring
+ * (e.g. a custom-styled toggle), it can add `focus-visible:ring-0`
+ * to override.
+ */
+@layer base {
+  button,
+  [role='button'] {
+    cursor: pointer;
+    user-select: none;
+  }
+  button:disabled,
+  [role='button'][aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+  button:focus-visible,
+  a:focus-visible,
+  [role='button']:focus-visible,
+  [type='button']:focus-visible,
+  [type='submit']:focus-visible,
+  [type='reset']:focus-visible {
+    @apply outline-none ring-2 ring-falcon ring-offset-2 ring-offset-peregrine-950;
+  }
+  /* Inputs already use `focus:border-falcon` everywhere; add a
+     subtle ring as well so the affordance is unmistakable. */
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    @apply outline-none ring-1 ring-falcon/40;
+  }
+}

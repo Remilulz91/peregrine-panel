@@ -7,17 +7,15 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.40.0** — log retention + manual cleanup. A daily
-> background worker now deletes every row older than
-> `LOG_RETENTION_DAYS` (default **30 days**) across the three
-> log tables (`auth_events`, `audit_events`, `server_activity`).
-> Set the env var to `0` to disable, or to `90` / `180` / `365`
-> for a longer forensic window. The admin Security dashboard
-> also gains a **"Clear failed logins"** button that wipes
-> failed-auth rows immediately (successful logins are kept).
-> Both manual and automatic deletions are themselves
-> audit-logged. See the changelog in
-> [`CHANGELOG.md`](CHANGELOG.md).
+> **Version 0.40.1** — UX / accessibility polish. Every button,
+> link, role=button, and form input now gets a **visible amber
+> focus ring** when reached by keyboard navigation
+> (`:focus-visible`, so mouse clicks are unchanged). `cursor:
+> pointer` is restored on `<button>` (Tailwind v3 removed it from
+> preflight) and `user-select: none` prevents accidental text
+> selection on click. All applied via one `@layer base` rule in
+> `index.css` — no component file was edited, no design altered.
+> See the changelog in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features
 
