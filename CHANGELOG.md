@@ -2,6 +2,129 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.42.0 — 2026-06-14
+
+This release is the output of a mid-2026 best-practices audit
+against authoritative sources (OWASP, NIST SP 800-63B Rev. 4,
+the `itzg/minecraft-server` documentation, NeoForge release
+notes, Caddy 2.10 release notes, the Node.js release schedule).
+Every change below is a strict superset of v0.41.1: no loader
+is removed, no minimum version is raised, no audit event is
+dropped, no security primitive is relaxed.
+
+### Added — 4 new server loaders
+
+The itzg image's [types-and-platforms](https://docker-minecraft-server.readthedocs.io/en/latest/types-and-platforms/)
+documentation lists Paper, Hybrids, Quilt etc. as first-class
+categories. These were the four mainstream gaps in our picker:
+
+- **Purpur** (`TYPE=PURPUR`) — Paper fork with extra performance
+  and config knobs. Plugin ecosystem identical to Paper.
+- **Folia** (`TYPE=FOLIA`) — Paper's threaded fork (regionised
+  tick loop) for very large servers. Most Paper plugins work;
+  a few break because of the threading model.
+- **Quilt** (`TYPE=QUILT`) — Fabric fork with stronger
+  backward-compat across MC versions. Shares Fabric's mod
+  ecosystem heavily.
+- **Mohist** (`TYPE=MOHIST`) — Forge + Bukkit hybrid: load mods
+  AND plugins on the same server.
+
+All four ship as binaries (no BuildTools first-start cost — the
+amber BuildTools warning is still gated to Bukkit / Spigot only).
+
+### Added — new Minecraft versions
+
+Mojang adopted a year-based numbering scheme in March 2026
+([source](https://www.minecraft.net/en-us/article/minecraft-new-version-numbering-system)).
+**26.1 "Tiny Takeover"** shipped 24 March 2026
+([wiki](https://minecraft.wiki/w/Java_Edition_26.1)). 1.21.5 and
+1.21.6 are the late point releases of the legacy 1.21 line.
+
+Added to the per-loader curated lists:
+
+- **Vanilla / Paper / Fabric / NeoForge / Purpur / Folia / Quilt** —
+  gain `26.1`, `1.21.6`, `1.21.5` at the top.
+- **Bukkit / Spigot** — gain `1.21.6`, `1.21.5` (no 26.1 yet;
+  BuildTools mappings typically lag a few weeks behind a new
+  Mojang line).
+- **Forge / Mohist** — unchanged. Forge does not ship for 1.21.5+
+  at time of writing; Mohist tends to lag further still.
+
+NeoForge confirmed its 26.1 support in
+[its 24 March 2026 release notes](https://neoforged.net/news/26.1release/).
+
+### Changed — Argon2id `parallelism: 4 → 1`
+
+OWASP's [Password Storage Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)
+lists every recommended Argon2id configuration with **p=1**, and
+RFC 9106 §4 explicitly recommends p=1 unless multi-threaded
+hashing is the application's bottleneck. Interactive logins are
+latency-bounded, not throughput-bounded, and `@node-rs/argon2`
+already runs each hash on its own libuv worker. Using p=1 also
+makes the hash deterministic across machines with different CPU
+core counts, which is the canonical default the spec expects.
+
+**Memory and time costs are unchanged** (`memoryCost: 65536 KiB
+(64 MiB)`, `timeCost: 3`) — well above OWASP's 19 MiB floor. The
+panel's hash cost stays within the OWASP "interactive login"
+envelope (~150 ms on a typical 2-core VPS).
+
+**Backward compatibility — verified.** Argon2 PHC strings encode
+their params (`$argon2id$v=19$m=65536,t=3,p=4$…`). `verify()`
+reads those params from the hash itself, so every existing
+password (hashed with the old `p=4`) keeps verifying without a
+rehash. New passwords (sign-up, password change) use `p=1`.
+
+### Added — fail2ban `bancount` column
+
+Surfaces the `bancount` field from fail2ban's `bips` schema
+([reference](https://deepwiki.com/fail2ban/fail2ban/7.1-ban-time-increment-system)).
+This is the foundation of fail2ban's ban-time-increment feature
+and is the single most useful column for triaging the dashboard:
+`1` = first offence, anything higher = recidivist. The Security
+panel now displays it in a dedicated column, coloured rose for
+any value ≥ 2 so the eye lands on persistent attackers first.
+
+### Changed — HARDENING.md
+
+- §3a now recommends **Caddy 2.10+** (April 2025) instead of 2.9+.
+  2.10 ships automated ECH and ACME 6-day cert profiles in
+  addition to the X25519MLKEM768 post-quantum hybrid key exchange
+  that was the original 2.9 reason ([Caddy 2.10 notes](https://github.com/caddyserver/caddy/releases/tag/v2.10.0)).
+- New §3d optional sub-section documents the **Node 22 → Node 24
+  LTS migration** that operators will want to plan over the next
+  10 months — Node 22 is in maintenance LTS (EOL April 2027),
+  Node 24 is the active LTS (EOL April 2028), Node 26 enters LTS
+  October 2026 ([release schedule](https://nodejs.org/en/blog/announcements/evolving-the-nodejs-release-schedule),
+  [endoflife.date](https://endoflife.date/nodejs)).
+
+### Considered, deferred
+
+These were flagged by the audit as "should consider" but require
+a larger refactor or a follow-up release:
+
+- **JWT → opaque server-side sessions** (cheap revocation,
+  smaller attack surface). The panel is single-instance with
+  SQLite, so a `sessions` table would be a clean fit — but it
+  affects every authenticated endpoint and warrants its own
+  release.
+- **Plugin browser via Modrinth API**
+  ([Modrinth supports plugins since 2024](https://modrinth.com/news/article/plugins-resource-packs/),
+  itzg already supports auto-download via `MODRINTH_PROJECTS`).
+  Biggest user-facing payoff of the deferred items; planned for
+  a future release.
+- **Explicit seccomp profile** in `docker-compose.yml`. Docker's
+  default seccomp profile is already applied automatically;
+  declaring it explicitly only adds auditability, not protection.
+
+### Notes
+
+- No new dependency. No database migration. Lockfile root version
+  bumped to 0.42.0; no transitive package changes.
+- All 4 new loaders work automatically with the existing per-loader
+  version dropdown (v0.41.1 architecture) and the existing capitalised
+  display in `ServerCard.tsx`.
+
 ## v0.41.1 — 2026-06-14
 
 ### Changed

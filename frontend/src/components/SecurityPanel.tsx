@@ -233,6 +233,9 @@ export default function SecurityPanel() {
                 <tr>
                   <th className="px-4 py-2">{t('admin.security.col.jail')}</th>
                   <th className="px-4 py-2">{t('admin.security.col.ip')}</th>
+                  <th className="px-4 py-2 text-right">
+                    {t('admin.security.col.bancount')}
+                  </th>
                   <th className="px-4 py-2">
                     {t('admin.security.col.bannedAt')}
                   </th>
@@ -249,6 +252,18 @@ export default function SecurityPanel() {
                     </td>
                     <td className="px-4 py-2 font-mono text-peregrine-200">
                       {b.ip}
+                    </td>
+                    {/* v0.42.0+: bancount; ≥2 = recidivist, surface in rose. */}
+                    <td className="px-4 py-2 text-right">
+                      <span
+                        className={
+                          b.bancount >= 2
+                            ? 'font-semibold text-rose-300'
+                            : 'text-peregrine-400'
+                        }
+                      >
+                        {b.bancount}
+                      </span>
                     </td>
                     <td className="px-4 py-2 text-xs text-peregrine-400">
                       {formatEpoch(b.bannedAt, language)}

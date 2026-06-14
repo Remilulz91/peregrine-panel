@@ -44,6 +44,15 @@ export interface BannedIp {
   bantime: number;
   /** Unix epoch seconds when the ban expires. null = permanent. */
   expiresAt: number | null;
+  /**
+   * v0.42.0+: number of times THIS (jail, ip) tuple has been
+   * banned, ever. fail2ban increments this on every re-ban (it's
+   * the foundation of the ban-time-increment feature). A high
+   * `bancount` on an active row tells the admin "this IP is a
+   * recidivist", which is the most useful single column for
+   * triaging the dashboard.
+   */
+  bancount: number;
 }
 
 export type Fail2banStatus =
@@ -125,10 +134,11 @@ export function readFail2banStatus(): Fail2banStatus {
 
     // Active bans only — fail2ban also keeps historical rows where
     // (timeofban + bantime) <= now. We hide those from the dashboard.
+    // v0.42.0+: also fetch `bancount` so the UI can flag recidivists.
     const now = Math.floor(Date.now() / 1000);
     const rows = database
       .prepare(
-        `SELECT jail, ip, timeofban, bantime
+        `SELECT jail, ip, timeofban, bantime, bancount
            FROM bips
           WHERE bantime = -1
              OR (timeofban + bantime) > ?
@@ -139,6 +149,7 @@ export function readFail2banStatus(): Fail2banStatus {
         ip: string;
         timeofban: number;
         bantime: number;
+        bancount: number | null;
       }>;
 
     const bans: BannedIp[] = rows.map((row) => ({
@@ -147,6 +158,9 @@ export function readFail2banStatus(): Fail2banStatus {
       bannedAt: row.timeofban,
       bantime: row.bantime,
       expiresAt: row.bantime === -1 ? null : row.timeofban + row.bantime,
+      // fail2ban's column has a default of 1; coerce a NULL (some
+      // legacy databases predate the column) to 1 as a safe floor.
+      bancount: Number(row.bancount ?? 1),
     }));
 
     // The list of jails the operator has configured, even those with

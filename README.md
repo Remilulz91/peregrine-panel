@@ -7,18 +7,21 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.41.1** — **per-loader Minecraft version dropdown**.
-> The free-text version field is now a `<select>` whose options
-> are scoped to the chosen loader: NeoForge only lists 1.20.1+,
-> Fabric lists 1.14+, Forge lists 1.7.10+, Bukkit / Spigot list
-> 1.8.8+, Paper / Vanilla list the full curated range. Switching
-> loader auto-resets the version to LATEST if the previous
-> selection isn't supported by the new loader — so an operator
-> can never click *Create* on a combination the loader doesn't
-> even exist for. Settings page version picker gets the same
-> treatment and additionally preserves the currently-running
-> version in the list, even if it's older than the curated
-> floor. See the changelog in [`CHANGELOG.md`](CHANGELOG.md).
+> **Version 0.42.0** — mid-2026 best-practices alignment after a
+> web research pass against OWASP, NIST, itzg/minecraft-server,
+> NeoForge, Caddy and Node.js sources. Highlights:
+> 4 new loaders — **Purpur, Folia, Quilt, Mohist** — now
+> first-class in both the create and settings pickers; **26.1**
+> (Mojang's new year-based numbering), **1.21.6** and **1.21.5**
+> added to the version lists for loaders that track upstream
+> quickly (Vanilla/Paper/Fabric/NeoForge/Purpur/Folia/Quilt);
+> Argon2id `parallelism` lowered from **4 → 1** to match RFC 9106
+> §4 and OWASP's current matrix (existing passwords keep
+> verifying — params are encoded in each hash); fail2ban
+> dashboard now surfaces the **bancount** column to flag
+> recidivists; HARDENING.md updated to recommend **Caddy 2.10+**
+> and to plan the Node 22 → 24 LTS migration. See the changelog
+> in [`CHANGELOG.md`](CHANGELOG.md) for sources and rationale.
 
 ## Features
 

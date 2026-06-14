@@ -24,7 +24,13 @@ export type ServerLoader =
   | 'forge'
   | 'neoforge'
   | 'bukkit'
-  | 'spigot';
+  | 'spigot'
+  // v0.42.0+: high-value Paper-family and hybrid forks the itzg image
+  // ships out of the box. See its types-and-platforms docs.
+  | 'purpur'
+  | 'folia'
+  | 'quilt'
+  | 'mohist';
 
 const LOADER_SET: ReadonlySet<string> = new Set([
   'vanilla',
@@ -34,6 +40,10 @@ const LOADER_SET: ReadonlySet<string> = new Set([
   'neoforge',
   'bukkit',
   'spigot',
+  'purpur',
+  'folia',
+  'quilt',
+  'mohist',
 ]);
 
 /** True if the given value is one of the supported loaders. */

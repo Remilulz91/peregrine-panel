@@ -229,6 +229,8 @@ const translations = {
 
   'admin.security.col.jail': { en: 'Jail', fr: 'Jail' },
   'admin.security.col.ip': { en: 'IP', fr: 'IP' },
+  // v0.42.0+: how many times (jail, ip) has been banned ever.
+  'admin.security.col.bancount': { en: 'Bans', fr: 'Bans' },
   'admin.security.col.bannedAt': { en: 'Banned at', fr: 'Banni le' },
   'admin.security.col.expiresIn': { en: 'Expires in', fr: 'Expire dans' },
   'admin.security.col.username': { en: 'Username', fr: 'Utilisateur' },
@@ -464,6 +466,11 @@ const translations = {
   'loader.neoforge': { en: 'NeoForge', fr: 'NeoForge' },
   'loader.bukkit': { en: 'Bukkit', fr: 'Bukkit' },
   'loader.spigot': { en: 'Spigot', fr: 'Spigot' },
+  // v0.42.0+ — Paper-family forks and the Forge / Bukkit hybrid.
+  'loader.purpur': { en: 'Purpur', fr: 'Purpur' },
+  'loader.folia': { en: 'Folia', fr: 'Folia' },
+  'loader.quilt': { en: 'Quilt', fr: 'Quilt' },
+  'loader.mohist': { en: 'Mohist', fr: 'Mohist' },
   // v0.41.0+: shown when the user picks Bukkit or Spigot in the
   // create-server dialog. Bukkit/Spigot cannot be redistributed as
   // pre-built binaries (DMCA — Mojang owns CraftBukkit), so the itzg

@@ -233,25 +233,27 @@ fail2ban-client status sshd         # filter is active
 `DEPLOYMENT.md` step 6 already installs Caddy with auto-Let's-Encrypt.
 What follows tightens that baseline.
 
-### 3a. Use Caddy 2.9+ for X25519MLKEM768 (post-quantum hybrid)
+### 3a. Use Caddy 2.10+ for X25519MLKEM768 (post-quantum hybrid)
 
 **Why.** A passive network adversary can record TLS traffic today and
 attempt to break the key exchange years later, when a large quantum
-computer becomes available ("harvest now, decrypt later"). Caddy 2.9
-ships built on Go 1.23+, which **enables the X25519MLKEM768 hybrid
-key exchange by default** for TLS 1.3 — a post-quantum scheme
-standardized by NIST (ML-KEM = FIPS 203). It costs ~1 ms extra per
-handshake and is invisible to clients that don't support it (they
-fall back to plain X25519).
+computer becomes available ("harvest now, decrypt later"). Caddy 2.10
+(April 2025) ships built on Go 1.23+, which **enables the
+X25519MLKEM768 hybrid key exchange by default** for TLS 1.3 — a
+post-quantum scheme standardized by NIST (ML-KEM = FIPS 203). 2.10
+also adds automated Encrypted Client Hello (ECH) and ACME 6-day
+short-lived certificate profiles. It costs ~1 ms extra per handshake
+and is invisible to clients that don't support it (they fall back to
+plain X25519).
 
 ```bash
 # Check the installed Caddy version.
 caddy version
-# If it's < 2.9 you can either re-install from cloudsmith
+# If it's < 2.10 you can either re-install from cloudsmith
 # (which now ships 2.x stable) or download the static binary from
 # https://caddyserver.com/download:
 apt install --only-upgrade -y caddy
-caddy version    # should print v2.9.x or later
+caddy version    # should print v2.10.x or later
 systemctl restart caddy
 ```
 
@@ -413,6 +415,29 @@ curl -sI https://your-domain.example | head -5
 curl -k --resolve your-domain.example:443:YOUR.VPS.IP.HERE https://your-domain.example
 # Expected: "couldn't connect" or "connection refused".
 ```
+
+---
+
+### 3d. (Optional) Plan the Node.js base-image bump
+
+**Why.** The panel's Dockerfile uses `node:22-slim` as its base image.
+Node 22 went into **maintenance LTS** in October 2025 and reaches
+end-of-life in April 2027. Node 24 is the **active LTS** as of
+mid-2026 (EOL April 2028), and Node 26 enters LTS in October 2026.
+Staying on Node 22 is fine for the next ~10 months but you'll want
+to plan the bump:
+
+```bash
+# Test locally before flipping the production Dockerfile:
+docker build --build-arg NODE_IMAGE=node:24-slim -t peregrine:test .
+
+# Once you've smoke-tested it, the change is two lines in
+# Dockerfile (every `FROM node:22-slim` -> `FROM node:24-slim`)
+# plus backend/package.json -> "engines": { "node": ">=22 <25" }.
+```
+
+Verify before / after with:
+`docker exec peregrine node --version`.
 
 ---
 

@@ -6,6 +6,8 @@
  * Supported Minecraft loader types (Java side). Bedrock is always 'vanilla'.
  * v0.41.0+: 'bukkit' and 'spigot' are BuildTools-compiled at runtime;
  * see the loader note in the create-server dialog.
+ * v0.42.0+: 'purpur' (Paper fork), 'folia' (Paper's threaded fork),
+ * 'quilt' (Fabric fork), 'mohist' (Forge + Bukkit hybrid).
  */
 export type ServerLoader =
   | 'vanilla'
@@ -14,7 +16,11 @@ export type ServerLoader =
   | 'forge'
   | 'neoforge'
   | 'bukkit'
-  | 'spigot';
+  | 'spigot'
+  | 'purpur'
+  | 'folia'
+  | 'quilt'
+  | 'mohist';
 
 /** A user account, as returned by the API. */
 export interface ApiUser {
@@ -153,6 +159,12 @@ export interface ApiBannedIp {
   bannedAt: number;
   bantime: number;
   expiresAt: number | null;
+  /**
+   * v0.42.0+: number of times this (jail, ip) has been banned ever.
+   * A 1 means "first offence", anything higher means the IP keeps
+   * coming back — typically a botnet or a persistent scanner.
+   */
+  bancount: number;
 }
 
 export type ApiFail2banStatus =
@@ -814,9 +826,19 @@ export function hasPermission(
 export const JAVA_LOADERS: ServerLoader[] = [
   'vanilla',
   'paper',
+  // v0.42.0+: Purpur is a Paper fork with extra performance + config
+  // knobs; placed next to Paper since they share the plugin ecosystem.
+  'purpur',
+  // Folia is Paper's threaded fork — for very large servers. Most
+  // Paper plugins work, some break due to the threading model.
+  'folia',
   'fabric',
+  // Quilt is the Fabric fork. Mod ecosystem overlaps heavily.
+  'quilt',
   'forge',
   'neoforge',
+  // Mohist is the Forge + Bukkit hybrid (mods AND plugins).
+  'mohist',
   // v0.41.0+: Bukkit/Spigot are compiled from source by BuildTools
   // inside the container on first start. Listed last so newcomers
   // don't pick them by reflex over Paper (which is a strict superset).
@@ -857,8 +879,17 @@ export const BUILDTOOLS_LOADERS: ReadonlySet<ServerLoader> = new Set<ServerLoade
  *   - Bukkit /  — 1.8.8 (BuildTools technically supports back to 1.4.5
  *     Spigot     but Mojang-mappings work cleanly from 1.8 on)
  */
+// v0.42.0+: top of each curated list now carries the new Mojang
+// year-based numbering (26.1, shipped 24 March 2026) for the loaders
+// that track upstream quickly, plus the late-1.21 point releases
+// (1.21.5, 1.21.6). Bukkit / Spigot / Forge stay capped at 1.21.x
+// while their toolchains catch up. Sources cited in CHANGELOG.
+
 const VANILLA_MC_VERSIONS: string[] = [
   'LATEST',
+  '26.1',
+  '1.21.6',
+  '1.21.5',
   '1.21.4',
   '1.21.1',
   '1.21',
@@ -876,6 +907,9 @@ const VANILLA_MC_VERSIONS: string[] = [
 
 const PAPER_MC_VERSIONS: string[] = [
   'LATEST',
+  '26.1',
+  '1.21.6',
+  '1.21.5',
   '1.21.4',
   '1.21.1',
   '1.21',
@@ -893,6 +927,9 @@ const PAPER_MC_VERSIONS: string[] = [
 
 const FABRIC_MC_VERSIONS: string[] = [
   'LATEST',
+  '26.1',
+  '1.21.6',
+  '1.21.5',
   '1.21.4',
   '1.21.1',
   '1.21',
@@ -907,6 +944,8 @@ const FABRIC_MC_VERSIONS: string[] = [
   '1.14.4',
 ];
 
+// Forge does not (yet) ship for 1.21.5+ as of mid-2026 — keep the
+// list capped at 1.21.1, which remains the most-installed line.
 const FORGE_MC_VERSIONS: string[] = [
   'LATEST',
   '1.21.1',
@@ -924,6 +963,9 @@ const FORGE_MC_VERSIONS: string[] = [
 
 const NEOFORGE_MC_VERSIONS: string[] = [
   'LATEST',
+  '26.1',
+  '1.21.6',
+  '1.21.5',
   '1.21.4',
   '1.21.1',
   '1.21',
@@ -932,10 +974,12 @@ const NEOFORGE_MC_VERSIONS: string[] = [
   '1.20.1',
 ];
 
-// Bukkit & Spigot share the same supported-versions list — they're
-// both produced by BuildTools against the same Mojang mappings.
+// Bukkit / Spigot stay capped where BuildTools is known to work
+// cleanly — the 26.1 toolchain may still need a few weeks to settle.
 const BUKKIT_SPIGOT_MC_VERSIONS: string[] = [
   'LATEST',
+  '1.21.6',
+  '1.21.5',
   '1.21.4',
   '1.21.1',
   '1.21',
@@ -949,6 +993,74 @@ const BUKKIT_SPIGOT_MC_VERSIONS: string[] = [
   '1.16.5',
   '1.12.2',
   '1.8.8',
+];
+
+// v0.42.0+ — Paper-family forks and the Forge/Bukkit hybrid.
+
+// Purpur tracks Paper; shipped for 1.21.x and 26.1.
+const PURPUR_MC_VERSIONS: string[] = [
+  'LATEST',
+  '26.1',
+  '1.21.6',
+  '1.21.5',
+  '1.21.4',
+  '1.21.1',
+  '1.21',
+  '1.20.6',
+  '1.20.4',
+  '1.20.1',
+  '1.19.4',
+  '1.19.2',
+  '1.18.2',
+];
+
+// Folia was first released for 1.19.4 and has stayed on the modern
+// Paper line; no LTS-style back-port.
+const FOLIA_MC_VERSIONS: string[] = [
+  'LATEST',
+  '26.1',
+  '1.21.6',
+  '1.21.5',
+  '1.21.4',
+  '1.21.1',
+  '1.21',
+  '1.20.6',
+  '1.20.4',
+  '1.20.1',
+  '1.19.4',
+];
+
+// Quilt tracks Fabric closely; back-compat to 1.18.2.
+const QUILT_MC_VERSIONS: string[] = [
+  'LATEST',
+  '26.1',
+  '1.21.6',
+  '1.21.5',
+  '1.21.4',
+  '1.21.1',
+  '1.21',
+  '1.20.6',
+  '1.20.4',
+  '1.20.1',
+  '1.19.4',
+  '1.18.2',
+];
+
+// Mohist is the Forge + Bukkit hybrid — release cadence lags upstream
+// Forge, so the curated list reflects what's typically downloadable
+// today rather than what Forge itself supports.
+const MOHIST_MC_VERSIONS: string[] = [
+  'LATEST',
+  '1.21.1',
+  '1.20.6',
+  '1.20.4',
+  '1.20.1',
+  '1.19.4',
+  '1.19.2',
+  '1.18.2',
+  '1.16.5',
+  '1.12.2',
+  '1.7.10',
 ];
 
 /**
@@ -965,6 +1077,11 @@ export const VERSIONS_BY_LOADER: Record<ServerLoader, string[]> = {
   neoforge: NEOFORGE_MC_VERSIONS,
   bukkit: BUKKIT_SPIGOT_MC_VERSIONS,
   spigot: BUKKIT_SPIGOT_MC_VERSIONS,
+  // v0.42.0+
+  purpur: PURPUR_MC_VERSIONS,
+  folia: FOLIA_MC_VERSIONS,
+  quilt: QUILT_MC_VERSIONS,
+  mohist: MOHIST_MC_VERSIONS,
 };
 
 /**

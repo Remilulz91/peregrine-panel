@@ -105,6 +105,24 @@ function itzgTypeFor(loader: ServerLoader): string {
     case 'spigot':
       // Same BuildTools mechanism as Bukkit — different patch set.
       return 'SPIGOT';
+    case 'purpur':
+      // v0.42.0+: Paper fork with extra performance + config knobs;
+      // ships as a binary, no BuildTools step. itzg TYPE=PURPUR.
+      return 'PURPUR';
+    case 'folia':
+      // v0.42.0+: Paper's threaded fork — regionised tick loop for
+      // very large servers. Most Paper plugins work; some break
+      // because of the threading model. itzg TYPE=FOLIA.
+      return 'FOLIA';
+    case 'quilt':
+      // v0.42.0+: Fabric fork with a slightly different mod ecosystem
+      // and stronger backward-compat across MC versions. itzg
+      // TYPE=QUILT.
+      return 'QUILT';
+    case 'mohist':
+      // v0.42.0+: Forge + Bukkit hybrid — load mods AND plugins on
+      // the same server. itzg lists it under "Hybrids" (TYPE=MOHIST).
+      return 'MOHIST';
     case 'vanilla':
     default:
       return 'VANILLA';
