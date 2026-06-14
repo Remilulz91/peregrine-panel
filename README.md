@@ -7,21 +7,21 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.42.0** — mid-2026 best-practices alignment after a
-> web research pass against OWASP, NIST, itzg/minecraft-server,
-> NeoForge, Caddy and Node.js sources. Highlights:
-> 4 new loaders — **Purpur, Folia, Quilt, Mohist** — now
-> first-class in both the create and settings pickers; **26.1**
-> (Mojang's new year-based numbering), **1.21.6** and **1.21.5**
-> added to the version lists for loaders that track upstream
-> quickly (Vanilla/Paper/Fabric/NeoForge/Purpur/Folia/Quilt);
-> Argon2id `parallelism` lowered from **4 → 1** to match RFC 9106
-> §4 and OWASP's current matrix (existing passwords keep
-> verifying — params are encoded in each hash); fail2ban
-> dashboard now surfaces the **bancount** column to flag
-> recidivists; HARDENING.md updated to recommend **Caddy 2.10+**
-> and to plan the Node 22 → 24 LTS migration. See the changelog
-> in [`CHANGELOG.md`](CHANGELOG.md) for sources and rationale.
+> **Version 0.43.0** — the loader picker is now a **2-dropdown
+> matrix**: one for the mod loader (Fabric / Quilt / Forge /
+> NeoForge / none) and one for the plugin API (Paper / Purpur /
+> Folia / Spigot / Bukkit / none). The panel resolves the
+> combination to one server binary deterministically — Forge +
+> Bukkit → **Arclight**, Fabric + Bukkit → **Banner** — and
+> shows the resolved name + a hybrid-server warning. Invalid
+> pairs (e.g. Forge + Paper, no binary exists) disable Create
+> and explain why. Adds **Arclight** + **Banner** as backend
+> loaders alongside the v0.42.0 Mohist. Bonus UI fix: all
+> dropdowns now use `appearance-none` + a custom chevron so the
+> trigger stays fully rounded (the OS-native popup list is still
+> OS-rendered — a fully custom dropdown component is planned for
+> a future release). See the changelog in
+> [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features
 

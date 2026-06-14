@@ -123,6 +123,14 @@ function itzgTypeFor(loader: ServerLoader): string {
       // v0.42.0+: Forge + Bukkit hybrid — load mods AND plugins on
       // the same server. itzg lists it under "Hybrids" (TYPE=MOHIST).
       return 'MOHIST';
+    case 'arclight':
+      // v0.43.0+: Forge AND NeoForge + Bukkit hybrid. The modern
+      // successor to Mohist; itzg auto-picks the Arclight build that
+      // matches the requested VERSION. TYPE=ARCLIGHT.
+      return 'ARCLIGHT';
+    case 'banner':
+      // v0.43.0+: Fabric + Bukkit hybrid. TYPE=BANNER.
+      return 'BANNER';
     case 'vanilla':
     default:
       return 'VANILLA';

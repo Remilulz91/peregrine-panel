@@ -20,7 +20,10 @@ export type ServerLoader =
   | 'purpur'
   | 'folia'
   | 'quilt'
-  | 'mohist';
+  | 'mohist'
+  // v0.43.0+ — modern hybrids (mods + plugins).
+  | 'arclight'
+  | 'banner';
 
 /** A user account, as returned by the API. */
 export interface ApiUser {
@@ -1063,6 +1066,36 @@ const MOHIST_MC_VERSIONS: string[] = [
   '1.7.10',
 ];
 
+// v0.43.0+ — Arclight (the modern Forge/NeoForge + Bukkit hybrid)
+// tracks both upstream loaders. Has 1.21.x builds for Forge and
+// NeoForge.
+const ARCLIGHT_MC_VERSIONS: string[] = [
+  'LATEST',
+  '1.21.4',
+  '1.21.1',
+  '1.21',
+  '1.20.6',
+  '1.20.4',
+  '1.20.1',
+  '1.19.4',
+  '1.19.2',
+  '1.18.2',
+  '1.17.1',
+  '1.16.5',
+];
+
+// Banner (Fabric + Bukkit hybrid) — modern Fabric versions only.
+const BANNER_MC_VERSIONS: string[] = [
+  'LATEST',
+  '1.21.4',
+  '1.21.1',
+  '1.21',
+  '1.20.6',
+  '1.20.4',
+  '1.20.1',
+  '1.19.4',
+];
+
 /**
  * Single lookup table the create-server dialog + per-server settings
  * tab use to populate the version dropdown when the user picks a
@@ -1082,6 +1115,9 @@ export const VERSIONS_BY_LOADER: Record<ServerLoader, string[]> = {
   folia: FOLIA_MC_VERSIONS,
   quilt: QUILT_MC_VERSIONS,
   mohist: MOHIST_MC_VERSIONS,
+  // v0.43.0+
+  arclight: ARCLIGHT_MC_VERSIONS,
+  banner: BANNER_MC_VERSIONS,
 };
 
 /**

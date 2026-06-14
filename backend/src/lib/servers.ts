@@ -30,7 +30,14 @@ export type ServerLoader =
   | 'purpur'
   | 'folia'
   | 'quilt'
-  | 'mohist';
+  | 'mohist'
+  // v0.43.0+: the two actively-maintained Bukkit-API-on-top-of-a-mod-
+  // loader hybrids. Arclight runs Forge AND NeoForge mods alongside
+  // Bukkit/Spigot plugins; Banner runs Fabric mods alongside Bukkit
+  // plugins. Together with the v0.42.0 Mohist entry, they cover the
+  // three "mods + plugins" pairings the community actually maintains.
+  | 'arclight'
+  | 'banner';
 
 const LOADER_SET: ReadonlySet<string> = new Set([
   'vanilla',
@@ -44,6 +51,8 @@ const LOADER_SET: ReadonlySet<string> = new Set([
   'folia',
   'quilt',
   'mohist',
+  'arclight',
+  'banner',
 ]);
 
 /** True if the given value is one of the supported loaders. */

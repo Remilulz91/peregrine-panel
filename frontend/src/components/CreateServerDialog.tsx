@@ -4,18 +4,34 @@ import {
   api,
   ApiError,
   BUILDTOOLS_LOADERS,
-  JAVA_LOADERS,
   mcVersionsFor,
   type ApiAdminUser,
   type ApiHostResources,
   type ApiTemplate,
   type ServerLoader,
 } from '../lib/api';
+import {
+  HYBRID_LOADERS,
+  MOD_LOADERS,
+  PLUGIN_APIS,
+  resolveLoader,
+  type ModLoader,
+  type PluginApi,
+} from '../lib/loaderMatrix';
 import { useAuth } from '../lib/auth';
 import { useTranslation, type TranslationKey } from '../lib/i18n';
 
+/**
+ * v0.43.0+: `appearance-none` + custom SVG chevron so the trigger
+ * is fully under our control (no OS-default arrow eating the
+ * rounded-lg corners on the right side). The pop-up *list* of a
+ * native <select> is still rendered by the OS — fully styling that
+ * would require a custom popover + listbox component (planned for
+ * a future release).
+ */
 const SELECT_CLASS =
-  'w-full rounded-lg border border-peregrine-700 bg-peregrine-950 px-3 py-2 text-sm text-white outline-none transition-colors focus:border-falcon';
+  'w-full appearance-none rounded-lg border border-peregrine-700 bg-peregrine-950 bg-[length:14px_14px] bg-[right_0.75rem_center] bg-no-repeat px-3 py-2 pr-9 text-sm text-white outline-none transition-colors focus:border-falcon ' +
+  'bg-[url("data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27%237e8aa0%27%3E%3Cpath%20fill-rule%3D%27evenodd%27%20d%3D%27M5.23%207.21a.75.75%200%200%201%201.06.02L10%2011.06l3.71-3.83a.75.75%200%201%201%201.08%201.04l-4.25%204.39a.75.75%200%200%201-1.08%200L5.21%208.27a.75.75%200%200%201%20.02-1.06z%27%20clip-rule%3D%27evenodd%27%2F%3E%3C/svg%3E")]';
 
 interface CreateServerDialogProps {
   templates: ApiTemplate[];
@@ -41,7 +57,16 @@ export default function CreateServerDialog({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [templateId, setTemplateId] = useState(templates[0]?.id ?? '');
-  const [loader, setLoader] = useState<ServerLoader>('vanilla');
+  // v0.43.0+: replaced the single `loader` state with the (modLoader,
+  // pluginApi) pair. The resolved binary is computed in `loader`
+  // below and submitted to the backend exactly like before — no
+  // backend change.
+  const [modLoader, setModLoader] = useState<ModLoader>('none');
+  const [pluginApi, setPluginApi] = useState<PluginApi>('none');
+  const loader: ServerLoader | null = useMemo(
+    () => resolveLoader(modLoader, pluginApi),
+    [modLoader, pluginApi],
+  );
   // v0.12.0+: only admins reach this dialog (the button is hidden
   // for other users in Dashboard). We let the admin pick which user
   // will own the new server, defaulting to themselves.
@@ -111,14 +136,13 @@ export default function CreateServerDialog({
   }
 
   // v0.41.1+: per-loader version list. Loader changes (via the
-  // <select> below) reset the version to LATEST inline when the
-  // current version isn't supported by the new loader. No useEffect
-  // is needed because the dialog always starts with version='LATEST'
-  // and every loader supports LATEST — so the only way to land in
-  // an inconsistent state is the loader <select>'s onChange, which
-  // we handle directly.
+  // mod-loader / plugin-API <select>s below) reset the version to
+  // LATEST inline when the current version isn't supported by the
+  // new binary. Falls back to the Vanilla list when the user has
+  // picked an unsupported (modLoader, pluginApi) combo — the
+  // submit button is disabled in that state anyway.
   const availableVersions = useMemo(
-    () => mcVersionsFor(loader),
+    () => mcVersionsFor(loader ?? 'vanilla'),
     [loader],
   );
 
@@ -127,6 +151,14 @@ export default function CreateServerDialog({
     setError(null);
     setBusy(true);
     try {
+      // v0.43.0+: Java requires a resolved binary; if the user picked
+      // an unsupported combination (e.g. Forge + Paper), the loader
+      // is null and the submit button should already be disabled —
+      // belt-and-braces guard here too.
+      if (isJava && loader === null) {
+        setError(t('create.loaderInvalidCombination'));
+        return;
+      }
       await api.createServer({
         name,
         description: description.trim() || undefined,
@@ -138,7 +170,7 @@ export default function CreateServerDialog({
         // The backend ignores the loader on Bedrock, but we send it
         // explicitly when the game is Java to keep the wire payload
         // predictable.
-        loader: isJava ? loader : 'vanilla',
+        loader: isJava ? (loader ?? 'vanilla') : 'vanilla',
         memoryMb,
         cpuLimit,
       });
@@ -287,50 +319,118 @@ export default function CreateServerDialog({
                 </select>
               </div>
 
-              {/* Loader is Java-only — Bedrock has no fork ecosystem. */}
+              {/*
+               * v0.43.0+: Java-only mod/plugin matrix. The user picks
+               * a mod loader (left dropdown) and a plugin API (right
+               * dropdown) independently; the panel resolves the
+               * combination to one of the existing ServerLoader values
+               * via loaderMatrix.ts. Invalid pairs (e.g. Forge +
+               * Paper) disable the Create button.
+               */}
               {isJava && (
                 <div>
-                  <label
-                    htmlFor="srv-loader"
-                    className="mb-1 block text-xs font-medium text-peregrine-400"
-                  >
+                  <p className="mb-1 block text-xs font-medium text-peregrine-400">
                     {t('create.loaderLabel')}
-                  </label>
-                  <select
-                    id="srv-loader"
-                    value={loader}
-                    onChange={(e) => {
-                      const newLoader = e.target.value as ServerLoader;
-                      setLoader(newLoader);
-                      // If the current version isn't supported by the
-                      // new loader (e.g. switching to NeoForge while
-                      // version is 1.8.9), snap to LATEST.
-                      if (!mcVersionsFor(newLoader).includes(version)) {
-                        setVersion('LATEST');
-                      }
-                    }}
-                    className={SELECT_CLASS}
-                  >
-                    {JAVA_LOADERS.map((l) => (
-                      <option key={l} value={l}>
-                        {t((`loader.${l}` as TranslationKey))}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="mt-1 text-xs text-peregrine-600">
-                    {t('create.loaderHint')}
                   </p>
-                  {/*
-                   * v0.41.0+: Bukkit/Spigot warning. The itzg image
-                   * runs BuildTools on first start (~5–15 min, ~1–2 GiB
-                   * RAM). This callout sets expectations *before* the
-                   * user clicks Create, so the long INSTALLING state
-                   * doesn't look like a hang.
-                   */}
-                  {BUILDTOOLS_LOADERS.has(loader) && (
-                    <p className="mt-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-2 text-xs leading-snug text-amber-200">
-                      {t('loader.buildtoolsWarning')}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label
+                        htmlFor="srv-mod-loader"
+                        className="mb-1 block text-[11px] uppercase tracking-wider text-peregrine-500"
+                      >
+                        {t('create.modLoaderLabel')}
+                      </label>
+                      <select
+                        id="srv-mod-loader"
+                        value={modLoader}
+                        onChange={(e) => {
+                          const next = e.target.value as ModLoader;
+                          setModLoader(next);
+                          const resolved = resolveLoader(next, pluginApi);
+                          if (
+                            resolved !== null &&
+                            !mcVersionsFor(resolved).includes(version)
+                          ) {
+                            setVersion('LATEST');
+                          }
+                        }}
+                        className={SELECT_CLASS}
+                      >
+                        {MOD_LOADERS.map((m) => (
+                          <option key={m} value={m}>
+                            {t(`loader.mod.${m}` as TranslationKey)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="srv-plugin-api"
+                        className="mb-1 block text-[11px] uppercase tracking-wider text-peregrine-500"
+                      >
+                        {t('create.pluginApiLabel')}
+                      </label>
+                      <select
+                        id="srv-plugin-api"
+                        value={pluginApi}
+                        onChange={(e) => {
+                          const next = e.target.value as PluginApi;
+                          setPluginApi(next);
+                          const resolved = resolveLoader(modLoader, next);
+                          if (
+                            resolved !== null &&
+                            !mcVersionsFor(resolved).includes(version)
+                          ) {
+                            setVersion('LATEST');
+                          }
+                        }}
+                        className={SELECT_CLASS}
+                      >
+                        {PLUGIN_APIS.map((p) => (
+                          <option key={p} value={p}>
+                            {t(`loader.plugin.${p}` as TranslationKey)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Resolved binary preview + warnings. */}
+                  {loader === null ? (
+                    <p className="mt-2 rounded-lg border border-rose-500/40 bg-rose-500/10 p-2 text-xs leading-snug text-rose-200">
+                      {t('create.loaderInvalidCombination')}
                     </p>
+                  ) : (
+                    <>
+                      <p className="mt-2 text-xs text-peregrine-500">
+                        {t('create.loaderResolved').replace(
+                          '{name}',
+                          t(`loader.${loader}` as TranslationKey),
+                        )}
+                      </p>
+                      {/*
+                       * v0.41.0+: BuildTools warning (Bukkit / Spigot
+                       * only). Compile on first start is ~5–15 min,
+                       * ~1–2 GiB RAM.
+                       */}
+                      {BUILDTOOLS_LOADERS.has(loader) && (
+                        <p className="mt-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-2 text-xs leading-snug text-amber-200">
+                          {t('loader.buildtoolsWarning')}
+                        </p>
+                      )}
+                      {/*
+                       * v0.43.0+: hybrid (mods + plugins) warning. These
+                       * binaries are community-maintained and not
+                       * officially endorsed by Paper / Forge upstream;
+                       * a small fraction of plugins or mods may
+                       * misbehave under them.
+                       */}
+                      {HYBRID_LOADERS.has(loader) && (
+                        <p className="mt-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-2 text-xs leading-snug text-amber-200">
+                          {t('loader.hybridWarning')}
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
               )}
@@ -478,7 +578,7 @@ export default function CreateServerDialog({
               </button>
               <button
                 type="submit"
-                disabled={busy}
+                disabled={busy || (isJava && loader === null)}
                 className="rounded-lg bg-falcon px-4 py-2 text-sm font-semibold text-peregrine-950 transition-colors hover:bg-falcon-bright disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {busy ? t('common.pleaseWait') : t('create.submit')}

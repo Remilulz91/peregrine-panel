@@ -11,7 +11,6 @@ import {
   ApiError,
   hasPermission,
   BUILDTOOLS_LOADERS,
-  JAVA_LOADERS,
   mcVersionsFor,
   PERM,
   type ApiHostResources,
@@ -19,6 +18,15 @@ import {
   type ApiTemplate,
   type ServerLoader,
 } from '../../lib/api';
+import {
+  HYBRID_LOADERS,
+  MOD_LOADERS,
+  PLUGIN_APIS,
+  resolveLoader,
+  splitLoader,
+  type ModLoader,
+  type PluginApi,
+} from '../../lib/loaderMatrix';
 import { navigate } from '../../lib/router';
 import { useAuth } from '../../lib/auth';
 import { useTranslation, type TranslationKey } from '../../lib/i18n';
@@ -71,7 +79,16 @@ export default function SettingsPage({
 
   // v0.31.0+: version / loader change on an existing server. Recreates
   // the container; world / mods / config are preserved on disk.
-  const [versionLoader, setVersionLoader] = useState<ServerLoader>(server.loader);
+  // v0.43.0+: derive the (modLoader, pluginApi) pair from the saved
+  // server.loader so the two dropdowns initialise correctly. The
+  // resolved binary is recomputed from the current dropdown state.
+  const initialSplit = splitLoader(server.loader);
+  const [modLoader, setModLoader] = useState<ModLoader>(initialSplit.modLoader);
+  const [pluginApi, setPluginApi] = useState<PluginApi>(initialSplit.pluginApi);
+  const versionLoader: ServerLoader | null = useMemo(
+    () => resolveLoader(modLoader, pluginApi),
+    [modLoader, pluginApi],
+  );
   const [versionString, setVersionString] = useState(server.minecraftVersion);
 
   // v0.41.1+: dropdown of versions supported by the current loader.
@@ -82,8 +99,8 @@ export default function SettingsPage({
   // silently snap it to LATEST. Instead, the loader <select> handles
   // the version reset inline (see onChange handler in the JSX).
   const availableVersions = useMemo(
-    () => mcVersionsFor(versionLoader),
-    [versionLoader],
+    () => mcVersionsFor(versionLoader ?? server.loader),
+    [versionLoader, server.loader],
   );
   const [savingVersion, setSavingVersion] = useState(false);
   const [versionError, setVersionError] = useState<string | null>(null);
@@ -247,6 +264,13 @@ export default function SettingsPage({
       trimmedVersion === server.minecraftVersion &&
       versionLoader === server.loader
     ) {
+      return;
+    }
+    // v0.43.0+: belt-and-braces guard — the Save button is also
+    // disabled when versionLoader is null, but make sure no one
+    // bypasses by submitting the form via Enter.
+    if (versionLoader === null) {
+      setVersionError(t('create.loaderInvalidCombination'));
       return;
     }
     if (!window.confirm(t('settings.version.confirm'))) return;
@@ -524,43 +548,106 @@ export default function SettingsPage({
             onSubmit={handleVersionChange}
             className="mt-4 flex flex-wrap items-end gap-3"
           >
+            {/*
+             * v0.43.0+: two-dropdown loader matrix. Mirrors the create
+             * dialog so the user has one mental model across the
+             * panel. splitLoader() reverse-maps the existing
+             * server.loader into (modLoader, pluginApi) on mount; both
+             * sub-selects share the appearance-none + custom chevron
+             * styling defined at the top of CreateServerDialog.tsx.
+             */}
             {template?.kind === 'java' && (
-              <div className="min-w-[160px]">
-                <label
-                  htmlFor="version-loader"
-                  className="mb-1 block text-xs font-medium text-peregrine-400"
-                >
+              <div className="w-full">
+                <p className="mb-1 block text-xs font-medium text-peregrine-400">
                   {t('create.loaderLabel')}
-                </label>
-                <select
-                  id="version-loader"
-                  value={versionLoader}
-                  disabled={savingVersion || isRunning}
-                  onChange={(e) => {
-                    const newLoader = e.target.value as ServerLoader;
-                    setVersionLoader(newLoader);
-                    // v0.41.1+: if the live version isn't in the new
-                    // loader's curated list, snap to LATEST so the
-                    // operator never sees a "Save" button with an
-                    // incompatible combination. The currently-running
-                    // version stays only when it's still supported.
-                    if (!mcVersionsFor(newLoader).includes(versionString)) {
-                      setVersionString('LATEST');
-                    }
-                  }}
-                  className="w-full rounded-lg border border-peregrine-700 bg-peregrine-950 px-3 py-2 text-sm text-white outline-none transition-colors focus:border-falcon disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {JAVA_LOADERS.map((l) => (
-                    <option key={l} value={l}>
-                      {t(`loader.${l}` as TranslationKey)}
-                    </option>
-                  ))}
-                </select>
-                {/* v0.41.0+: same BuildTools warning as the create dialog. */}
-                {BUILDTOOLS_LOADERS.has(versionLoader) && (
-                  <p className="mt-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-2 text-xs leading-snug text-amber-200">
-                    {t('loader.buildtoolsWarning')}
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label
+                      htmlFor="version-mod-loader"
+                      className="mb-1 block text-[11px] uppercase tracking-wider text-peregrine-500"
+                    >
+                      {t('create.modLoaderLabel')}
+                    </label>
+                    <select
+                      id="version-mod-loader"
+                      value={modLoader}
+                      disabled={savingVersion || isRunning}
+                      onChange={(e) => {
+                        const next = e.target.value as ModLoader;
+                        setModLoader(next);
+                        const resolved = resolveLoader(next, pluginApi);
+                        if (
+                          resolved !== null &&
+                          !mcVersionsFor(resolved).includes(versionString)
+                        ) {
+                          setVersionString('LATEST');
+                        }
+                      }}
+                      className="w-full appearance-none rounded-lg border border-peregrine-700 bg-peregrine-950 px-3 py-2 pr-9 text-sm text-white outline-none transition-colors focus:border-falcon disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {MOD_LOADERS.map((m) => (
+                        <option key={m} value={m}>
+                          {t(`loader.mod.${m}` as TranslationKey)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="version-plugin-api"
+                      className="mb-1 block text-[11px] uppercase tracking-wider text-peregrine-500"
+                    >
+                      {t('create.pluginApiLabel')}
+                    </label>
+                    <select
+                      id="version-plugin-api"
+                      value={pluginApi}
+                      disabled={savingVersion || isRunning}
+                      onChange={(e) => {
+                        const next = e.target.value as PluginApi;
+                        setPluginApi(next);
+                        const resolved = resolveLoader(modLoader, next);
+                        if (
+                          resolved !== null &&
+                          !mcVersionsFor(resolved).includes(versionString)
+                        ) {
+                          setVersionString('LATEST');
+                        }
+                      }}
+                      className="w-full appearance-none rounded-lg border border-peregrine-700 bg-peregrine-950 px-3 py-2 pr-9 text-sm text-white outline-none transition-colors focus:border-falcon disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {PLUGIN_APIS.map((p) => (
+                        <option key={p} value={p}>
+                          {t(`loader.plugin.${p}` as TranslationKey)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                {versionLoader === null ? (
+                  <p className="mt-2 rounded-lg border border-rose-500/40 bg-rose-500/10 p-2 text-xs leading-snug text-rose-200">
+                    {t('create.loaderInvalidCombination')}
                   </p>
+                ) : (
+                  <>
+                    <p className="mt-2 text-xs text-peregrine-500">
+                      {t('create.loaderResolved').replace(
+                        '{name}',
+                        t(`loader.${versionLoader}` as TranslationKey),
+                      )}
+                    </p>
+                    {BUILDTOOLS_LOADERS.has(versionLoader) && (
+                      <p className="mt-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-2 text-xs leading-snug text-amber-200">
+                        {t('loader.buildtoolsWarning')}
+                      </p>
+                    )}
+                    {HYBRID_LOADERS.has(versionLoader) && (
+                      <p className="mt-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-2 text-xs leading-snug text-amber-200">
+                        {t('loader.hybridWarning')}
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
             )}
@@ -603,6 +690,7 @@ export default function SettingsPage({
               disabled={
                 savingVersion ||
                 isRunning ||
+                versionLoader === null ||
                 (versionString.trim() === server.minecraftVersion &&
                   versionLoader === server.loader)
               }

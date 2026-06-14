@@ -2,6 +2,127 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.43.0 — 2026-06-14
+
+### Added — two-dropdown loader matrix
+
+The single loader `<select>` in the *Create server* dialog and on
+the per-server *Settings → Game version* page is replaced by two
+sub-dropdowns:
+
+- **Mod loader**: `No mods / Fabric / Quilt / Forge / NeoForge`
+- **Plugin API**: `No plugins / Paper / Purpur / Folia / Spigot / Bukkit`
+
+The panel resolves the `(modLoader, pluginApi)` pair to one of the
+existing backend `ServerLoader` values via a new module
+`frontend/src/lib/loaderMatrix.ts` — deterministic table, no
+runtime ambiguity:
+
+| Mod loader | Plugin API | Resolved binary |
+|---|---|---|
+| none | none | `vanilla` |
+| none | Paper / Purpur / Folia / Spigot / Bukkit | same name |
+| Fabric / Quilt / Forge / NeoForge | none | same name |
+| Fabric | Bukkit | **`banner`** (Fabric + Bukkit hybrid) |
+| Forge | Bukkit | **`arclight`** (Forge + Bukkit hybrid) |
+| NeoForge | Bukkit | **`arclight`** (also handles NeoForge) |
+| Quilt | Bukkit | INVALID (no widely-deployed hybrid) |
+| any mod loader | Paper / Purpur / Folia / Spigot | INVALID (the Paper family is not what hybrids re-implement; Bukkit is the lowest common denominator) |
+
+The resolved name is shown below the two dropdowns as
+"*Server binary: Arclight*", along with a hybrid-server warning
+when the resolution lands on Mohist / Arclight / Banner. Invalid
+pairs render a rose-bordered "no binary exists for this
+combination" message and disable the Create button. The
+Settings page reverse-maps an existing server's saved
+`server.loader` to the right (modLoader, pluginApi) pair at mount
+via a new `splitLoader()` helper, so editing a Mohist or Banner
+server shows the right two dropdowns without surprise.
+
+**Why two dropdowns rather than a categorised single one?** The
+matrix accurately reflects how Minecraft hybrid servers are
+built — Arclight, Banner and Mohist are literally "Forge or
+Fabric plus Bukkit", baked into one binary. Picking the two
+ingredients separately matches the user's mental model of "I
+want mods, AND I want plugins".
+
+### Added — Arclight + Banner loaders
+
+Two new entries in the backend `ServerLoader` type and the
+itzg-image type-mapping (`backend/src/lib/docker.ts`):
+
+- **Arclight** (`TYPE=ARCLIGHT`) — the modern, actively-
+  maintained Forge / NeoForge + Bukkit hybrid. Default for
+  Forge + Bukkit and NeoForge + Bukkit pairings.
+- **Banner** (`TYPE=BANNER`) — the Fabric + Bukkit hybrid.
+  Default for Fabric + Bukkit pairings.
+
+Together with v0.42.0's Mohist, the panel now covers the three
+"mods + plugins" hybrid pairings the community actively
+maintains. Mohist remains in the type union — existing Mohist
+servers continue to work — but the create dialog no longer
+emits it as a default since Arclight is the active successor.
+
+### Added — hybrid-server warning callout
+
+When the resolved binary is one of the hybrids
+(Arclight / Banner / Mohist), the dialog shows an amber-bordered
+callout below the picker:
+
+> Hybrid server (mods + plugins) — these binaries are
+> community-maintained and not officially endorsed by Paper or
+> Forge upstream. Most plugins and mods work, but expect
+> occasional incompatibilities; test critical add-ons before
+> going live.
+
+This is a structural caveat of how hybrids are built — the panel
+exposes the existing community options as cleanly as possible
+but can't make Arclight more stable than Arclight itself is.
+
+### Fixed — dropdown trigger arrow + rounded right edge
+
+Every `<select>` in the create dialog and the Settings version
+picker now uses `appearance-none` plus a CSS-embedded SVG
+chevron (data URI, peregrine-400 fill, positioned right-3
+center). This eliminates the OS-default arrow that was eating
+into the `rounded-lg` right corner on Windows and giving the
+trigger a half-rounded look. **Caveat documented in the
+release**: when the user *opens* a native `<select>`, the
+pop-up list is still rendered by the operating system and
+cannot be styled via CSS in any browser. Fully styling the
+opened list would require a custom popover + listbox component
+— planned for a future dedicated release.
+
+### Changed — i18n
+
+15+ new keys (EN + FR):
+
+- `loader.arclight`, `loader.banner` — display names.
+- `loader.mod.*` (5 keys) — left dropdown options.
+- `loader.plugin.*` (6 keys) — right dropdown options.
+- `loader.hybridWarning` — the warning callout text.
+- `create.modLoaderLabel`, `create.pluginApiLabel` — column
+  headers.
+- `create.loaderResolved` — "Server binary: {name}" line.
+- `create.loaderInvalidCombination` — the rose-bordered "no
+  binary exists" error.
+
+### Notes
+
+- **No backend wire-format change.** The existing
+  `loader: ServerLoader` field on the create / update endpoints
+  is unchanged; the frontend simply submits the resolved value.
+- **No database migration.**
+- **Lockfile unchanged.** Pure code addition on the frontend
+  (`loaderMatrix.ts`) plus two backend type-union entries.
+- **Stability disclaimer.** The user asked for a hybrid system
+  "more stable than Mohist / Arclight / Cardboard". The panel
+  cannot make a binary more stable than the binary itself is —
+  Arclight / Banner are developed outside this project. What
+  the panel CAN do, and now does: surface the three viable
+  hybrids cleanly, set expectations via the warning callout,
+  and refuse impossible combinations up front.
+
 ## v0.42.0 — 2026-06-14
 
 This release is the output of a mid-2026 best-practices audit

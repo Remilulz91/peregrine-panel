@@ -471,6 +471,42 @@ const translations = {
   'loader.folia': { en: 'Folia', fr: 'Folia' },
   'loader.quilt': { en: 'Quilt', fr: 'Quilt' },
   'loader.mohist': { en: 'Mohist', fr: 'Mohist' },
+  // v0.43.0+ — modern hybrids (mods + plugins).
+  'loader.arclight': { en: 'Arclight', fr: 'Arclight' },
+  'loader.banner': { en: 'Banner', fr: 'Banner' },
+
+  // v0.43.0+ — mod-loader dropdown options.
+  'loader.mod.none': { en: 'No mods', fr: 'Sans mods' },
+  'loader.mod.fabric': { en: 'Fabric', fr: 'Fabric' },
+  'loader.mod.quilt': { en: 'Quilt', fr: 'Quilt' },
+  'loader.mod.forge': { en: 'Forge', fr: 'Forge' },
+  'loader.mod.neoforge': { en: 'NeoForge', fr: 'NeoForge' },
+
+  // v0.43.0+ — plugin-API dropdown options.
+  'loader.plugin.none': { en: 'No plugins', fr: 'Sans plugins' },
+  'loader.plugin.paper': { en: 'Paper', fr: 'Paper' },
+  'loader.plugin.purpur': { en: 'Purpur', fr: 'Purpur' },
+  'loader.plugin.folia': { en: 'Folia', fr: 'Folia' },
+  'loader.plugin.spigot': { en: 'Spigot', fr: 'Spigot' },
+  'loader.plugin.bukkit': { en: 'Bukkit', fr: 'Bukkit' },
+
+  // v0.43.0+ — warning shown when the resolved binary is a hybrid.
+  'loader.hybridWarning': {
+    en: 'Hybrid server (mods + plugins) — these binaries are community-maintained and not officially endorsed by Paper or Forge upstream. Most plugins and mods work, but expect occasional incompatibilities; test critical add-ons before going live.',
+    fr: 'Serveur hybride (mods + plugins) — ces binaires sont maintenus par la communauté et ne sont pas officiellement endossés par Paper ou Forge en amont. La plupart des plugins et des mods fonctionnent, mais attendez-vous à des incompatibilités ponctuelles ; testez vos add-ons critiques avant la mise en production.',
+  },
+
+  // v0.43.0+ — new sub-labels for the two-dropdown picker.
+  'create.modLoaderLabel': { en: 'Mod loader', fr: 'Chargeur de mods' },
+  'create.pluginApiLabel': { en: 'Plugin API', fr: 'API de plugins' },
+  'create.loaderResolved': {
+    en: 'Server binary: {name}',
+    fr: 'Binaire serveur : {name}',
+  },
+  'create.loaderInvalidCombination': {
+    en: 'No server binary exists for this combination. Pick a different mod loader or plugin API.',
+    fr: 'Aucun binaire serveur n’existe pour cette combinaison. Choisissez un autre chargeur de mods ou une autre API de plugins.',
+  },
   // v0.41.0+: shown when the user picks Bukkit or Spigot in the
   // create-server dialog. Bukkit/Spigot cannot be redistributed as
   // pre-built binaries (DMCA — Mojang owns CraftBukkit), so the itzg
