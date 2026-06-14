@@ -1,10 +1,18 @@
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from 'react';
 import {
   api,
   ApiError,
   hasPermission,
   BUILDTOOLS_LOADERS,
   JAVA_LOADERS,
+  mcVersionsFor,
   PERM,
   type ApiHostResources,
   type ApiServer,
@@ -65,6 +73,18 @@ export default function SettingsPage({
   // the container; world / mods / config are preserved on disk.
   const [versionLoader, setVersionLoader] = useState<ServerLoader>(server.loader);
   const [versionString, setVersionString] = useState(server.minecraftVersion);
+
+  // v0.41.1+: dropdown of versions supported by the current loader.
+  // We deliberately do NOT useEffect-reset on (versionLoader,
+  // versionString) — on initial mount, if the server runs a version
+  // older than the curated floor (e.g. Fabric 1.15.2 — predates our
+  // 1.16.5 cut-off), we want to keep showing the live value, not
+  // silently snap it to LATEST. Instead, the loader <select> handles
+  // the version reset inline (see onChange handler in the JSX).
+  const availableVersions = useMemo(
+    () => mcVersionsFor(versionLoader),
+    [versionLoader],
+  );
   const [savingVersion, setSavingVersion] = useState(false);
   const [versionError, setVersionError] = useState<string | null>(null);
   const [versionSavedAt, setVersionSavedAt] = useState<number>(0);
@@ -516,9 +536,18 @@ export default function SettingsPage({
                   id="version-loader"
                   value={versionLoader}
                   disabled={savingVersion || isRunning}
-                  onChange={(e) =>
-                    setVersionLoader(e.target.value as ServerLoader)
-                  }
+                  onChange={(e) => {
+                    const newLoader = e.target.value as ServerLoader;
+                    setVersionLoader(newLoader);
+                    // v0.41.1+: if the live version isn't in the new
+                    // loader's curated list, snap to LATEST so the
+                    // operator never sees a "Save" button with an
+                    // incompatible combination. The currently-running
+                    // version stays only when it's still supported.
+                    if (!mcVersionsFor(newLoader).includes(versionString)) {
+                      setVersionString('LATEST');
+                    }
+                  }}
                   className="w-full rounded-lg border border-peregrine-700 bg-peregrine-950 px-3 py-2 text-sm text-white outline-none transition-colors focus:border-falcon disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {JAVA_LOADERS.map((l) => (
@@ -542,15 +571,32 @@ export default function SettingsPage({
               >
                 {t('settings.version.versionLabel')}
               </label>
-              <input
+              {/*
+               * v0.41.1+: select instead of free-text input. Options
+               * track the loader's supported-versions range; the
+               * useEffect above resets to LATEST if the user picks a
+               * loader that doesn't support the previously-selected
+               * version. The current server's version is force-added
+               * to the list if missing so the operator always sees
+               * the live value selected — useful when the server is
+               * running a build older than the curated floor.
+               */}
+              <select
                 id="version-input"
-                type="text"
                 value={versionString}
                 disabled={savingVersion || isRunning}
-                placeholder="1.21.4"
                 onChange={(e) => setVersionString(e.target.value)}
                 className="w-full rounded-lg border border-peregrine-700 bg-peregrine-950 px-3 py-2 text-sm text-white outline-none transition-colors focus:border-falcon disabled:cursor-not-allowed disabled:opacity-50"
-              />
+              >
+                {(availableVersions.includes(versionString)
+                  ? availableVersions
+                  : [versionString, ...availableVersions]
+                ).map((v) => (
+                  <option key={v} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </select>
             </div>
             <button
               type="submit"

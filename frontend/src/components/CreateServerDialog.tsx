@@ -5,6 +5,7 @@ import {
   ApiError,
   BUILDTOOLS_LOADERS,
   JAVA_LOADERS,
+  mcVersionsFor,
   type ApiAdminUser,
   type ApiHostResources,
   type ApiTemplate,
@@ -108,6 +109,18 @@ export default function CreateServerDialog({
   if (!isJava && version !== 'LATEST') {
     setVersion('LATEST');
   }
+
+  // v0.41.1+: per-loader version list. Loader changes (via the
+  // <select> below) reset the version to LATEST inline when the
+  // current version isn't supported by the new loader. No useEffect
+  // is needed because the dialog always starts with version='LATEST'
+  // and every loader supports LATEST — so the only way to land in
+  // an inconsistent state is the loader <select>'s onChange, which
+  // we handle directly.
+  const availableVersions = useMemo(
+    () => mcVersionsFor(loader),
+    [loader],
+  );
 
   async function handleSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
@@ -286,7 +299,16 @@ export default function CreateServerDialog({
                   <select
                     id="srv-loader"
                     value={loader}
-                    onChange={(e) => setLoader(e.target.value as ServerLoader)}
+                    onChange={(e) => {
+                      const newLoader = e.target.value as ServerLoader;
+                      setLoader(newLoader);
+                      // If the current version isn't supported by the
+                      // new loader (e.g. switching to NeoForge while
+                      // version is 1.8.9), snap to LATEST.
+                      if (!mcVersionsFor(newLoader).includes(version)) {
+                        setVersion('LATEST');
+                      }
+                    }}
                     className={SELECT_CLASS}
                   >
                     {JAVA_LOADERS.map((l) => (
@@ -321,15 +343,30 @@ export default function CreateServerDialog({
                   >
                     {t('create.versionLabel')}
                   </label>
-                  <input
+                  {/*
+                   * v0.41.1+: dropdown instead of free-text input. Each
+                   * loader has its own supported-versions range
+                   * (NeoForge starts at 1.20.1, Fabric at 1.14, etc.),
+                   * so this list is rebuilt from `availableVersions`
+                   * every time the user picks a different loader, and
+                   * the selected version auto-resets to LATEST if it
+                   * isn't in the new loader's range (see the useEffect
+                   * above). Backend still validates against Mojang's
+                   * manifest so a curated-list typo never lets through
+                   * an invalid id.
+                   */}
+                  <select
                     id="srv-version"
-                    type="text"
                     value={version}
-                    maxLength={32}
                     onChange={(e) => setVersion(e.target.value)}
-                    placeholder="LATEST"
                     className={SELECT_CLASS}
-                  />
+                  >
+                    {availableVersions.map((v) => (
+                      <option key={v} value={v}>
+                        {v}
+                      </option>
+                    ))}
+                  </select>
                   <p className="mt-1 text-xs text-peregrine-500">
                     {t('create.versionHint')}
                   </p>

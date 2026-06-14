@@ -836,14 +836,30 @@ export const BUILDTOOLS_LOADERS: ReadonlySet<ServerLoader> = new Set<ServerLoade
 ]);
 
 /**
- * Curated Minecraft Java versions exposed in the create-server dropdown.
- * "LATEST" always works (itzg picks the newest stable release). The rest
- * are widely-used breakpoints — Forge / Fabric may not exist for every
- * one of them, in which case the container fails to install (status
- * INSTALL_FAILED). Add or remove freely; this is purely UI shaping.
+ * Curated Minecraft Java versions exposed in the create-server / change-
+ * version dropdowns, **per loader**. "LATEST" always works (itzg picks
+ * the newest stable release the loader supports). The rest are widely-
+ * used breakpoints. Add or remove freely; this is purely UI shaping —
+ * the backend validates the actual version string against Mojang's
+ * manifest.
+ *
+ * v0.41.1+: the version dropdown is now scoped to the selected loader
+ * so users can't pick combinations the loader doesn't support (e.g.
+ * NeoForge for 1.8.9, which never existed). The compatibility floors
+ * baked in below are:
+ *
+ *   - Vanilla   — every notable release back to 1.8.9
+ *   - Paper     — 1.8.8 (the earliest the PaperMC project ships)
+ *   - Fabric    — 1.14   (when Fabric API was introduced)
+ *   - Forge     — 1.7.10 (Forge predates that but pre-1.7.10 servers
+ *                 are vanishingly rare today)
+ *   - NeoForge  — 1.20.1 (NeoForge was forked from Forge in late 2023)
+ *   - Bukkit /  — 1.8.8 (BuildTools technically supports back to 1.4.5
+ *     Spigot     but Mojang-mappings work cleanly from 1.8 on)
  */
-export const JAVA_MC_VERSIONS: string[] = [
+const VANILLA_MC_VERSIONS: string[] = [
   'LATEST',
+  '1.21.4',
   '1.21.1',
   '1.21',
   '1.20.6',
@@ -857,6 +873,114 @@ export const JAVA_MC_VERSIONS: string[] = [
   '1.12.2',
   '1.8.9',
 ];
+
+const PAPER_MC_VERSIONS: string[] = [
+  'LATEST',
+  '1.21.4',
+  '1.21.1',
+  '1.21',
+  '1.20.6',
+  '1.20.4',
+  '1.20.1',
+  '1.19.4',
+  '1.19.2',
+  '1.18.2',
+  '1.17.1',
+  '1.16.5',
+  '1.12.2',
+  '1.8.8',
+];
+
+const FABRIC_MC_VERSIONS: string[] = [
+  'LATEST',
+  '1.21.4',
+  '1.21.1',
+  '1.21',
+  '1.20.6',
+  '1.20.4',
+  '1.20.1',
+  '1.19.4',
+  '1.19.2',
+  '1.18.2',
+  '1.17.1',
+  '1.16.5',
+  '1.14.4',
+];
+
+const FORGE_MC_VERSIONS: string[] = [
+  'LATEST',
+  '1.21.1',
+  '1.20.6',
+  '1.20.4',
+  '1.20.1',
+  '1.19.4',
+  '1.19.2',
+  '1.18.2',
+  '1.17.1',
+  '1.16.5',
+  '1.12.2',
+  '1.7.10',
+];
+
+const NEOFORGE_MC_VERSIONS: string[] = [
+  'LATEST',
+  '1.21.4',
+  '1.21.1',
+  '1.21',
+  '1.20.6',
+  '1.20.4',
+  '1.20.1',
+];
+
+// Bukkit & Spigot share the same supported-versions list — they're
+// both produced by BuildTools against the same Mojang mappings.
+const BUKKIT_SPIGOT_MC_VERSIONS: string[] = [
+  'LATEST',
+  '1.21.4',
+  '1.21.1',
+  '1.21',
+  '1.20.6',
+  '1.20.4',
+  '1.20.1',
+  '1.19.4',
+  '1.19.2',
+  '1.18.2',
+  '1.17.1',
+  '1.16.5',
+  '1.12.2',
+  '1.8.8',
+];
+
+/**
+ * Single lookup table the create-server dialog + per-server settings
+ * tab use to populate the version dropdown when the user picks a
+ * loader. Exported for direct read; mutate the per-loader arrays
+ * above (not this Record) if you need to add a version.
+ */
+export const VERSIONS_BY_LOADER: Record<ServerLoader, string[]> = {
+  vanilla: VANILLA_MC_VERSIONS,
+  paper: PAPER_MC_VERSIONS,
+  fabric: FABRIC_MC_VERSIONS,
+  forge: FORGE_MC_VERSIONS,
+  neoforge: NEOFORGE_MC_VERSIONS,
+  bukkit: BUKKIT_SPIGOT_MC_VERSIONS,
+  spigot: BUKKIT_SPIGOT_MC_VERSIONS,
+};
+
+/**
+ * Convenience helper. Same as `VERSIONS_BY_LOADER[loader]` but does
+ * a safe fallback to Vanilla if a future loader is somehow added on
+ * the backend before being declared here.
+ */
+export function mcVersionsFor(loader: ServerLoader): string[] {
+  return VERSIONS_BY_LOADER[loader] ?? VANILLA_MC_VERSIONS;
+}
+
+/**
+ * Legacy alias retained for any external code reading the broad
+ * Vanilla list. New code should call `mcVersionsFor(loader)`.
+ */
+export const JAVA_MC_VERSIONS: string[] = VANILLA_MC_VERSIONS;
 
 /**
  * Bedrock numbering is awkward (e.g. 1.21.50.10), so we just expose

@@ -7,17 +7,18 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.41.0** — **Bukkit and Spigot** are now first-class
-> loaders alongside Vanilla, Paper, Fabric, Forge, and NeoForge,
-> in both the *New game server* dialog and the *Settings → Game
-> version* picker of existing servers. Behind the scenes the
-> itzg image compiles them from source via BuildTools on first
-> container start (no redistributable binary exists — Mojang
-> owns the CraftBukkit sources). The UI shows an amber callout
-> explaining the first-start cost (5–15 minutes, ~1–2 GiB of
-> RAM during compile) the moment either is selected, so the
-> long *INSTALLING* state doesn't look like a hang. See the
-> changelog in [`CHANGELOG.md`](CHANGELOG.md).
+> **Version 0.41.1** — **per-loader Minecraft version dropdown**.
+> The free-text version field is now a `<select>` whose options
+> are scoped to the chosen loader: NeoForge only lists 1.20.1+,
+> Fabric lists 1.14+, Forge lists 1.7.10+, Bukkit / Spigot list
+> 1.8.8+, Paper / Vanilla list the full curated range. Switching
+> loader auto-resets the version to LATEST if the previous
+> selection isn't supported by the new loader — so an operator
+> can never click *Create* on a combination the loader doesn't
+> even exist for. Settings page version picker gets the same
+> treatment and additionally preserves the currently-running
+> version in the list, even if it's older than the curated
+> floor. See the changelog in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features
 

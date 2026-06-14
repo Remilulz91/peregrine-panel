@@ -2,6 +2,63 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.41.1 — 2026-06-14
+
+### Changed
+
+- **Minecraft version is now a `<select>` scoped to the chosen
+  loader**, in both the *Create server* dialog and the per-server
+  *Settings → Game version* picker. Previously, the field was a
+  free-text `<input>` showing the same placeholder regardless of
+  loader, which let users land on combinations the loader doesn't
+  ship for (e.g. NeoForge for 1.8.9, which never existed).
+- New module-level data in `frontend/src/lib/api.ts`:
+  `VERSIONS_BY_LOADER` (one curated list per loader) plus the
+  `mcVersionsFor(loader)` helper. The per-loader floors are:
+  - **Vanilla / Paper** — back to 1.8.8 / 1.8.9.
+  - **Fabric** — back to 1.14.4 (Fabric API was introduced in 1.14).
+  - **Forge** — back to 1.7.10 (Forge pre-1.7.10 servers are
+    vanishingly rare today).
+  - **NeoForge** — back to 1.20.1 (NeoForge was forked from
+    Forge in late 2023).
+  - **Bukkit / Spigot** — back to 1.8.8 (BuildTools technically
+    supports earlier but pre-1.8 builds are rarely usable on
+    modern hardware/JVMs).
+- Each list is capped at the latest curated breakpoint (1.21.4
+  at time of writing). New Mojang releases will need an entry
+  added to the relevant `*_MC_VERSIONS` arrays — purely
+  data-driven, no logic change required.
+
+### Behavior
+
+- **Auto-reset on loader switch.** When the user picks a new
+  loader, if the currently-selected Minecraft version isn't in
+  that loader's curated list, the version snaps to LATEST.
+  Implemented inline in the loader `<select>`'s `onChange` so
+  the state and the rendered options can never disagree.
+- **Live-version preservation on the Settings page.** If a
+  server is running an older Minecraft version than the curated
+  floor (e.g. Fabric 1.15.2 — predates the 1.16.5 cut-off), the
+  Settings dropdown still shows that exact value as the selected
+  option. Only an explicit loader change wipes it. The operator
+  never loses sight of the live build the server is on.
+- **`JAVA_MC_VERSIONS` kept as a legacy alias** of the Vanilla
+  list so any external code that imported it (none in the
+  current tree — verified by grep — but stable APIs are kind to
+  out-of-tree consumers) keeps compiling.
+
+### Notes
+
+- **Backend unchanged.** The version string still flows to
+  Mojang's manifest validation in `lib/minecraftVersions.ts`,
+  which is the authoritative gate. The frontend dropdown is
+  purely UX shaping — a curated list of "versions the loader
+  actively ships for", not a security boundary.
+- **No database migration, no new dependency, no API change.**
+- This is the extension of v0.41.0 the user asked for *"de
+  manière chirurgicale"*: 1 helper added in api.ts, 2 components
+  updated, 1 free-text field → 1 select per component.
+
 ## v0.41.0 — 2026-06-14
 
 ### Added
