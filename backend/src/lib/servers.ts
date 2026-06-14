@@ -3,15 +3,28 @@ import { db } from './db';
 
 /**
  * Supported Minecraft loader types (Java side). Bedrock is always 'vanilla'.
+ *
  * v0.24.0+: NeoForge is the community fork of Forge maintained since
  * late 2023; the itzg image accepts it via `TYPE=NEOFORGE`.
+ *
+ * v0.41.0+: Bukkit and Spigot are the legacy plugin-API server flavours
+ * — Spigot is the most popular Bukkit fork, Paper (already supported)
+ * is a fork of Spigot. Both are accepted by the itzg image via
+ * `TYPE=BUKKIT` / `TYPE=SPIGOT`, **but** they cannot be distributed as
+ * binaries (DMCA — Mojang owns CraftBukkit). The itzg entrypoint runs
+ * BuildTools.jar on first start to compile the server locally from
+ * Mojang's mappings; expect 5–15 minutes of CPU + ~1–2 GiB of RAM
+ * during that initial compile. Subsequent restarts reuse the compiled
+ * jar and are as fast as Vanilla.
  */
 export type ServerLoader =
   | 'vanilla'
   | 'paper'
   | 'fabric'
   | 'forge'
-  | 'neoforge';
+  | 'neoforge'
+  | 'bukkit'
+  | 'spigot';
 
 const LOADER_SET: ReadonlySet<string> = new Set([
   'vanilla',
@@ -19,6 +32,8 @@ const LOADER_SET: ReadonlySet<string> = new Set([
   'fabric',
   'forge',
   'neoforge',
+  'bukkit',
+  'spigot',
 ]);
 
 /** True if the given value is one of the supported loaders. */

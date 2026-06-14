@@ -97,6 +97,14 @@ function itzgTypeFor(loader: ServerLoader): string {
       // mid-2024. Underlying Minecraft version handling is identical
       // to Forge, so the rest of the env vars stay the same.
       return 'NEOFORGE';
+    case 'bukkit':
+      // v0.41.0+: BuildTools-compiled, can't be redistributed as a
+      // binary. itzg's entrypoint runs BuildTools on first start;
+      // subsequent restarts reuse the compiled JAR from /data.
+      return 'BUKKIT';
+    case 'spigot':
+      // Same BuildTools mechanism as Bukkit — different patch set.
+      return 'SPIGOT';
     case 'vanilla':
     default:
       return 'VANILLA';

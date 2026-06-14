@@ -3,6 +3,7 @@ import {
   api,
   ApiError,
   hasPermission,
+  BUILDTOOLS_LOADERS,
   JAVA_LOADERS,
   PERM,
   type ApiHostResources,
@@ -526,6 +527,12 @@ export default function SettingsPage({
                     </option>
                   ))}
                 </select>
+                {/* v0.41.0+: same BuildTools warning as the create dialog. */}
+                {BUILDTOOLS_LOADERS.has(versionLoader) && (
+                  <p className="mt-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-2 text-xs leading-snug text-amber-200">
+                    {t('loader.buildtoolsWarning')}
+                  </p>
+                )}
               </div>
             )}
             <div className="min-w-[180px] flex-1">

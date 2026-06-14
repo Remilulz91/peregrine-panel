@@ -3,6 +3,7 @@ import Field from './Field';
 import {
   api,
   ApiError,
+  BUILDTOOLS_LOADERS,
   JAVA_LOADERS,
   type ApiAdminUser,
   type ApiHostResources,
@@ -297,6 +298,18 @@ export default function CreateServerDialog({
                   <p className="mt-1 text-xs text-peregrine-600">
                     {t('create.loaderHint')}
                   </p>
+                  {/*
+                   * v0.41.0+: Bukkit/Spigot warning. The itzg image
+                   * runs BuildTools on first start (~5–15 min, ~1–2 GiB
+                   * RAM). This callout sets expectations *before* the
+                   * user clicks Create, so the long INSTALLING state
+                   * doesn't look like a hang.
+                   */}
+                  {BUILDTOOLS_LOADERS.has(loader) && (
+                    <p className="mt-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-2 text-xs leading-snug text-amber-200">
+                      {t('loader.buildtoolsWarning')}
+                    </p>
+                  )}
                 </div>
               )}
 

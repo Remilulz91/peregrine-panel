@@ -462,6 +462,18 @@ const translations = {
   'loader.fabric': { en: 'Fabric', fr: 'Fabric' },
   'loader.forge': { en: 'Forge', fr: 'Forge' },
   'loader.neoforge': { en: 'NeoForge', fr: 'NeoForge' },
+  'loader.bukkit': { en: 'Bukkit', fr: 'Bukkit' },
+  'loader.spigot': { en: 'Spigot', fr: 'Spigot' },
+  // v0.41.0+: shown when the user picks Bukkit or Spigot in the
+  // create-server dialog. Bukkit/Spigot cannot be redistributed as
+  // pre-built binaries (DMCA — Mojang owns CraftBukkit), so the itzg
+  // entrypoint compiles them from source via BuildTools on first
+  // start. That compile uses ~1–2 GiB of RAM and takes 5–15 minutes
+  // before the server is ready. Once compiled, restarts are normal.
+  'loader.buildtoolsWarning': {
+    en: 'Heads up: Bukkit and Spigot are compiled from source on first start (BuildTools) — expect 5–15 minutes and ~1–2 GiB of RAM before the server is online. Subsequent restarts are as fast as Vanilla.',
+    fr: 'Attention : Bukkit et Spigot sont compilés depuis les sources au premier démarrage (BuildTools) — prévoyez 5 à 15 minutes et ~1 à 2 Go de RAM avant que le serveur soit en ligne. Les redémarrages suivants sont aussi rapides que Vanilla.',
+  },
 
   'console.connecting': { en: 'Connecting...', fr: 'Connexion...' },
   'console.connected': { en: 'Connected', fr: 'Connecté' },

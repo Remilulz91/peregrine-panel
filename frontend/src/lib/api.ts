@@ -2,13 +2,19 @@
 // The authentication token lives in an httpOnly cookie, which the browser
 // sends automatically thanks to `credentials: 'include'`.
 
-/** Supported Minecraft loader types (Java side). Bedrock is always 'vanilla'. */
+/**
+ * Supported Minecraft loader types (Java side). Bedrock is always 'vanilla'.
+ * v0.41.0+: 'bukkit' and 'spigot' are BuildTools-compiled at runtime;
+ * see the loader note in the create-server dialog.
+ */
 export type ServerLoader =
   | 'vanilla'
   | 'paper'
   | 'fabric'
   | 'forge'
-  | 'neoforge';
+  | 'neoforge'
+  | 'bukkit'
+  | 'spigot';
 
 /** A user account, as returned by the API. */
 export interface ApiUser {
@@ -811,7 +817,23 @@ export const JAVA_LOADERS: ServerLoader[] = [
   'fabric',
   'forge',
   'neoforge',
+  // v0.41.0+: Bukkit/Spigot are compiled from source by BuildTools
+  // inside the container on first start. Listed last so newcomers
+  // don't pick them by reflex over Paper (which is a strict superset).
+  'bukkit',
+  'spigot',
 ];
+
+/**
+ * Loaders that are compiled from source by BuildTools on first
+ * container start (no redistributable binary exists — DMCA-protected
+ * sources). The UI shows a "first start takes 5–15 min, ~1–2 GiB RAM
+ * during compile" warning when the user picks one of these.
+ */
+export const BUILDTOOLS_LOADERS: ReadonlySet<ServerLoader> = new Set<ServerLoader>([
+  'bukkit',
+  'spigot',
+]);
 
 /**
  * Curated Minecraft Java versions exposed in the create-server dropdown.

@@ -2,6 +2,70 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.41.0 — 2026-06-14
+
+### Added
+
+- **Bukkit and Spigot loader support.** Both are now selectable
+  in the *Create server* dialog and in the per-server
+  *Settings → Game version* picker, alongside the existing
+  Vanilla / Paper / Fabric / Forge / NeoForge options. Behind
+  the scenes:
+  - The backend `ServerLoader` type union and validation set
+    (`LOADER_SET`) gain `'bukkit'` and `'spigot'` entries.
+  - `lib/docker.ts`'s `itzgTypeFor()` maps them to the
+    `TYPE=BUKKIT` and `TYPE=SPIGOT` env vars the
+    `itzg/minecraft-server` image consumes — no other changes
+    needed, the existing `VERSION=` + `MEMORY=` plumbing is
+    unchanged.
+  - The Mojang manifest validation in `lib/minecraftVersions.ts`
+    is reused as-is: Bukkit/Spigot version strings match the
+    upstream Minecraft version they target (e.g. `1.21.4`,
+    `1.20.6`, …), so the same curated dropdown list applies.
+  - The frontend type union and `JAVA_LOADERS` array gain the
+    two new entries (listed last so newcomers don't pick Bukkit
+    or Spigot by reflex over Paper, which is a strict superset).
+  - New `BUILDTOOLS_LOADERS` set in `frontend/src/lib/api.ts`
+    centralises the "BuildTools is required" predicate.
+- **BuildTools first-start callout.** Bukkit and Spigot cannot
+  be redistributed as pre-built binaries (DMCA — Mojang owns
+  the CraftBukkit sources). The itzg image therefore runs
+  `BuildTools.jar` on first container start to compile the
+  server locally from Mojang's mappings. That compile uses
+  ~1–2 GiB of RAM and takes 5–15 minutes before the server is
+  ready. To avoid users mistaking the long *INSTALLING* state
+  for a hang, the UI shows an amber-bordered callout the moment
+  either loader is selected — in both the Create dialog and the
+  Settings version picker. Subsequent restarts reuse the
+  compiled JAR from `/data` and are as fast as Vanilla.
+- New i18n keys: `loader.bukkit`, `loader.spigot`,
+  `loader.buildtoolsWarning` (EN + FR).
+
+### Plugin compatibility (clarification)
+
+- All five Bukkit-API-compatible loaders — **Bukkit, Spigot,
+  Paper** (and the existing Paper has always supported it) —
+  load plugins from the same `/data/plugins/` directory. Drop
+  any `.jar` from SpigotMC / Modrinth / Hangar into that folder
+  via the panel's File manager (or SFTP), restart the server,
+  done. No backend change was needed for plugins; this CHANGELOG
+  entry is just to make the wiring obvious to operators who
+  picked Bukkit/Spigot specifically to run plugins.
+
+### Notes
+
+- **No database migration.** The `loader` column is `TEXT`
+  with a per-write validation against `LOADER_SET`; adding two
+  new accepted values is a code-only change.
+- **No new dependency.** Lockfiles unchanged.
+- **Memory budgeting reminder.** During the BuildTools compile,
+  the container needs ~1–2 GiB of RAM **on top of** whatever
+  the running server will use. If the server is configured
+  with the bare minimum (1 GiB), the compile may OOM-kill. Pick
+  at least 2 GiB for the server's `memoryMb` if you plan to use
+  Bukkit or Spigot, or temporarily bump it for the first start
+  and lower it later via Settings.
+
 ## v0.40.2 — 2026-06-14
 
 ### Fixed (typography)
