@@ -222,7 +222,22 @@ deploy key.
 
 ## Security recommendations
 
+This guide gets you a working public panel. To go further — disk
+encryption (LUKS), SSH two-factor auth, post-quantum TLS, Cloudflare
+DDoS upstream, monitoring, off-site encrypted backups, and a
+pre-production audit checklist — see the dedicated guide:
+
+**→ [`HARDENING.md`](HARDENING.md)**
+
+In short, the minimum bar before announcing the panel publicly:
+
 - Harden SSH: once you have a working SSH key, disable password authentication
   in `/etc/ssh/sshd_config` (`PasswordAuthentication no`), then restart SSH.
-- Keep the system updated regularly: `apt update && apt upgrade`.
-- Keep backups of the `peregrine-data` Docker volume and of `/srv/peregrine`.
+  Add TOTP via `libpam-google-authenticator` if SSH is exposed to the
+  Internet (full procedure in `HARDENING.md` §2c).
+- Keep the system updated regularly: `apt update && apt upgrade`. Or
+  enable `unattended-upgrades` so security patches apply automatically
+  (`HARDENING.md` §5).
+- Keep backups of the `peregrine-data` Docker volume and of `/srv/peregrine`,
+  pulled OFF the host. Encrypt them with `age` before pushing to any
+  cloud bucket (`HARDENING.md` §9).

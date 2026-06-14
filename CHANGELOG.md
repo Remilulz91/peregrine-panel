@@ -2,6 +2,83 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.38.0 — 2026-06-14
+
+### Added
+
+- **`docs/HARDENING.md`** — comprehensive production hardening
+  runbook (~820 lines, 13 sections). Companion to
+  `docs/DEPLOYMENT.md`: where DEPLOYMENT gets you a working public
+  panel, HARDENING raises the security floor for operators who
+  expose the panel on the open Internet. Every section follows the
+  same shape: **why this matters → exact copy-pasteable commands →
+  how to verify it stuck**.
+
+  Covered topics:
+  - **Threat model** matrix mapping three realistic adversary
+    profiles (opportunistic scanner, targeted attacker, physical
+    theft / provider compromise) to the sections that defend
+    against each.
+  - **LUKS at-rest encryption** of the dedicated data disk, with
+    auto-unlock via a keyfile on the encrypted root for unattended
+    reboots.
+  - **SSH hardening**: public-key only, non-standard port (and the
+    safe re-application of UFW rules around the swap), TOTP second
+    factor via `libpam-google-authenticator` with
+    `AuthenticationMethods publickey,keyboard-interactive`.
+  - **Web edge / TLS**: upgrade to Caddy 2.9+ for the
+    X25519MLKEM768 post-quantum hybrid key exchange (built-in
+    since the move to Go 1.23); hardened Caddyfile with TLS 1.3
+    only, full security-header set, JSON access log with rotation.
+  - **Cloudflare DDoS upstream**: proxied DNS, UFW locked to
+    Cloudflare's published CIDRs only (so the VPS IP can't be
+    bypassed), `trusted_proxies static cloudflare` so audit logs
+    show the real client IP, free-tier WAF + rate-limit rule
+    template for `/api/auth/login`.
+  - **`unattended-upgrades`** with 04:00 auto-reboot for
+    kernel/libc patches.
+  - **System entropy**: `rngd` from `rng-tools-debian` as the
+    baseline, optional YubiKey 5+ TRNG feed for hardware
+    certified-entropy threat models.
+  - **Network and process audit**: `ss`, SUID-bit find, lightweight
+    monitoring via netdata over SSH tunnel, daily digest via
+    `logwatch`.
+  - **Extra fail2ban jails** for the panel's `/api/auth/login`
+    (parses Caddy's JSON access log) and a 404-scanner jail that
+    catches the precursor sweeps (wp-admin, `/.env`, phpmyadmin).
+  - **Off-site backups** — the explicit replacement for the
+    v0.36.x panel-side Picocrypt encryption that was removed in
+    v0.37.0: rsync over SSH to a laptop, then `age` encryption,
+    then `rclone` to S3/B2; with restore-drill cadence (every 90
+    days, recorded in `/srv/peregrine/RESTORE-TESTED.txt`).
+  - **Pre-production audit checklist** — 25 items grouped into
+    Crypto/secrets, Network, TLS, SSH, Updates, Backups, Audit
+    trail, Containers. Designed to be ticked off literally one
+    by one before announcing the panel publicly.
+  - **Appendix A — emergency response runbook** for suspected
+    compromise: don't reboot (preserve memory state), cut at
+    Cloudflare DNS, snapshot the host, rotate `JWT_SECRET`, and
+    the exact SQL to query the last 7 days of `audit_events`.
+  - **Appendix B — explicit non-goals**: MAC profiles, kernel
+    hardening LSMs, multi-host clustering, compliance frameworks.
+    Listed so readers don't waste time on items that aren't in
+    scope for a small self-hosted panel.
+
+- **`docs/DEPLOYMENT.md`** updated with a pointer to
+  `HARDENING.md` from its "Security recommendations" section, so
+  operators following the linear install flow are nudged into the
+  deeper guide once the basic deployment is working.
+- **`README.md`** callout updated.
+
+### Notes
+
+- **Pure docs release.** No code change in `backend/src/` or
+  `frontend/src/`, no dependency change, no database migration. The
+  `npm ci` lockfiles are unchanged. Operators who only care about
+  application behaviour can skip this update; operators preparing
+  a public deployment should read `HARDENING.md` end to end before
+  flipping the DNS record.
+
 ## v0.37.0 — 2026-06-14
 
 ### Removed

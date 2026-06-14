@@ -7,20 +7,17 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.37.0** — VPS-friendliness pass. The Picocrypt-format
-> encrypted backup download from v0.36.0 has been **removed**
-> entirely: the format's hardcoded 1 GiB / 4-iter Argon2id meant
-> 64 concurrent downloads would request 64 GiB of RAM — completely
-> impractical on a real VPS. The plain `.tar.gz` download is
-> unchanged. On top of that: Dashboard polling 4 s → 10 s, host
-> metrics polling 5 s → 15 s, Node V8 heap capped at 512 MiB,
-> Socket.IO `perMessageDeflate` disabled (~5–10 % CPU saved),
-> new SQLite index on `servers(owner_id)`. **No feature, no
-> security primitive, no audit event was removed beyond the
-> encrypted-download route.** Argon2id login params and all
-> Zero Trust hardening from v0.34.0 / v0.35.0 stay exactly as
-> they were. See the changelog in
-> [`CHANGELOG.md`](CHANGELOG.md).
+> **Version 0.38.0** — new [`docs/HARDENING.md`](docs/HARDENING.md)
+> production hardening guide. ~820 lines of copy-pasteable
+> commands, each with a *why* and a *verify* step, covering LUKS
+> disk encryption, SSH two-factor (TOTP), Caddy with post-quantum
+> TLS (X25519MLKEM768), Cloudflare DDoS upstream, automatic
+> security updates, system entropy (rngd + YubiKey TRNG),
+> monitoring (netdata + logwatch), advanced fail2ban jails,
+> off-site encrypted backups with `age`, and a full
+> pre-production audit checklist. No application code change in
+> this release — it's pure operator documentation. See the
+> changelog in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features
 
