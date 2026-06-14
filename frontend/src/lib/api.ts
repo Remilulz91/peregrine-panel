@@ -106,6 +106,53 @@ export interface ApiDiskUsage {
   reservedBytes: number;
 }
 
+// v0.39.0 — admin Security dashboard payloads.
+
+export interface ApiFailedLoginRow {
+  id: number;
+  kind: string;
+  username: string | null;
+  userId: string | null;
+  remoteIp: string | null;
+  details: string | null;
+  createdAt: string;
+}
+
+export interface ApiFailedLoginAggregate {
+  username: string;
+  remoteIp: string;
+  attempts: number;
+  lastAt: string;
+  firstAt: string;
+  byKind: Record<string, number>;
+}
+
+export interface ApiFailedLoginStats {
+  last24h: number;
+  last7d: number;
+  distinctUsernames7d: number;
+  distinctIps7d: number;
+}
+
+export interface ApiSecurityFailedLogins {
+  stats: ApiFailedLoginStats;
+  topOffenders: ApiFailedLoginAggregate[];
+  recent: ApiFailedLoginRow[];
+  window: { days: number; limit: number };
+}
+
+export interface ApiBannedIp {
+  jail: string;
+  ip: string;
+  bannedAt: number;
+  bantime: number;
+  expiresAt: number | null;
+}
+
+export type ApiFail2banStatus =
+  | { available: true; bans: ApiBannedIp[]; jails: string[] }
+  | { available: false; reason: 'not_configured' | 'unreadable' | 'bad_schema' };
+
 export interface ApiSubuser {
   id: string;
   serverId: string;
@@ -443,6 +490,14 @@ export const api = {
     }),
   listAdminServers: () =>
     request<{ servers: ApiAdminServer[] }>('/api/admin/servers'),
+
+  // v0.39.0 — admin Security dashboard.
+  adminSecurityFailedLogins: (limit = 100, days = 7) =>
+    request<ApiSecurityFailedLogins>(
+      `/api/admin/security/failed-logins?limit=${limit}&days=${days}`,
+    ),
+  adminSecurityBannedIps: () =>
+    request<{ status: ApiFail2banStatus }>('/api/admin/security/banned-ips'),
 
   listTemplates: () =>
     request<{ templates: ApiTemplate[] }>('/api/templates'),

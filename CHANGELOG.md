@@ -2,6 +2,87 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.39.0 — 2026-06-14
+
+### Added
+
+- **Admin-only Security dashboard.** New "Security" tab in the
+  Administration panel, gated by the same `authenticateAdmin`
+  hook as the rest of `/api/admin/*`. Four sections, refreshed
+  every 30 s:
+  - **Stats header** — failed authentications in the last 24 h
+    and 7 d, plus distinct usernames and distinct IPs targeted
+    over the last 7 d. Tells an admin at a glance whether the
+    panel is under active brute-force.
+  - **fail2ban — currently banned IPs** — pulls the live ban
+    table from the host's fail2ban SQLite database (read-only).
+    Shows jail, IP, ban timestamp, and time-to-expiry. If
+    fail2ban isn't installed or the mount isn't wired up, the
+    card renders a friendly "not configured (see
+    HARDENING.md §8)" callout instead of crashing.
+  - **Top offenders (last 7 days)** — failed auth events
+    aggregated by `(username, IP)`, ordered by attempt count
+    desc. Each row breaks the kinds down with coloured badges
+    (`login_failed`, `mfa_failed`, `sftp_failed`,
+    `rate_limited`, …).
+  - **Recent raw attempts** — newest-first table of the last
+    100 failed events, with timestamp, kind badge, username,
+    IP and free-text details.
+- New backend module `backend/src/services/securityLog.ts`:
+  read-only queries on the existing `auth_events` table —
+  `failedLoginStats()`, `topFailedLoginOffenders()`,
+  `listRecentFailedLogins()`. All client-supplied limits are
+  clamped (max 500 rows, max 90-day window) so a curious admin
+  can't accidentally pull a multi-GB payload.
+- New backend module `backend/src/lib/fail2ban.ts`: opens the
+  fail2ban SQLite DB in **read-only** mode via Node 22's
+  `node:sqlite` `readOnly: true` flag (mapped to
+  `SQLITE_OPEN_READONLY`). Filters historical rows so only
+  active bans are returned. Gracefully falls back to
+  `{ available: false, reason: '...' }` if the file is missing,
+  unreadable, or has the wrong schema.
+- Three new admin-gated routes:
+  - `GET /api/admin/security/failed-logins?limit&days`
+  - `GET /api/admin/security/banned-ips`
+- New frontend `frontend/src/components/SecurityPanel.tsx`
+  rendering inside `AdminPanel.tsx` under the new "Security"
+  tab. Bilingual EN/FR i18n keys (`admin.security.*`).
+
+### Changed
+
+- `docker-compose.yml` carries the recommended (but commented
+  out) read-only bind-mount of `/var/lib/fail2ban` →
+  `/host/fail2ban`. Operators uncomment the line once fail2ban
+  is installed on the host. Default-disabled because the mount
+  would otherwise prevent `docker compose up` on hosts that
+  haven't installed fail2ban yet.
+- `.env.example` adds the optional `FAIL2BAN_DB_PATH` variable
+  (defaults to `/host/fail2ban/fail2ban.sqlite3`; set to empty
+  string to disable the integration entirely).
+- `docs/HARDENING.md` §8 documents the panel-side integration:
+  what the mount does, what to put in `docker-compose.yml`, and
+  what happens if fail2ban is missing.
+
+### Security notes
+
+- The fail2ban integration is **strictly read-only**. The panel
+  never invokes `fail2ban-client`, never writes to the
+  fail2ban DB, and the bind-mount carries the `:ro` flag. A
+  panel RCE cannot ban or unban arbitrary IPs through this
+  feature.
+- Both endpoints are guarded by `authenticateAdmin`. A
+  non-admin user trying to query them gets 401/403 the same
+  way they would for any other `/api/admin/*` route.
+- `auth_events` already stored everything we display — there
+  is no new data collection in this release. The dashboard is
+  a *view* on data the panel was already keeping for forensic
+  reconstruction (see v0.23.0+ notes).
+
+### Notes
+
+- No new dependency. No database migration.
+- Lockfiles unchanged.
+
 ## v0.38.0 — 2026-06-14
 
 ### Added

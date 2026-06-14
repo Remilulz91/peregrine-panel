@@ -7,17 +7,15 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.38.0** — new [`docs/HARDENING.md`](docs/HARDENING.md)
-> production hardening guide. ~820 lines of copy-pasteable
-> commands, each with a *why* and a *verify* step, covering LUKS
-> disk encryption, SSH two-factor (TOTP), Caddy with post-quantum
-> TLS (X25519MLKEM768), Cloudflare DDoS upstream, automatic
-> security updates, system entropy (rngd + YubiKey TRNG),
-> monitoring (netdata + logwatch), advanced fail2ban jails,
-> off-site encrypted backups with `age`, and a full
-> pre-production audit checklist. No application code change in
-> this release — it's pure operator documentation. See the
-> changelog in [`CHANGELOG.md`](CHANGELOG.md).
+> **Version 0.39.0** — new admin-only **Security** dashboard in
+> the panel. Three live views: failed-auth stats (24 h / 7 d /
+> distinct usernames + IPs), top offenders grouped by
+> (username, IP) over the last 7 days, the last 100 raw failed
+> attempts, and the **currently banned IPs from fail2ban**
+> (read-only mount of `/var/lib/fail2ban` — optional, the
+> dashboard renders a "not configured" callout gracefully if
+> fail2ban isn't installed on the host). See the changelog in
+> [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features
 

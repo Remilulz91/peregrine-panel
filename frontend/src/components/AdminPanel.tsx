@@ -11,12 +11,13 @@ import { useTranslation, type TranslationKey } from '../lib/i18n';
 import CreateUserDialog from './CreateUserDialog';
 import EditUserDialog from './EditUserDialog';
 import ServerCard from './ServerCard';
+import SecurityPanel from './SecurityPanel';
 
 interface AdminPanelProps {
   templates: ApiTemplate[];
 }
 
-type Tab = 'users' | 'servers';
+type Tab = 'users' | 'servers' | 'security';
 
 export default function AdminPanel({ templates }: AdminPanelProps) {
   const { t } = useTranslation();
@@ -149,6 +150,13 @@ export default function AdminPanel({ templates }: AdminPanelProps) {
             className={tabClass('servers')}
           >
             {t('admin.tabServers')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab('security')}
+            className={tabClass('security')}
+          >
+            {t('admin.tabSecurity')}
           </button>
         </div>
       </div>
@@ -307,6 +315,8 @@ export default function AdminPanel({ templates }: AdminPanelProps) {
           )}
         </section>
       )}
+
+      {tab === 'security' && <SecurityPanel />}
 
       {createOpen && (
         <CreateUserDialog

@@ -148,6 +148,96 @@ const translations = {
   },
   'admin.tabUsers': { en: 'Users', fr: 'Utilisateurs' },
   'admin.tabServers': { en: 'All servers', fr: 'Tous les serveurs' },
+  'admin.tabSecurity': { en: 'Security', fr: 'Sécurité' },
+
+  // v0.39.0 — admin Security dashboard.
+  'admin.security.loadError': {
+    en: 'Unable to load the security data.',
+    fr: 'Impossible de charger les données de sécurité.',
+  },
+  'admin.security.stat.last24h': {
+    en: 'Failed auth (24 h)',
+    fr: 'Échecs auth (24 h)',
+  },
+  'admin.security.stat.last7d': {
+    en: 'Failed auth (7 d)',
+    fr: 'Échecs auth (7 j)',
+  },
+  'admin.security.stat.distinctUsernames': {
+    en: 'Distinct usernames (7 d)',
+    fr: 'Utilisateurs distincts (7 j)',
+  },
+  'admin.security.stat.distinctIps': {
+    en: 'Distinct IPs (7 d)',
+    fr: 'IPs distinctes (7 j)',
+  },
+
+  'admin.security.bansTitle': {
+    en: 'fail2ban — currently banned IPs',
+    fr: 'fail2ban — IPs actuellement bannies',
+  },
+  'admin.security.bansSubtitle': {
+    en: 'Active bans across every jail configured on the host. Read-only.',
+    fr: 'Bans actifs dans tous les jails configurés sur l’hôte. Lecture seule.',
+  },
+  'admin.security.bansNotConfigured': {
+    en: 'fail2ban integration is not configured.',
+    fr: 'L’intégration fail2ban n’est pas configurée.',
+  },
+  'admin.security.bansUnreadable': {
+    en: 'fail2ban database exists but cannot be read.',
+    fr: 'La base de données fail2ban existe mais ne peut pas être lue.',
+  },
+  'admin.security.bansBadSchema': {
+    en: 'The file at the configured path does not look like a fail2ban database.',
+    fr: 'Le fichier au chemin configuré ne ressemble pas à une base fail2ban.',
+  },
+  'admin.security.bansSetupHint': {
+    en: 'Bind-mount /var/lib/fail2ban into the panel container read-only and set FAIL2BAN_DB_PATH. See docs/HARDENING.md §8.',
+    fr: 'Bind-mountez /var/lib/fail2ban dans le conteneur du panneau en lecture seule et définissez FAIL2BAN_DB_PATH. Voir docs/HARDENING.md §8.',
+  },
+  'admin.security.bansEmpty': {
+    en: 'No active bans across {n} configured jails. Quiet day.',
+    fr: 'Aucun ban actif dans {n} jails configurés. Journée calme.',
+  },
+
+  'admin.security.offendersTitle': {
+    en: 'Top offenders (last 7 days)',
+    fr: 'Pires offenseurs (7 derniers jours)',
+  },
+  'admin.security.offendersSubtitle': {
+    en: 'Failed authentication attempts grouped by (username, IP). Click a kind badge to see the raw event log for it below.',
+    fr: 'Échecs d’authentification groupés par (utilisateur, IP). Cliquez sur un badge pour voir le journal brut ci-dessous.',
+  },
+  'admin.security.offendersEmpty': {
+    en: 'No failed authentication attempts in the last 7 days.',
+    fr: 'Aucun échec d’authentification dans les 7 derniers jours.',
+  },
+
+  'admin.security.recentTitle': {
+    en: 'Recent failed attempts',
+    fr: 'Tentatives d’échec récentes',
+  },
+  'admin.security.recentSubtitle': {
+    en: 'Last {n} failed authentication events, newest first.',
+    fr: 'Les {n} derniers échecs d’authentification, du plus récent au plus ancien.',
+  },
+  'admin.security.recentEmpty': {
+    en: 'No failed authentication events on record.',
+    fr: 'Aucun échec d’authentification enregistré.',
+  },
+
+  'admin.security.col.jail': { en: 'Jail', fr: 'Jail' },
+  'admin.security.col.ip': { en: 'IP', fr: 'IP' },
+  'admin.security.col.bannedAt': { en: 'Banned at', fr: 'Banni le' },
+  'admin.security.col.expiresIn': { en: 'Expires in', fr: 'Expire dans' },
+  'admin.security.col.username': { en: 'Username', fr: 'Utilisateur' },
+  'admin.security.col.attempts': { en: 'Attempts', fr: 'Tentatives' },
+  'admin.security.col.lastAt': { en: 'Last attempt', fr: 'Dernière tentative' },
+  'admin.security.col.kinds': { en: 'Kinds', fr: 'Types' },
+  'admin.security.col.when': { en: 'When', fr: 'Quand' },
+  'admin.security.col.kind': { en: 'Kind', fr: 'Type' },
+  'admin.security.col.details': { en: 'Details', fr: 'Détails' },
   'admin.users.title': { en: 'User accounts', fr: 'Comptes utilisateurs' },
   'admin.users.create': { en: 'Create user', fr: 'Créer un utilisateur' },
   'admin.users.empty': { en: 'No accounts yet.', fr: 'Aucun compte pour le moment.' },

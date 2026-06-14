@@ -56,6 +56,19 @@ services:
       # Backup archives (.tar.gz). Lives on the same dedicated disk as
       # the servers by default, so a single mount holds both.
       - "${BACKUPS_PATH:-/srv/peregrine/backups}:${BACKUPS_PATH:-/srv/peregrine/backups}"
+      # v0.39.0+: OPTIONAL — read-only access to the host's fail2ban
+      # SQLite database, so the admin Security dashboard can show
+      # currently banned IPs. The panel never writes to this path;
+      # the `:ro` flag is the guarantee.
+      #
+      # COMMENTED OUT by default: this mount requires fail2ban to
+      # already be installed on the host (`apt install fail2ban`),
+      # otherwise docker compose up fails with "no such file or
+      # directory". Uncomment the line below — and keep the matching
+      # FAIL2BAN_DB_PATH in your .env — once fail2ban is in place.
+      # When commented, the Security dashboard renders a friendly
+      # "not configured" callout instead of crashing.
+      # - "/var/lib/fail2ban:/host/fail2ban:ro"
 
 volumes:
   peregrine-data:

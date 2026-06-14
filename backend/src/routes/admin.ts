@@ -30,6 +30,12 @@ import {
 import { getContainerState } from '../lib/docker';
 import { deprovisionServer } from '../services/provisioning';
 import { disableMfa, userHasMfa } from '../lib/mfa';
+import {
+  failedLoginStats,
+  listRecentFailedLogins,
+  topFailedLoginOffenders,
+} from '../services/securityLog';
+import { readFail2banStatus } from '../lib/fail2ban';
 
 interface CreateUserBody {
   username: string;
@@ -309,5 +315,31 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
       }),
     );
     return { servers: result };
+  });
+
+  // v0.39.0 — Security dashboard (admin only). Two small read-only
+  // endpoints, hitting the existing `auth_events` table plus the
+  // optional fail2ban DB mount. Polled every ~30 s from the UI.
+
+  app.get('/security/failed-logins', async (request) => {
+    const query = request.query as { limit?: string; days?: string };
+    const limit = Math.min(
+      500,
+      Math.max(1, Number.parseInt(query.limit ?? '100', 10) || 100),
+    );
+    const days = Math.min(
+      90,
+      Math.max(1, Number.parseInt(query.days ?? '7', 10) || 7),
+    );
+    return {
+      stats: failedLoginStats(),
+      topOffenders: topFailedLoginOffenders(days, 50),
+      recent: listRecentFailedLogins(limit),
+      window: { days, limit },
+    };
+  });
+
+  app.get('/security/banned-ips', async () => {
+    return { status: readFail2banStatus() };
   });
 }

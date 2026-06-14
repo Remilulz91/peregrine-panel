@@ -621,6 +621,33 @@ fail2ban-client status peregrine-login
 fail2ban-client status caddy-404-scanner
 ```
 
+### Optional — read the bans inside the panel (v0.39.0+)
+
+The admin **Security** tab can read fail2ban's live ban list and
+display it next to Peregrine's own failed-login stats. The
+integration is **read-only** — the panel cannot ban or unban
+anyone, it only displays what fail2ban has already decided.
+
+Wiring is done in `docker-compose.yml` by bind-mounting fail2ban's
+database into the container with the `:ro` flag:
+
+```yaml
+services:
+  peregrine:
+    volumes:
+      - "/var/lib/fail2ban:/host/fail2ban:ro"
+    environment:
+      - FAIL2BAN_DB_PATH=/host/fail2ban/fail2ban.sqlite3
+```
+
+This mount is present by default in the docker-compose.yml that
+ships with v0.39.0+. If fail2ban is **not** installed on the host
+(rare, since DEPLOYMENT.md §8 sets it up), the mount fails the
+container start. In that case, either install fail2ban, or comment
+the volume line out and set `FAIL2BAN_DB_PATH=""` in `.env` — the
+dashboard will then show a "not configured" callout and Peregrine
+will start normally.
+
 ---
 
 ## 9. Off-site backups (replacement for the panel-side encryption)
