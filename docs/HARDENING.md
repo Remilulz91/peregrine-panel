@@ -283,6 +283,14 @@ cat > /etc/caddy/Caddyfile <<'EOF'
     # servers { protocols h1 h2 }
 }
 
+# v0.43.1+: catch-all for any HTTP request that isn't the
+# configured canonical domain (bare server IP, www. typos, stale
+# DNS records). Redirects to the canonical HTTPS URL so neither
+# the Caddy welcome page nor a downgrade attack can surface.
+:80 {
+    redir https://your-domain.example{uri} permanent
+}
+
 your-domain.example {
     encode zstd gzip
 

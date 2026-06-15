@@ -137,10 +137,29 @@ curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /
 apt update && apt install -y caddy
 ```
 
-Configure Caddy as a reverse proxy (replace the domain):
+Configure Caddy as a reverse proxy. Pick **one** of the two
+configurations below depending on how you want the panel
+reachable.
+
+### Option A — Production (HTTPS, recommended)
+
+This is the default and what `install.sh` writes. HTTP requests
+to the bare server IP are redirected to the canonical HTTPS
+domain — anything that isn't your domain (typos, an old DNS
+record, someone typing the IP directly) lands on the panel via
+HTTPS instead of Caddy's default welcome page.
 
 ```bash
 cat > /etc/caddy/Caddyfile <<'EOF'
+# v0.43.1+: catch-all for any request that isn't the configured
+# domain (bare server IP, www. typos, stale DNS). Redirects to the
+# canonical HTTPS URL. Without this block, Caddy serves its default
+# welcome page for any unknown hostname — both an annoying UX
+# regression and a small information leak about the server stack.
+:80 {
+    redir https://your-domain.example{uri} permanent
+}
+
 your-domain.example {
     reverse_proxy 127.0.0.1:3000
 }
@@ -148,7 +167,41 @@ EOF
 systemctl reload caddy
 ```
 
-Caddy automatically obtains and renews the HTTPS certificate.
+Behaviour you get:
+
+- `https://your-domain.example` → panel, with a free Let's Encrypt cert.
+- `http://your-domain.example` → 308 redirect to HTTPS (Caddy
+  default for any domain-named site block).
+- `http://<server-IP>` → 308 redirect to `https://your-domain.example/`
+  (the new `:80` catch-all).
+- `https://<server-IP>` → browser cert-name-mismatch warning
+  (Let's Encrypt cannot issue a cert for a bare IP). This is
+  fine — nobody legitimately types the IP in.
+
+### Option B — HTTP-only (no domain, intranet / lab)
+
+If you don't have a domain and want to reach the panel via the
+server's IP over plain HTTP only, use this instead:
+
+```bash
+cat > /etc/caddy/Caddyfile <<'EOF'
+# HTTP-only deployment. The `http://` scheme prefix tells Caddy
+# to never try to issue an HTTPS cert — it just serves the panel
+# on port 80 for any hostname (domain or bare IP).
+http:// {
+    reverse_proxy 127.0.0.1:3000
+}
+EOF
+systemctl reload caddy
+```
+
+`http://<server-IP>` will now serve the panel directly.
+**Important caveat**: passwords and session cookies travel
+unencrypted over the wire. Only use this on a trusted local
+network. Switch back to Option A as soon as you have a domain.
+
+Caddy automatically obtains and renews the HTTPS certificate in
+Option A; nothing to renew in Option B.
 
 ## 7. Firewall (UFW)
 

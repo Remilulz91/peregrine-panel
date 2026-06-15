@@ -2,6 +2,67 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.43.1 — 2026-06-14
+
+### Fixed (operator docs)
+
+- **Caddy welcome page on bare-IP access.** The Caddyfile
+  shipped by `install.sh` (and the matching examples in
+  `docs/DEPLOYMENT.md` §6 and `docs/HARDENING.md` §3b) only
+  declared a site block for the canonical domain. Any HTTP
+  request whose `Host` header didn't match that exact string
+  — including someone typing the server's bare IP into a
+  browser — fell through to Caddy's default behaviour, which
+  is to serve its "Welcome / how to set up Caddy" page. Both
+  an annoying UX regression and a small information leak
+  about the server stack. Fixed by adding a `:80` catch-all
+  to every shipped Caddyfile:
+
+  ```caddyfile
+  :80 {
+      redir https://your-domain.example{uri} permanent
+  }
+
+  your-domain.example {
+      reverse_proxy 127.0.0.1:3000
+      # …
+  }
+  ```
+
+  Behaviour after the fix:
+  - `http://<server-IP>` → `301 / 308 → https://your-domain.example/`
+  - `http://www.your-domain.example` → same redirect
+  - `http://your-domain.example` → Caddy's built-in HTTPS auto-upgrade
+    (unchanged)
+  - `https://<server-IP>` → browser cert-name-mismatch warning
+    (Let's Encrypt cannot issue certs for bare IPs — out of
+    scope for the panel, and not a security regression: nobody
+    accidentally types a server IP with `https://`).
+
+### Added (operator docs)
+
+- **DEPLOYMENT.md §6 now documents two modes:**
+  - **Option A — Production (HTTPS).** The default. Catch-all
+    `:80` block + canonical-domain site block. Picked by
+    `install.sh`.
+  - **Option B — HTTP-only (no domain, intranet / lab).** A
+    one-block Caddyfile (`http://` site) that serves the panel
+    on plain HTTP for any hostname. Comes with a "passwords
+    travel unencrypted, only use on a trusted local network"
+    caveat. Replaces what used to be an undocumented edge
+    case for users without a domain.
+
+### Notes
+
+- **Pure documentation + installer fix.** No backend code,
+  no frontend code, no database migration. Lockfiles unchanged.
+- **For existing deployments**, the fix is a one-liner: SSH
+  into the server, edit `/etc/caddy/Caddyfile` to add the
+  `:80 { redir https://your-domain.example{uri} permanent }`
+  block above the existing site block, then
+  `systemctl reload caddy`. Or pull v0.43.1 and re-run
+  `install.sh your-domain.example`.
+
 ## v0.43.0 — 2026-06-14
 
 ### Added — two-dropdown loader matrix

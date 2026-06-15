@@ -7,20 +7,18 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.43.0** — the loader picker is now a **2-dropdown
-> matrix**: one for the mod loader (Fabric / Quilt / Forge /
-> NeoForge / none) and one for the plugin API (Paper / Purpur /
-> Folia / Spigot / Bukkit / none). The panel resolves the
-> combination to one server binary deterministically — Forge +
-> Bukkit → **Arclight**, Fabric + Bukkit → **Banner** — and
-> shows the resolved name + a hybrid-server warning. Invalid
-> pairs (e.g. Forge + Paper, no binary exists) disable Create
-> and explain why. Adds **Arclight** + **Banner** as backend
-> loaders alongside the v0.42.0 Mohist. Bonus UI fix: all
-> dropdowns now use `appearance-none` + a custom chevron so the
-> trigger stays fully rounded (the OS-native popup list is still
-> OS-rendered — a fully custom dropdown component is planned for
-> a future release). See the changelog in
+> **Version 0.43.1** — operator-doc fix. The shipped Caddyfile
+> (in `install.sh`, `docs/DEPLOYMENT.md` §6 and
+> `docs/HARDENING.md` §3b) only configured a site block for the
+> canonical domain. Any HTTP request whose `Host` header
+> didn't match — bare server IP, `www.` typo, stale DNS —
+> landed on Caddy's default welcome page. The Caddyfile now
+> includes a `:80` catch-all that redirects every such request
+> to `https://your-domain.example/`. DEPLOYMENT.md also gains an
+> **Option B** for HTTP-only / no-domain deployments (intranet
+> / lab) that simply serves the panel on any hostname over
+> plain HTTP. Pure documentation + installer fix; no panel
+> code change. See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features

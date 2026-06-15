@@ -83,7 +83,15 @@ else
 fi
 
 echo "==> Configuring Caddy for ${DOMAIN}..."
+# v0.43.1+: the `:80` catch-all redirects every HTTP request whose
+# Host header isn't ${DOMAIN} (bare server IP, www. typos, stale DNS)
+# to the canonical HTTPS URL. Without it, those requests hit Caddy's
+# default welcome page — annoying UX and a small information leak.
 cat > /etc/caddy/Caddyfile <<EOF
+:80 {
+    redir https://${DOMAIN}{uri} permanent
+}
+
 ${DOMAIN} {
     reverse_proxy 127.0.0.1:3000
 }
