@@ -7,14 +7,13 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.43.9** — `tailwindcss` bumped from **3.4.17 to
-> 3.4.19** (patch in the 3.x line), per Dependabot PR #17.
-> Two upstream bug-fix patches (`sibling-*()` inside `calc(…)`,
-> Node 22.18+ `require.cache` resolution). The ignore rule
-> from v0.43.7 keeps blocking the v4 jump while letting these
-> in-major patches flow exactly as designed. Docker rebuild
-> recommended. See the changelog in
-> [`CHANGELOG.md`](CHANGELOG.md).
+> **Version 0.43.10** — `actions/setup-node` bumped from **v4
+> to v6** in `.github/workflows/build.yml` (2 refs — Backend
+> + Frontend jobs), per Dependabot PR #8. Compat verified
+> pre-merge by the PR's own CI (both Build jobs passed with
+> `node-version: 22` on the v6 action). Pure CI refresh; no
+> panel code change, no Docker rebuild needed. See the
+> changelog in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features
 

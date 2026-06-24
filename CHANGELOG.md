@@ -2,6 +2,30 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.43.10 — 2026-06-24
+
+### Changed (CI)
+
+- **`actions/setup-node` bumped from `@v4` to `@v6`** in
+  `.github/workflows/build.yml` (both Backend and Frontend
+  jobs), per Dependabot PR #8. v6 ships an updated runtime
+  (newer Node on the runner side, modernised cache handling)
+  with the same input surface our YAML uses
+  (`node-version: 22`, `cache: npm`, `cache-dependency-path`).
+- **Compat verified pre-merge.** The Dependabot PR's own CI
+  ran both Build jobs with the v6 action against our
+  `package-lock.json` files and passed:
+  - Backend (typecheck + build): 18 s ✓
+  - Frontend (typecheck + build): 15 s ✓
+
+### Notes
+
+- **Pure CI metadata change.** No backend code, no frontend
+  code, no Docker rebuild needed. The panel running in
+  production is unaffected; only future PRs / pushes will
+  exercise the v6 action.
+- Dependabot PR #8 auto-closes when this hits `main`.
+
 ## v0.43.9 — 2026-06-24
 
 ### Changed (frontend deps)
