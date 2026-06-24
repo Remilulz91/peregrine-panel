@@ -2,6 +2,63 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.43.5 — 2026-06-24
+
+### Changed (backend deps)
+
+Dependabot PR #13 proposed 5 bumps in one batch. We
+cherry-picked **3 outright**, **bumped 2 within their current
+major instead** of accepting Dependabot's cross-major target,
+and added `ignore` rules to `dependabot.yml` so the cross-major
+nag stops on those two until they're actually ready.
+
+**Applied as proposed:**
+
+| Package | From | To | Rationale |
+|---|---|---|---|
+| `@fastify/multipart` | 9.0.3 | 10.0.0 | Compat with `fastify@5.8.5` maintained; v10 is the version that pairs with Fastify v5+. |
+| `dotenv` | 16.4.7 | 17.4.2 | Our only use is `dotenv.config({ path })` in `config.ts` — the v16→v17 breaking changes (callback signature removal, stricter quote parsing, removed `silent` option) don't touch our call site. |
+| `@types/dockerode` | 3.3.31 | 4.0.1 | Types-only, runtime `dockerode@5.0.0` unchanged. |
+
+**Bumped within current major instead** of Dependabot's
+cross-major target:
+
+| Package | Dependabot wanted | Applied | Why |
+|---|---|---|---|
+| `@types/node` | `26.0.0` | `22.20.0` (latest 22.x) | The runtime is Node 22 LTS (`engines: ">=22 <23"`). `@types/node@26` would advertise Node-26-only APIs (new `fs.*`, `node:sqlite` additions, etc.) to TypeScript — code using them would compile cleanly and then crash at runtime on Node 22. Sticking to the matching major prevents that whole class of bugs. |
+| `typescript` | `6.0.3` | `5.9.3` (latest stable 5.x) | TS v6 ships breaking changes (stricter type-narrowing, removed legacy syntax, `--strict` default shifts). Adopting it requires a full repo typecheck pass + manual fixes to anything the stricter inference now flags. Worth doing in its own release, not folded into a routine dep bump. |
+
+### Added — Dependabot ignore rules
+
+```yaml
+ignore:
+  - dependency-name: "@types/node"
+    update-types: ["version-update:semver-major"]
+  - dependency-name: "typescript"
+    update-types: ["version-update:semver-major"]
+```
+
+Dependabot will keep proposing minor / patch bumps within the
+current majors (so we still get `22.21.x` and `5.10.x` when
+they ship) — only the cross-major churn is silenced. To
+explicitly take the TS v6 or `@types/node` v26+ jump later,
+either remove the relevant `ignore` entry or use `@dependabot
+allow @types/node major` on a PR.
+
+### Notes
+
+- **No backend source code change.** Dotenv and multipart v10
+  upgrades verified against our actual call sites — no migration
+  needed.
+- **Lockfile fully repinned.** Backend `package-lock.json`
+  regenerated incrementally; every entry retains its
+  `resolved` + `integrity` fields (verified post-regen).
+- Frontend lockfile root version bumped to 0.43.5 to stay in
+  sync; no other frontend change.
+- **Docker rebuild required**: `docker compose up -d --build`.
+  The new `node_modules/` need to land in the runtime image.
+- Dependabot PR #13 auto-closes when this hits `main`.
+
 ## v0.43.4 — 2026-06-24
 
 ### Changed (CI)

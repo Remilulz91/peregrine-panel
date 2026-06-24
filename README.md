@@ -7,13 +7,16 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.43.4** — CI tooling refresh. `actions/checkout`
-> bumped from **v4 to v7** across `build.yml` (×2) and
-> `secret-scan.yml` (×1), per Dependabot PR #14. No source
-> code change; CI uses a slightly newer Node runner on the
-> GitHub side. Pure CI dependency update; no Docker rebuild
-> needed for the panel itself. See the changelog in
-> [`CHANGELOG.md`](CHANGELOG.md).
+> **Version 0.43.5** — Dependabot PR #13 cherry-picked. Took
+> the 3 safe bumps (`@fastify/multipart` 9→10, `dotenv` 16→17,
+> `@types/dockerode` 3→4), bumped `@types/node` and `typescript`
+> within their current majors (22.10.7→22.20.0 and 5.7.3→5.9.3),
+> **refused** the cross-major jumps Dependabot wanted there
+> (`@types/node@26` would have broken Node-22-runtime alignment;
+> `typescript@6` ships breaking changes that need a full
+> typecheck pass first). Added `ignore` rules in `dependabot.yml`
+> so the cross-major nag stops on those two. Docker rebuild
+> recommended. See the changelog in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features
 

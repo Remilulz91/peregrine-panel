@@ -19,6 +19,22 @@ updates:
       backend-deps:
         patterns:
           - "*"
+    # v0.43.5+: pin two majors that need manual review before bumping.
+    #   - @types/node tracks the runtime; we run Node 22 LTS in
+    #     production, so we stay on @types/node@22.x. A 26.x bump
+    #     would expose Node 26 APIs to TypeScript that don't exist
+    #     at runtime → silent compile-OK / runtime-crash class of
+    #     bugs.
+    #   - typescript v6 / v7 ship breaking changes (stricter
+    #     defaults, removed legacy syntax) that need a full
+    #     typecheck pass before we adopt; let the ecosystem settle.
+    # Dependabot will keep proposing minor / patch bumps within
+    # those majors — only the cross-major nag is silenced.
+    ignore:
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: npm
     directory: /frontend
