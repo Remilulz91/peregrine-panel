@@ -1,6 +1,6 @@
 {
   "name": "peregrine-backend",
-  "version": "0.43.2",
+  "version": "0.43.3",
   "private": true,
   "description": "Peregrine - panel API (Fastify, TypeScript)",
   "license": "SEE LICENSE IN ../LICENSE",
@@ -34,6 +34,7 @@
     "node": ">=22 <23"
   },
   "overrides": {
-    "esbuild": "0.28.1"
+    "esbuild": "0.28.1",
+    "ws": "8.21.0"
   }
 }

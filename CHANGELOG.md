@@ -2,6 +2,64 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.43.3 — 2026-06-24
+
+### Security
+
+- **GHSA — `ws < 8.21.0` memory-exhaustion DoS (High).**
+  Dependabot raised the advisory on the panel's repo on
+  2026-06-24. The `ws` WebSocket library, version 8.0.0 →
+  8.20.x, allocates structural wrappers per WebSocket fragment
+  in a way that lets a remote peer force OOM-kill of the
+  receiver by streaming a high volume of 1-byte non-final
+  fragments at modest bandwidth.
+  - Reaches Peregrine as a **transitive** dependency:
+    - Backend: `socket.io@4.8.3 → … → ws@8.20.1` (the live
+      console socket).
+    - Frontend: `socket.io-client@4.8.1 → … → ws@8.20.1` (the
+      browser side of the same socket).
+  - **Mitigation applied**: both `backend/package.json` and
+    `frontend/package.json` add `"ws": "8.21.0"` to their
+    `overrides` block, alongside the existing `esbuild` pin
+    from v0.34.0. Both `package-lock.json` files regenerated
+    incrementally to keep every other transitive
+    `resolved`/`integrity` field intact; verified post-regen:
+    `npm ls ws` reports `ws@8.21.0` everywhere it appears.
+  - **Why we patched directly rather than waiting for
+    Dependabot's PR to merge**: identical effect on the
+    dependency tree (npm `overrides` is the strongest pin
+    available), and it keeps the panel's release cadence in
+    sync with the CHANGELOG / tags instead of producing an
+    out-of-band `dependabot/…` commit on `main`.
+  - Patched version: `ws@8.21.0` ([upstream commit](https://github.com/websockets/ws/commit/bca91adf15677e47dbe4f959653452727be28b94)).
+  - Credit to Nadav Magier for the responsible disclosure.
+
+### Action required
+
+```bash
+cd peregrine-panel
+git pull
+docker compose up -d --build     # ws@8.21.0 picked up at install time
+```
+
+After the rebuild:
+
+```bash
+docker exec peregrine sh -c 'cat /app/backend/node_modules/ws/package.json | grep \"version\"'
+# Expected: "version": "8.21.0",
+```
+
+### Notes
+
+- **Pure dependency pin**, no panel code change, no API
+  change, no migration. The two Dependabot PRs (#13 / #16)
+  auto-close when this hits `main`.
+- The `ws` package will reach 8.22.0+ eventually with further
+  patches; Dependabot will continue to alert and we'll bump
+  the override at that point. Keeping `"ws": "8.21.0"` as an
+  exact pin (no caret) matches the supply-chain policy from
+  v0.35.0 (`save-exact=true` in `.npmrc`).
+
 ## v0.43.2 — 2026-06-14
 
 ### Fixed (regression — backups + scheduled tasks)

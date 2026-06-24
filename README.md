@@ -7,17 +7,15 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.43.2** — **regression fix** in the Dockerfile.
-> The v0.34.0 anti-LOLBin hardening accidentally removed
-> `tar`, `gzip` and `gunzip` from the runtime container — but
-> the backup service spawns `tar -czf` to make archives and
-> `tar -xzf` to restore them. Every backup attempt (manual
-> AND via the schedule worker) failed with a "tar: command
-> not found" the moment a cache-less rebuild made the rm
-> actually take effect. The Dockerfile now keeps tar+gzip
-> explicitly. **A Docker rebuild is required** to pick up the
-> fix: `docker compose up -d --build`. See the changelog in
-> [`CHANGELOG.md`](CHANGELOG.md).
+> **Version 0.43.3** — **security advisory fix**. GitHub /
+> Dependabot reported a High-severity DoS in `ws < 8.21.0`
+> (memory exhaustion via tiny WebSocket fragments). It reaches
+> us as a transitive dep through `socket.io@4.8.3` (backend)
+> and `socket.io-client@4.8.1` (frontend). Both lockfiles now
+> force `ws@8.21.0` via the existing `overrides` block — no
+> wait for upstream socket.io to re-pin. **Docker rebuild
+> required**: `docker compose up -d --build`. See the
+> changelog in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features
 
