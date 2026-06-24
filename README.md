@@ -7,18 +7,16 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.43.1** — operator-doc fix. The shipped Caddyfile
-> (in `install.sh`, `docs/DEPLOYMENT.md` §6 and
-> `docs/HARDENING.md` §3b) only configured a site block for the
-> canonical domain. Any HTTP request whose `Host` header
-> didn't match — bare server IP, `www.` typo, stale DNS —
-> landed on Caddy's default welcome page. The Caddyfile now
-> includes a `:80` catch-all that redirects every such request
-> to `https://your-domain.example/`. DEPLOYMENT.md also gains an
-> **Option B** for HTTP-only / no-domain deployments (intranet
-> / lab) that simply serves the panel on any hostname over
-> plain HTTP. Pure documentation + installer fix; no panel
-> code change. See the changelog in
+> **Version 0.43.2** — **regression fix** in the Dockerfile.
+> The v0.34.0 anti-LOLBin hardening accidentally removed
+> `tar`, `gzip` and `gunzip` from the runtime container — but
+> the backup service spawns `tar -czf` to make archives and
+> `tar -xzf` to restore them. Every backup attempt (manual
+> AND via the schedule worker) failed with a "tar: command
+> not found" the moment a cache-less rebuild made the rm
+> actually take effect. The Dockerfile now keeps tar+gzip
+> explicitly. **A Docker rebuild is required** to pick up the
+> fix: `docker compose up -d --build`. See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features

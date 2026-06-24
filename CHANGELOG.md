@@ -2,6 +2,80 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.43.2 — 2026-06-14
+
+### Fixed (regression — backups + scheduled tasks)
+
+- **`tar` was deleted from the runtime container by the
+  anti-LOLBin hardening introduced in v0.34.0**, but
+  `backend/src/services/backups.ts` spawns the system `tar`
+  binary in two code paths:
+  - `runTarCreate()` — `tar -czf <archive> -C <parent> <child>`,
+    used by every backup creation (manual via the *Backups* tab,
+    automatic via the *Schedules* worker).
+  - `runTarExtract()` — `tar -xzf <archive> -C <parent>`, used
+    by every backup restore.
+
+  Both failed with `tar: command not found` the moment a
+  cache-less Docker rebuild made the `rm -f /usr/bin/tar …` line
+  actually take effect. User-visible symptoms reported on
+  v0.43.1:
+  - *Backups → Create* → no row appears, server log shows
+    "backup creation failed".
+  - *Schedules → Run now* on a backup schedule → HTTP 500
+    `Could not run the schedule.`
+  - Automatic scheduled backups silently log "tar create exited
+    127" on every tick.
+- **Fix**: `tar`, `gzip`, `gunzip` are no longer in the
+  Dockerfile's anti-LOLBin removal list. A new comment block
+  spells out why: they ARE technically LOLBins from an attacker's
+  point of view, but they're functional dependencies of the panel
+  itself; the trade-off is accepted. `du` is also kept (used by
+  `diskQuotaWorker` + `measureDirectorySize`) — it was never on
+  the removal list but is now explicitly mentioned. All the
+  *other* LOLBins removed in v0.34.0 (`apt`, `dpkg`, `find`,
+  `xargs`, `curl`, `wget`, `ssh`, `scp`, `nc`, `ncat`, `xxd`,
+  `base32`, `sftp`) stay removed — no security regression on
+  those.
+
+### Why this only surfaced now
+
+The `rm -f` shipped in v0.34.0, but the silent `|| true` fallback
+meant the deletion was a no-op on Docker layers that had cached
+the previous filesystem state. Many operators (including the
+maintainer's own deployment) had been re-using a cached layer
+across v0.34.0 → v0.43.1 builds and so `tar` was still actually
+on disk in their running containers. Recent `install.sh` runs and
+`docker compose up -d --build` invocations triggered a full
+no-cache rebuild that finally cleared that layer — and the
+breakage surfaced immediately.
+
+### Action required
+
+Pull v0.43.2 and run:
+
+```bash
+cd peregrine-panel
+git pull
+docker compose up -d --build
+```
+
+After the rebuild, `docker exec peregrine which tar` should
+print `/usr/bin/tar`, and both manual backups and scheduled
+tasks should run cleanly. Existing backup archives are
+unaffected — only NEW backup creation and existing-archive
+restore needed the binary.
+
+### Notes
+
+- **No backend code change**, no migration. Pure Dockerfile +
+  CHANGELOG.
+- **A future hardening pass** could replace the `spawn('tar', …)`
+  calls with a pure-Node tar implementation (`node-tar` or
+  `tar-stream`), making the panel binary-free again. Out of
+  scope for this patch — the surgical fix is to restore the
+  binary the existing code depends on.
+
 ## v0.43.1 — 2026-06-14
 
 ### Fixed (operator docs)

@@ -39,15 +39,25 @@ RUN npm --prefix backend ci --omit=dev --ignore-scripts && npm cache clean --for
 # exfiltration / persistence. `node` remains the sole significant
 # binary an attacker could leverage. Specifically removed: apt + dpkg
 # (no further package installs), find/xargs (discovery), curl/wget
-# (HTTP exfil — not in slim by default but defence in depth), tar
-# (mass archiving), gzip, ssh client, base64 + xxd if present.
+# (HTTP exfil — not in slim by default but defence in depth), ssh
+# client, base64 + xxd if present.
 # We keep coreutils minimal (rm, mv, cat, ls — needed by the entrypoint
 # and HEALTHCHECK). If something we removed is required, the container
 # crashes immediately on start which is what we want.
+#
+# v0.43.2+: we KEEP `tar` + `gzip` + `gunzip` — earlier versions
+# tried to remove them too, but `services/backups.ts` spawns
+# `tar -czf` to create backup archives and `tar -xzf` to restore
+# them. Removing those binaries broke every backup (manual + via
+# the schedule worker) with a "tar: command not found" the moment
+# the cache-less Docker layer ran the rm. They ARE technically
+# LOLBins from an attacker's POV, but they're functional
+# dependencies of the panel itself; trade-off accepted. `du` is
+# also kept (used by diskQuotaWorker + measureDirectorySize) —
+# it's part of coreutils and was never on the removal list.
 RUN apt-get update -y && apt-get install -y --no-install-recommends ca-certificates \
     && rm -f /usr/bin/apt /usr/bin/apt-get /usr/bin/dpkg /usr/bin/dpkg-deb /usr/bin/dpkg-query 2>/dev/null || true \
     && rm -f /usr/bin/find /usr/bin/xargs /usr/bin/curl /usr/bin/wget 2>/dev/null || true \
-    && rm -f /usr/bin/tar /usr/bin/gzip /usr/bin/gunzip /bin/tar /bin/gzip 2>/dev/null || true \
     && rm -f /usr/bin/ssh /usr/bin/scp /usr/bin/nc /usr/bin/ncat 2>/dev/null || true \
     && rm -f /usr/bin/xxd /usr/bin/base32 /usr/bin/sftp 2>/dev/null || true \
     && rm -rf /var/lib/apt/lists/* /var/cache/apt 2>/dev/null || true
