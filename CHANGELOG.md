@@ -2,6 +2,36 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.43.4 — 2026-06-24
+
+### Changed (CI)
+
+- **`actions/checkout` bumped from `@v4` to `@v7`** in every
+  workflow, per Dependabot PR #14:
+  - `.github/workflows/build.yml` — both the Backend and
+    Frontend jobs.
+  - `.github/workflows/secret-scan.yml` — the Gitleaks job
+    (with `fetch-depth: 0` preserved).
+- The major bump v4 → v7 is purely a GitHub-side runtime
+  refresh (newer Node on the runner, updated default git
+  flags). Our workflow YAML doesn't use any flag removed by
+  the bump, so the diff is the version string only.
+
+### Notes
+
+- **Pure CI metadata change.** No backend code, no frontend
+  code, no Docker rebuild needed. The panel running in
+  production is unaffected; only future PRs / pushes will
+  exercise the v7 action.
+- Dependabot PR #14 will auto-close when this hits `main`.
+- The Dependabot warning "label could not be found: ci" on
+  every PR is unrelated to this fix — it's a repo-config item
+  on the GitHub UI side (the `ci` label needs to be created
+  in *Repository → Labels → New label*, alongside `backend`,
+  `frontend`, `docker` for the matching `dependabot.yml`
+  entries). Once the labels exist, Dependabot stops warning
+  and uses them to tag PRs for easy filtering.
+
 ## v0.43.3 — 2026-06-24
 
 ### Security
