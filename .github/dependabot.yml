@@ -118,3 +118,12 @@ updates:
       - docker
     commit-message:
       prefix: "deps(docker)"
+    # v0.43.11+: lock the Node base image to its current major.
+    # We're on Node 24 LTS (active LTS, EOL April 2028); Node 26
+    # only enters LTS in October 2026 and isn't worth chasing
+    # before then. Minor / patch bumps within the 24.x line still
+    # flow (24.1, 24.2, …). To accept the next major when it
+    # becomes LTS-worthy, remove this entry for one release.
+    ignore:
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]

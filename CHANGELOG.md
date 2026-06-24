@@ -2,6 +2,98 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.43.11 — 2026-06-24
+
+### Changed — Docker base image
+
+- **`node:22-slim` → `node:24-slim`** in the Dockerfile, every
+  stage:
+  - `FROM node:24-slim AS frontend-build`
+  - `FROM node:24-slim AS backend-build`
+  - `FROM node:24-slim AS runtime`
+- **Engines constraint bumped** in both `backend/package.json`
+  and `frontend/package.json`: `"node": ">=22 <23"` →
+  `"node": ">=24 <25"`. The constraint stays scoped to a
+  single major so dev / CI environments can't drift onto a
+  different Node line without a deliberate edit.
+
+### Why Node 24 and not Node 26 (what Dependabot proposed)
+
+PR #7 from Dependabot proposed `node:22-slim → node:26-slim`.
+The audit pass in v0.42.0 already mapped out the Node LTS
+landscape:
+
+| Node line | Status mid-2026 | EOL | Verdict |
+|---|---|---|---|
+| **Node 22** | maintenance LTS (since Oct 2025) | April 2027 | What we were on — slower patch cadence the closer we get to EOL |
+| **Node 24** | **active LTS** | April 2028 | What we picked — current upstream attention, ~22 months of LTS runway |
+| **Node 26** | not yet LTS — enters LTS October 2026 | April 2029 | Premature for a production base image; LTS isn't decreed until release week |
+
+Bumping straight to Node 26 in June 2026 would put production
+on a release line whose LTS guarantee doesn't exist yet —
+breaking changes can still land between minor versions of a
+pre-LTS line. Node 24, on the other hand, has been the active
+LTS since October 2025: well-vetted, with the
+`--allow-fs-read`, native `node:sqlite` stable API, and
+performance work we already rely on.
+
+### Added — Docker dependabot ignore rule
+
+```yaml
+- package-ecosystem: docker
+  …
+  ignore:
+    - dependency-name: "node"
+      update-types: ["version-update:semver-major"]
+```
+
+Minor / patch bumps within the 24.x line still flow normally
+(e.g. `node:24.5-slim` → `node:24.6-slim` if Docker publishes
+that level of tag). The rule only silences the cross-major
+nag until we explicitly decide Node 26 is ready (October 2026
+at the earliest).
+
+### Updated — docs/HARDENING.md §3d
+
+The "planned migration" sub-section is rewritten now that the
+migration is done — explains the current state (Node 24 LTS),
+the rationale for not chasing Node 26 yet, and how to make
+the next jump once Node 26 becomes LTS-worthy.
+
+### Action required
+
+```bash
+cd peregrine-panel
+git pull
+docker compose up -d --build      # required: pulls node:24-slim
+```
+
+Post-rebuild sanity check:
+
+```bash
+docker exec peregrine node --version
+# Expected: v24.x.x
+```
+
+### Notes — things to watch on first run
+
+- **Native bindings**: `@node-rs/argon2` and `ssh2` both ship
+  prebuilt N-API binaries for Node 18 / 20 / 22 / 24, so the
+  `npm ci --ignore-scripts` step in the Dockerfile picks the
+  right prebuilt without needing to compile anything from
+  source. If a future native dep doesn't have Node 24
+  prebuilts, the build will fail loudly — not silently.
+- **`node:sqlite`**: API has been stable since Node 22.5.0;
+  Node 24 ships further improvements (transactions, faster
+  prepared-statement reuse). Our usage compatible with both.
+- **Argon2id hashes**: unchanged on disk — `@node-rs/argon2`
+  produces the same PHC-format strings whether it's running
+  on Node 22 or 24. Existing user passwords keep verifying.
+- **Heap cap**: `NODE_OPTIONS=--max-old-space-size=512` from
+  v0.37.0 still applies, V8 in Node 24 honours it the same
+  way.
+- Dependabot PR #7 auto-closes when this hits `main`.
+
 ## v0.43.10 — 2026-06-24
 
 ### Changed (CI)

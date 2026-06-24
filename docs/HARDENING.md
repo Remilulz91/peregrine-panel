@@ -426,26 +426,36 @@ curl -k --resolve your-domain.example:443:YOUR.VPS.IP.HERE https://your-domain.e
 
 ---
 
-### 3d. (Optional) Plan the Node.js base-image bump
+### 3d. Node.js LTS line
 
-**Why.** The panel's Dockerfile uses `node:22-slim` as its base image.
-Node 22 went into **maintenance LTS** in October 2025 and reaches
-end-of-life in April 2027. Node 24 is the **active LTS** as of
-mid-2026 (EOL April 2028), and Node 26 enters LTS in October 2026.
-Staying on Node 22 is fine for the next ~10 months but you'll want
-to plan the bump:
+**Why.** The Node major underneath the panel container determines
+which security patches, V8 fixes and native-module ABIs ship to
+production. Picking the wrong line means either running on a
+maintenance-only branch (slower patch cadence) or on a non-LTS
+release (breaking changes can land between minor versions).
+
+The Node release schedule as of mid-2026:
+
+- **Node 22** — maintenance LTS (since Oct 2025), EOL April 2027.
+- **Node 24** — **active LTS**, EOL April 2028. **What we're on.**
+- **Node 26** — enters LTS October 2026. Not LTS yet at time of
+  writing — premature to adopt as a base image.
 
 ```bash
-# Test locally before flipping the production Dockerfile:
-docker build --build-arg NODE_IMAGE=node:24-slim -t peregrine:test .
-
-# Once you've smoke-tested it, the change is two lines in
-# Dockerfile (every `FROM node:22-slim` -> `FROM node:24-slim`)
-# plus backend/package.json -> "engines": { "node": ">=22 <25" }.
+# v0.43.11+: the panel ships on Node 24 LTS by default.
+# Verify in your deployment:
+docker exec peregrine node --version
+# Expected: v24.x.x
 ```
 
-Verify before / after with:
-`docker exec peregrine node --version`.
+If a future audit moves the recommendation to Node 26 (once it's
+LTS in October 2026), the bump is three lines in the Dockerfile
+(every `FROM node:24-slim` → `FROM node:26-slim`) plus the
+`engines` constraint in both `backend/package.json` and
+`frontend/package.json` (`>=24 <25` → `>=26 <27`). The
+`dependabot.yml` ignore rule on `node` cross-major will need to
+be removed for that one release, then re-added pointing at the
+new floor.
 
 ---
 

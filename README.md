@@ -7,13 +7,17 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.43.10** — `actions/setup-node` bumped from **v4
-> to v6** in `.github/workflows/build.yml` (2 refs — Backend
-> + Frontend jobs), per Dependabot PR #8. Compat verified
-> pre-merge by the PR's own CI (both Build jobs passed with
-> `node-version: 22` on the v6 action). Pure CI refresh; no
-> panel code change, no Docker rebuild needed. See the
-> changelog in [`CHANGELOG.md`](CHANGELOG.md).
+> **Version 0.43.11** — **Docker base image bumped from Node
+> 22 (maintenance LTS) to Node 24 (active LTS)**. Dependabot
+> PR #7 proposed `node:22-slim → node:26-slim`; we took the
+> bump to **`node:24-slim` instead** because Node 26 only
+> enters LTS in October 2026 — premature for a production base
+> image. Engine constraints in both `package.json` files
+> updated from `>=22 <23` to `>=24 <25`. Added a Docker
+> dependabot ignore rule so the cross-major nag stops on
+> `node` until October. **Docker rebuild required**:
+> `docker compose up -d --build`. See the changelog in
+> [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features
 
