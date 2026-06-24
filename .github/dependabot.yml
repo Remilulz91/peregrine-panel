@@ -53,6 +53,43 @@ updates:
       frontend-deps:
         patterns:
           - "*"
+    # v0.43.7+: silence cross-major nag for the packages that need
+    # a dedicated migration release rather than a routine bump.
+    # Minor / patch updates within the current major still flow.
+    #
+    #   - react / react-dom / @types/react / @types/react-dom — v19
+    #     introduces ref-as-prop, new hydration semantics, removed
+    #     legacy APIs (PropTypes, defaultProps on function comps,
+    #     react-test-renderer). Needs a per-component sweep.
+    #   - @vitejs/plugin-react — paired with React 19 + Vite 8;
+    #     pinned to the React-18 line for now.
+    #   - tailwindcss — v4 is the Rust-based "Oxide" rewrite with a
+    #     CSS-based `@theme` config; our `tailwind.config.js` +
+    #     custom `peregrine` / `falcon` palette + `@apply` usage in
+    #     `index.css` all need a manual migration pass.
+    #   - vite — v8 broke our PostCSS / Tailwind pipeline once
+    #     before (v0.34.0 had to roll back); won't touch it again
+    #     without a dedicated release that verifies the build.
+    #   - typescript — v6 ships breaking changes (strict-default
+    #     shifts, removed legacy syntax). Same reasoning as the
+    #     backend block: ignored at major level, minor / patch flow.
+    ignore:
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@vitejs/plugin-react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "tailwindcss"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vite"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
 
   # GitHub Actions versions
   - package-ecosystem: github-actions

@@ -2,6 +2,88 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.43.7 — 2026-06-24
+
+### Changed (frontend deps)
+
+Dependabot PR #11 proposed 11 bumps in one batch. Cherry-picked
+**4 outright**, **refused 7** as dedicated-migration items, and
+added 8 `ignore` rules to `dependabot.yml` so the cross-major
+nag stops on those.
+
+**Applied as proposed:**
+
+| Package | From | To | Rationale |
+|---|---|---|---|
+| `socket.io-client` | 4.8.1 | 4.8.3 | Patch — pairs with the backend `socket.io@4.8.3` already in place. |
+| `@types/qrcode` | 1.5.5 | 1.5.6 | Patch, types-only. |
+| `autoprefixer` | 10.4.21 | 10.5.1 | Minor — no API change vs current usage. |
+| `typescript` | 5.7.3 | 5.9.3 | Within-major bump to match the backend `typescript@5.9.3` pin from v0.43.5. |
+
+**Refused — each needs a dedicated migration release:**
+
+| Package | Dependabot wanted | Stayed at | Why |
+|---|---|---|---|
+| `react` | 19.2.7 | 18.3.1 | v19 = ref-as-prop, new hydration semantics, removed legacy APIs (PropTypes, defaultProps on function components, react-test-renderer). Needs a per-component sweep + careful testing under StrictMode. |
+| `react-dom` | 19.2.7 | 18.3.1 | Tied to `react` version. |
+| `@types/react` | 19.2.17 | 18.3.18 | Tied to `react` version. |
+| `@types/react-dom` | 19.2.3 | 18.3.5 | Tied to `react-dom` version. |
+| `@vitejs/plugin-react` | 6.0.3 | 4.7.0 | v6 paired with React 19 + Vite 8. Both refused; keeping the matching plugin pinned. |
+| `tailwindcss` | 4.3.1 | 3.4.17 | v4 = the "Oxide" Rust-rewrite with a CSS-based `@theme` config (no more `tailwind.config.js`), refactored `@apply` semantics, new content scanner. Our codebase uses: a custom `tailwind.config.js` with `peregrine` / `falcon` palette extension; `@apply` in `index.css`; 100+ component files with utility classes. A v3 → v4 migration is hours of work + a full visual regression pass on every page. Worth its own release; not a routine bump. |
+| `vite` | 8.1.0 | 7.3.5 | v8 broke our PostCSS / Tailwind pipeline once already (v0.34.0 had to roll back: silent empty-CSS output, downgrade to Vite 7.1.5 + `overrides.esbuild: ^0.28.1`). Won't touch again without a dedicated release that re-verifies the build output byte-by-byte. |
+| `typescript` | 6.0.3 | 5.9.3 | Same reasoning as the backend block from v0.43.5: TS v6 ships breaking changes (strict-default shifts, removed legacy syntax). Ignored at the major level. |
+
+### Added — Dependabot ignore rules (frontend block)
+
+```yaml
+ignore:
+  - dependency-name: "react"
+    update-types: ["version-update:semver-major"]
+  - dependency-name: "react-dom"
+    update-types: ["version-update:semver-major"]
+  - dependency-name: "@types/react"
+    update-types: ["version-update:semver-major"]
+  - dependency-name: "@types/react-dom"
+    update-types: ["version-update:semver-major"]
+  - dependency-name: "@vitejs/plugin-react"
+    update-types: ["version-update:semver-major"]
+  - dependency-name: "tailwindcss"
+    update-types: ["version-update:semver-major"]
+  - dependency-name: "vite"
+    update-types: ["version-update:semver-major"]
+  - dependency-name: "typescript"
+    update-types: ["version-update:semver-major"]
+```
+
+Minor / patch updates within each major still flow normally
+(e.g. React `18.3.2` would still be proposed). To explicitly
+take any of the refused jumps later, remove the relevant
+`ignore` entry or use `@dependabot allow react major` on a
+follow-up PR.
+
+### Notes
+
+- **No frontend source code change** — the 4 applied bumps
+  are all type-only or stable-API (socket.io-client patch).
+- Frontend `package-lock.json` regenerated incrementally;
+  every entry retains its `resolved` + `integrity` fields.
+- Backend lockfile root version bumped to 0.43.7 to stay in
+  sync; no other backend change.
+- Dependabot PR #11 auto-closes when this hits `main`.
+
+### Action required
+
+```bash
+cd peregrine-panel
+git pull
+docker compose up -d --build
+```
+
+Frontend Vite build inside the container will compile against
+the updated `tsc 5.9.3` — same TS version as the backend, so
+any newly-strict type errors should already have surfaced in
+the v0.43.5/0.43.6 builds.
+
 ## v0.43.6 — 2026-06-24
 
 ### Fixed (build)

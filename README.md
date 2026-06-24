@@ -7,13 +7,19 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.43.6** — build hot-fix on top of v0.43.5. The
-> bump to `@types/node@22.20.0` (from 22.10.7) ships the
-> `readOnly` option declaration for `DatabaseSyncOptions` —
-> exactly the gap the `@ts-expect-error` in `fail2ban.ts`
-> compensated for. With the gap closed, the directive became
-> unused, and `tsc` errored on it under `noUnusedDirectives`.
-> Removed the directive; one-line patch. See the changelog in
+> **Version 0.43.7** — Dependabot PR #11 (frontend group, 11
+> bumps proposed) cherry-picked. Took **4 safe ones**
+> (`socket.io-client` 4.8.3, `@types/qrcode` 1.5.6,
+> `autoprefixer` 10.5.1, `typescript` 5.9.3 within the 5.x
+> line), **refused the 7 cross-major jumps** (`react` 19,
+> `react-dom` 19, `@types/react` 19, `@types/react-dom` 19,
+> `@vitejs/plugin-react` 6, `tailwindcss` 4, `vite` 8) —
+> each of those needs its own dedicated migration release
+> (React 19 ref-as-prop + hydration rewrite, Tailwind v4
+> Rust engine + CSS-based theme migration, Vite 8 previously
+> broke our PostCSS pipeline). 8 `ignore` rules added in
+> `dependabot.yml` so the cross-major nag stops on those.
+> Docker rebuild required. See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features
