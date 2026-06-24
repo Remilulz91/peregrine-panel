@@ -2,6 +2,29 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.43.8 — 2026-06-24
+
+### Changed (CI)
+
+- **`gitleaks/gitleaks-action` bumped from `@v2` to `@v3`** in
+  `.github/workflows/secret-scan.yml`, per Dependabot PR #9.
+  v3 ships an updated upstream Gitleaks binary and minor
+  internal refactors; our existing `env` block stays unchanged
+  (`GITHUB_TOKEN` + `GITLEAKS_ENABLE_UPLOAD_ARTIFACT: false`).
+- **Compatibility verified pre-merge.** The Dependabot PR's
+  own CI run executed the secret-scan job against our
+  `.gitleaksignore` allow-list using the v3 action and passed
+  in 5 s, so we know the bump doesn't surface a false-positive
+  regression against the panel's own source tree.
+
+### Notes
+
+- **Pure CI metadata change.** No backend code, no frontend
+  code, no Docker rebuild needed. The panel running in
+  production is unaffected; only future PRs / pushes will
+  exercise the v3 action.
+- Dependabot PR #9 auto-closes when this hits `main`.
+
 ## v0.43.7 — 2026-06-24
 
 ### Changed (frontend deps)

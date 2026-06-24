@@ -7,20 +7,12 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.43.7** — Dependabot PR #11 (frontend group, 11
-> bumps proposed) cherry-picked. Took **4 safe ones**
-> (`socket.io-client` 4.8.3, `@types/qrcode` 1.5.6,
-> `autoprefixer` 10.5.1, `typescript` 5.9.3 within the 5.x
-> line), **refused the 7 cross-major jumps** (`react` 19,
-> `react-dom` 19, `@types/react` 19, `@types/react-dom` 19,
-> `@vitejs/plugin-react` 6, `tailwindcss` 4, `vite` 8) —
-> each of those needs its own dedicated migration release
-> (React 19 ref-as-prop + hydration rewrite, Tailwind v4
-> Rust engine + CSS-based theme migration, Vite 8 previously
-> broke our PostCSS pipeline). 8 `ignore` rules added in
-> `dependabot.yml` so the cross-major nag stops on those.
-> Docker rebuild required. See the changelog in
-> [`CHANGELOG.md`](CHANGELOG.md).
+> **Version 0.43.8** — `gitleaks/gitleaks-action` bumped from
+> **v2 to v3** in `.github/workflows/secret-scan.yml`, per
+> Dependabot PR #9. Compat verified pre-merge by the PR's own
+> CI run (the Gitleaks job ran successfully against our config
+> using the v3 action). One-line YAML change; no panel code
+> change. See the changelog in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features
 
