@@ -7,16 +7,19 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.43.11** — **Docker base image bumped from Node
-> 22 (maintenance LTS) to Node 24 (active LTS)**. Dependabot
-> PR #7 proposed `node:22-slim → node:26-slim`; we took the
-> bump to **`node:24-slim` instead** because Node 26 only
-> enters LTS in October 2026 — premature for a production base
-> image. Engine constraints in both `package.json` files
-> updated from `>=22 <23` to `>=24 <25`. Added a Docker
-> dependabot ignore rule so the cross-major nag stops on
-> `node` until October. **Docker rebuild required**:
-> `docker compose up -d --build`. See the changelog in
+> **Version 0.43.12** — lockfile hot-fix on top of v0.43.11.
+> `node:24-slim` ships **npm 11**, which enforces a stricter
+> lockfile policy than npm 10: every platform-specific
+> `optionalDependency` of a native binding must be enumerated
+> in the lockfile, even when `--ignore-scripts` is in effect.
+> Our lockfile (regenerated under npm 10 in v0.43.5) only
+> listed 2 of the 12 prebuilt `@node-rs/argon2-*` platform
+> variants + missed 6 WASM runtime helpers, so `npm ci` in
+> the new Node 24 container errored with
+> `Missing: @node-rs/argon2-android-arm-eabi@2.0.2 from lock
+> file` (and 17 more). Regenerated both lockfiles under
+> npm 11; now 20 entries instead of 2. **Docker rebuild
+> required**. See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features

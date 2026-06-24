@@ -2,6 +2,60 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.43.12 — 2026-06-24
+
+### Fixed (build) — lockfile under npm 11
+
+- **`npm ci` in the new Node 24 container failed** with 18
+  `Missing: … from lock file` errors after v0.43.11's bump
+  from `node:22-slim` to `node:24-slim`. Root cause: npm 11
+  (shipped with Node 24) enforces a stricter lockfile policy
+  than npm 10 (shipped with Node 22) — every
+  platform-specific `optionalDependency` of a native binding
+  must be enumerated in the lockfile, even when
+  `--ignore-scripts` is in effect. Our lockfile, last fully
+  regenerated under npm 10 in v0.43.5, listed only the 2
+  Linux-x64 prebuilt variants of `@node-rs/argon2` (the
+  platforms the sandbox happened to be on) and missed the 10
+  other platforms plus 6 WASM runtime helpers.
+- **Regenerated both lockfiles under npm 11** via
+  `npx -y npm@11 install --package-lock-only --ignore-scripts
+  --no-audit --no-fund --engine-strict=false`. The
+  `@node-rs/argon2-*` entries went from 2 to 12 (Android arm /
+  arm64, Darwin arm64 / x64, FreeBSD x64, Linux arm /
+  arm64-gnu / arm64-musl / x64-gnu / x64-musl, Windows
+  arm64 / ia32 / x64, WASM32-WASI). Added: `@napi-rs/wasm-runtime`,
+  `@emnapi/core`, `@emnapi/runtime`, `@tybys/wasm-util`,
+  `@emnapi/wasi-threads`, `tslib`. **Total: +18 entries.**
+- `--engine-strict=false` was needed because the regenerator
+  ran in a Node 22 sandbox against `engines: ">=24 <25"`;
+  the flag bypasses the engines check for the lockfile
+  computation only. The runtime container still runs Node 24
+  and `npm ci` there respects the engines constraint
+  normally.
+
+### Why this only surfaced on v0.43.11 and not earlier
+
+The lockfile WAS missing those optional deps the whole time,
+but **npm 10 happened to tolerate the omission silently** —
+on a Linux x64 host with `--ignore-scripts`, npm 10 would
+just install the 2 Linux variants it found and move on. npm
+11 closed that loophole because it's a real soundness hole
+(running `npm ci` on a different platform from where the
+lockfile was created could pull a binary that wasn't pinned).
+
+### Notes
+
+- **No source code change**, no dependency change. Pure
+  lockfile metadata regeneration.
+- **Docker rebuild required**:
+  `docker compose up -d --build`. After it succeeds, the
+  same `docker exec peregrine node --version` check from
+  v0.43.11 should print `v24.x.x`.
+- Frontend lockfile also regenerated under npm 11 for
+  consistency, even though no frontend native binding was
+  affected.
+
 ## v0.43.11 — 2026-06-24
 
 ### Changed — Docker base image
