@@ -3,7 +3,7 @@
 # stages, then assembled into a small final image.
 
 # --- Stage 1: build the React interface ---
-FROM node:22-slim AS frontend-build
+FROM node:26-slim AS frontend-build
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm ci --ignore-scripts
@@ -11,7 +11,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # --- Stage 2: compile the backend (TypeScript -> JavaScript) ---
-FROM node:22-slim AS backend-build
+FROM node:26-slim AS backend-build
 WORKDIR /app/backend
 COPY backend/package*.json ./
 RUN npm ci --ignore-scripts
@@ -19,7 +19,7 @@ COPY backend/ ./
 RUN npm run build
 
 # --- Stage 3: final image run in production ---
-FROM node:22-slim AS runtime
+FROM node:26-slim AS runtime
 ENV NODE_ENV=production
 # v0.37.0: cap the V8 old-space heap at 512 MiB. The panel itself
 # (Fastify + node:sqlite + socket.io + a handful of workers) needs
