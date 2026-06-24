@@ -13,7 +13,7 @@ export async function healthRoutes(app: FastifyInstance): Promise<void> {
     return {
       status: 'ok',
       service: 'peregrine',
-      version: '0.43.5',
+      version: '0.43.6',
       time: new Date().toISOString(),
     };
   });

@@ -2,6 +2,39 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.43.6 — 2026-06-24
+
+### Fixed (build)
+
+- **Removed a now-stale `@ts-expect-error` directive** in
+  `backend/src/lib/fail2ban.ts:94`. The directive was introduced
+  in v0.39.0 because `@types/node@22.10.x` predated the
+  `readOnly` option on `DatabaseSyncOptions`. v0.43.5's bump to
+  `@types/node@22.20.0` ships the option declaration upstream,
+  so the call:
+
+  ```ts
+  new DatabaseSync(filePath, { readOnly: true });
+  ```
+
+  is now plain idiomatic TypeScript. With the directive still in
+  place, `tsc 5.9.3` raised `TS2578: Unused '@ts-expect-error'
+  directive`, failing `backend-build 6/6 RUN npm run build`
+  during the Docker image build.
+
+### Verified
+
+- `grep -rE '@ts-expect-error|@ts-ignore' backend/src frontend/src`
+  returns zero matches — no other directives became stale at the
+  same time. Build path is now clear.
+
+### Notes
+
+- One-line code patch + version bumps + lockfile root bumps.
+  No dependency change vs v0.43.5.
+- **Docker rebuild required**:
+  `docker compose up -d --build`.
+
 ## v0.43.5 — 2026-06-24
 
 ### Changed (backend deps)

@@ -84,16 +84,14 @@ function configuredPath(): string | null {
  * handle on the host, but our process is incapable of writing
  * even if we wanted to.
  *
- * The `as` cast is because `@types/node@22.10.x` predates the
- * `readOnly` option's addition to the type declarations (the
- * runtime accepts it; the types haven't caught up). When we bump
- * `@types/node` past the release that ships the type, this cast
- * can be removed.
+ * Historical note: from v0.39.0 to v0.43.4 this call needed a
+ * `@ts-expect-error` directive because `@types/node@22.10.x`
+ * predated the `readOnly` option's addition to the type
+ * declarations. v0.43.5's bump to `@types/node@22.20.0` ships
+ * the option declaration, so the directive is gone — the call
+ * site is now plain idiomatic TypeScript.
  */
 function openReadOnly(filePath: string): DatabaseSync {
-  // @ts-expect-error — `readOnly` is accepted at runtime by Node 22
-  // but not yet in @types/node 22.10.x. Remove this directive when
-  // @types/node ships the option in DatabaseSyncOptions.
   return new DatabaseSync(filePath, { readOnly: true });
 }
 

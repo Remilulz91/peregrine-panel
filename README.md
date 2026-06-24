@@ -7,16 +7,14 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.43.5** — Dependabot PR #13 cherry-picked. Took
-> the 3 safe bumps (`@fastify/multipart` 9→10, `dotenv` 16→17,
-> `@types/dockerode` 3→4), bumped `@types/node` and `typescript`
-> within their current majors (22.10.7→22.20.0 and 5.7.3→5.9.3),
-> **refused** the cross-major jumps Dependabot wanted there
-> (`@types/node@26` would have broken Node-22-runtime alignment;
-> `typescript@6` ships breaking changes that need a full
-> typecheck pass first). Added `ignore` rules in `dependabot.yml`
-> so the cross-major nag stops on those two. Docker rebuild
-> recommended. See the changelog in [`CHANGELOG.md`](CHANGELOG.md).
+> **Version 0.43.6** — build hot-fix on top of v0.43.5. The
+> bump to `@types/node@22.20.0` (from 22.10.7) ships the
+> `readOnly` option declaration for `DatabaseSyncOptions` —
+> exactly the gap the `@ts-expect-error` in `fail2ban.ts`
+> compensated for. With the gap closed, the directive became
+> unused, and `tsc` errored on it under `noUnusedDirectives`.
+> Removed the directive; one-line patch. See the changelog in
+> [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features
 
