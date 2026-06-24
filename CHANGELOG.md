@@ -2,6 +2,47 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.43.9 — 2026-06-24
+
+### Changed (frontend deps)
+
+- **`tailwindcss` bumped from `3.4.17` to `3.4.19`** (patch in
+  the 3.x line), per Dependabot PR #17. Two upstream bug-fix
+  patches:
+  - 3.4.18 — improved support for raw `supports-[…]` queries
+    in arbitrary values; fixed `require.cache` resolution when
+    loaded through a TypeScript file on Node 22.18+; support
+    for `import.meta.resolve(…)` in configs.
+  - 3.4.19 — fixed `sibling-*()` functions when used inside
+    `calc(…)`.
+- **Compat verified pre-merge** by the Dependabot PR's own CI
+  run: Frontend `typecheck + build` job passed in 20 s with
+  the updated `tailwindcss@3.4.19`.
+
+### Notes
+
+- **This is what the v0.43.7 ignore rules were designed for.**
+  We blocked the `tailwindcss` cross-major jump to v4 (which
+  is the "Oxide" Rust-rewrite — needs a dedicated migration
+  release), but minor / patch updates within the 3.x line
+  still flow normally. Dependabot just proved the policy
+  works: it proposed 3.4.17 → 3.4.19, not 3.4.17 → 4.x.
+- Frontend `package-lock.json` regenerated incrementally.
+- Backend lockfile root version bumped to 0.43.9 to stay in
+  sync; no other backend change.
+- Dependabot PR #17 auto-closes when this hits `main`.
+
+### Action required
+
+```bash
+cd peregrine-panel
+git pull
+docker compose up -d --build
+```
+
+Vite re-runs PostCSS + Tailwind during the frontend build
+stage; the new Tailwind picks up automatically.
+
 ## v0.43.8 — 2026-06-24
 
 ### Changed (CI)

@@ -7,12 +7,14 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.43.8** — `gitleaks/gitleaks-action` bumped from
-> **v2 to v3** in `.github/workflows/secret-scan.yml`, per
-> Dependabot PR #9. Compat verified pre-merge by the PR's own
-> CI run (the Gitleaks job ran successfully against our config
-> using the v3 action). One-line YAML change; no panel code
-> change. See the changelog in [`CHANGELOG.md`](CHANGELOG.md).
+> **Version 0.43.9** — `tailwindcss` bumped from **3.4.17 to
+> 3.4.19** (patch in the 3.x line), per Dependabot PR #17.
+> Two upstream bug-fix patches (`sibling-*()` inside `calc(…)`,
+> Node 22.18+ `require.cache` resolution). The ignore rule
+> from v0.43.7 keeps blocking the v4 jump while letting these
+> in-major patches flow exactly as designed. Docker rebuild
+> recommended. See the changelog in
+> [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features
 
