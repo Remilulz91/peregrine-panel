@@ -2,6 +2,70 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.43.15 — 2026-07-03
+
+### Fixed (CI) — `node-version: 22` in build.yml after v0.43.11
+
+- **CI has been broken since v0.43.11 push.** When we bumped
+  the Docker base image from `node:22-slim` to `node:24-slim`
+  in v0.43.11, we bumped the runtime Dockerfile, both
+  `engines` constraints, and the HARDENING.md note — **but we
+  missed the two `node-version: 22` lines in
+  `.github/workflows/build.yml`**. Every `push` / `pull_request`
+  since v0.43.11 has therefore failed the Backend and Frontend
+  Build jobs with:
+
+  ```
+  npm error code EBADENGINE
+  npm error Required: {"node":">=24 <25"}
+  npm error Actual:   {"node":"v22.x"}
+  ```
+
+  Same cause blocked the CI on Dependabot PRs #19 and #20,
+  making the "failing" status a false alarm about their
+  proposed dep bumps.
+- **Fix**: `node-version: 22` → `node-version: 24` in both
+  the Backend and Frontend jobs of `build.yml`. From v0.43.15
+  onwards CI runs Node 24 to match the runtime image.
+- **Lesson**: when bumping the Node major, grep for
+  `node.*22|node-version|"node".*22` across the whole repo,
+  not just the Dockerfile + package.json engines. Also
+  eyeball `.github/`, `docs/`, `install.sh`, `.tool-versions`
+  (we don't have one but common trap) etc.
+
+### Changed (backend deps — PR #20)
+
+3 within-major bumps, all patch or minor. Low risk.
+
+| Package | From | To | Notes |
+|---|---|---|---|
+| `dockerode` | 5.0.0 | 5.0.1 | Patch — transitive `@grpc/grpc-js`, `protobufjs` and `js-yaml` bumps only. |
+| `fastify` | 5.8.5 | 5.9.0 | Minor — new `request.mediaType` accessor, a handful of internal fixes / perf. Fully backward-compat with our route + hook usage. |
+| `tsx` | 4.22.4 | 4.22.5 | Patch — hook-state isolation fix, dev-only dep. |
+
+### Changed (frontend deps — PR #19)
+
+3 within-major patch bumps.
+
+| Package | From | To | Notes |
+|---|---|---|---|
+| `autoprefixer` | 10.5.1 | 10.5.2 | Moved `-webkit-fill-available` before `-moz-available`. Zero effect on any Tailwind class we use. |
+| `postcss` | 8.5.15 | 8.5.16 | Five upstream `Input#origin()` / `rangeBy()` / raws / positioning fixes. Vite consumes PostCSS during the CSS build; no build-config change on our side. |
+| `vite` | 7.3.5 | 7.3.6 | Allows `esbuild ^0.28` in peer range — dovetails with our existing `esbuild: 0.28.1` override from v0.34.0. Still within the Vite 7.x line (the v0.43.7 `ignore` rule keeps us off Vite 8). |
+
+### Notes
+
+- **No source code change.** Pure workflow + package.json +
+  lockfile metadata.
+- Both `package-lock.json` files regenerated under npm 11 via
+  `npx -y npm@11 install --package-lock-only --ignore-scripts
+  --engine-strict=false` (sandbox is still on Node 22). All
+  6 target versions verified with a scripted post-check.
+- **Docker rebuild required**: `docker compose up -d --build`.
+- Dependabot PRs #19 and #20 auto-close when this hits `main`.
+  Their failing CI status was a false alarm (about the Node
+  version mismatch above), not about the deps themselves.
+
 ## v0.43.14 — 2026-07-02
 
 ### Fixed — "Run now" confirmation dialog wording
