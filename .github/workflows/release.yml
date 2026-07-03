@@ -1,0 +1,108 @@
+name: Release
+
+# v0.43.16+: auto-creates a GitHub Release from the tag's annotated
+# message every time a `v*` tag is pushed. Also backfills any missing
+# releases for older tags — safe to re-run: existing releases are
+# skipped, not overwritten. Manual re-trigger is available from the
+# Actions tab (workflow_dispatch) for one-off backfills after fixing
+# something upstream.
+#
+# How it stays idempotent:
+#   1. Loops over `git tag -l 'v*' | sort -V` (semver-aware sort).
+#   2. Calls `gh release view <tag>` — non-zero exit means "no release
+#      exists yet for this tag", zero means "already published".
+#   3. Only creates when missing. Zero destructive operations.
+#
+# Where the release body comes from:
+#   - Annotated tag (the one we always use — `git tag -a -m "..."`):
+#     `--notes-from-tag` reads the tag's annotation message.
+#   - Lightweight tag (should never happen in this repo, but defensive):
+#     falls back to `--generate-notes`, which auto-generates from
+#     the commits between this tag and the previous release.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  # Needed to create releases via the GitHub REST API.
+  # Everything else is intentionally left as `none` implicitly.
+  contents: write
+
+jobs:
+  release:
+    name: Publish releases from tags
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (with full tag history)
+        uses: actions/checkout@v7
+        with:
+          # Fetch the whole history + every tag, not just the one that
+          # triggered the workflow — the backfill loop below iterates
+          # over all `v*` tags in the repo.
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Create missing releases from tags
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          created=0
+          skipped=0
+          failed=0
+
+          # `sort -V` handles semver ordering: v0.9.0 < v0.10.0.
+          for tag in $(git tag -l 'v*' | sort -V); do
+            if gh release view "$tag" >/dev/null 2>&1; then
+              echo "-- $tag already has a release, skipping"
+              skipped=$((skipped + 1))
+              continue
+            fi
+
+            echo "==> Publishing release for $tag..."
+
+            # Prefer the annotated tag message. Fall back to
+            # auto-generated notes (from commits) if the tag is a
+            # lightweight one without a message — shouldn't happen
+            # in this repo but keeps the workflow bullet-proof.
+            if [ "$(git for-each-ref --format='%(objecttype)' "refs/tags/$tag")" = "tag" ]; then
+              if gh release create "$tag" --title "$tag" --notes-from-tag; then
+                created=$((created + 1))
+              else
+                echo "!! failed to create release for $tag"
+                failed=$((failed + 1))
+              fi
+            else
+              echo "   (lightweight tag — falling back to auto-generated notes)"
+              if gh release create "$tag" --title "$tag" --generate-notes; then
+                created=$((created + 1))
+              else
+                echo "!! failed to create release for $tag"
+                failed=$((failed + 1))
+              fi
+            fi
+
+            # Small pause to be nice to the GitHub REST API rate
+            # limit — matters mostly on the first full-backfill run.
+            sleep 1
+          done
+
+          echo ""
+          echo "======================================"
+          echo " Release workflow summary"
+          echo "======================================"
+          echo " Created: $created"
+          echo " Skipped: $skipped (already released)"
+          echo " Failed:  $failed"
+          echo "======================================"
+
+          # Fail the job only if at least one release-creation call
+          # actually errored. Skipping (already-released) is not an
+          # error condition.
+          if [ "$failed" -gt 0 ]; then
+            exit 1
+          fi

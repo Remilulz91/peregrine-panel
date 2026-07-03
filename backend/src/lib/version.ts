@@ -4,7 +4,7 @@
  * and routes/health.ts. Re-exported from here so update-check + the
  * health route stay in sync without searching the codebase.
  */
-export const PEREGRINE_VERSION = '0.43.15';
+export const PEREGRINE_VERSION = '0.43.16';
 
 /**
  * Compares two semantic version strings (possibly prefixed with "v")

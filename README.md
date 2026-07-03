@@ -7,21 +7,16 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.43.15** — CI fix + 6 dep bumps. When we
-> bumped the Docker base image to Node 24 in v0.43.11, we
-> updated the Dockerfile and both `engines` constraints —
-> **but forgot** to update `node-version: 22` in
-> `.github/workflows/build.yml`. Result: every `push` /
-> `pull_request` after v0.43.11 failed CI with
-> `EBADENGINE Required: {"node":">=24 <25"} Actual: v22.x`,
-> which also blocked Dependabot's own PR checks. Fixed the
-> two `node-version` fields to `24` and, while at it,
-> applied the 6 safe bumps proposed by PRs #19 and #20:
-> backend `dockerode` 5.0.0 → 5.0.1, `fastify` 5.8.5 → 5.9.0,
-> `tsx` 4.22.4 → 4.22.5; frontend `autoprefixer`
-> 10.5.1 → 10.5.2, `postcss` 8.5.15 → 8.5.16, `vite`
-> 7.3.5 → 7.3.6. All within-major, low risk. Docker rebuild
-> required. See the changelog in [`CHANGELOG.md`](CHANGELOG.md).
+> **Version 0.43.16** — auto-release workflow. New
+> `.github/workflows/release.yml` fires on every
+> `push tag v*` and publishes a GitHub Release from the
+> tag's annotated message. Same run also backfills any
+> older tag that never got a release — safe to re-run,
+> existing releases are skipped, not overwritten.
+> Idempotent semver-sorted loop; manual re-trigger
+> available from the Actions tab. Zero panel code change,
+> no Docker rebuild needed. See the changelog in
+> [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features
 

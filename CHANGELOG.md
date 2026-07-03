@@ -2,6 +2,67 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.43.16 — 2026-07-03
+
+### Added — auto-release workflow
+
+- **New `.github/workflows/release.yml`**. Fires on every
+  `push` of a `v*` tag and — as part of the same run —
+  backfills any older tag that doesn't yet have a matching
+  GitHub Release. Manually triggerable from the Actions tab
+  via `workflow_dispatch` for one-off runs.
+- **Idempotent by design.** For each `v*` tag, in semver
+  order:
+  1. `gh release view "$tag"` — if that succeeds, the
+     release already exists → skip.
+  2. Otherwise, `gh release create "$tag" --title "$tag"
+     --notes-from-tag` — the release body is the annotated
+     tag's own message (which is why we've been writing
+     substantive `git tag -a -m "…"` messages all along).
+  3. `sleep 1` between calls to stay friendly with the
+     GitHub REST API rate limit.
+- **Bullet-proofed against lightweight tags** — if a tag has
+  no annotation object, the loop falls back to
+  `--generate-notes` (auto-generated from the commit range
+  since the previous release). Not expected to trigger in
+  this repo, but keeps the workflow from erroring out.
+- **Summary at the end of every run** — prints the count of
+  releases created, skipped (already released), and failed.
+  Exits non-zero only if a `gh release create` call actually
+  errored, not on "skip".
+- **Permissions**: the job requests `contents: write` only.
+  The stock `GITHUB_TOKEN` provided by Actions covers it —
+  no PAT setup needed, no repo secrets to manage.
+
+### First-run behaviour
+
+When this workflow lands on `main` and the operator pushes
+v0.43.16, the run will:
+
+1. See `v0.43.16` as the tag that triggered it — no release
+   for it yet → create one from the annotated message.
+2. Iterate through every earlier tag (`v0.34.0` … `v0.43.15`).
+   For each: if a release already exists (the operator
+   published a few manually), skip; otherwise create one from
+   the tag message. This backfills the ~15 tags pushed since
+   v0.43.1 that never got a GitHub Release attached.
+
+Subsequent tag pushes just publish the single new release
+and skip everything before.
+
+### Notes
+
+- **Pure CI addition.** No backend code, no frontend code,
+  no dependency change, no Docker rebuild needed.
+- The Build workflow (`build.yml`) triggers on
+  `push: branches: [main]` only — it does NOT re-fire on tag
+  pushes, so this new workflow doesn't step on the existing
+  typecheck / lockfile-strict CI.
+- Historical tag messages are used verbatim as release
+  bodies — no reformatting, no summary generation. What we
+  wrote in the terminal at tag time is what appears on the
+  Releases page.
+
 ## v0.43.15 — 2026-07-03
 
 ### Fixed (CI) — `node-version: 22` in build.yml after v0.43.11
