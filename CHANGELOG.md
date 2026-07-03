@@ -2,6 +2,60 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.43.13 — 2026-07-02
+
+### Fixed — "Run now" on restart schedules creates a backup instead
+
+- **`POST /api/servers/:id/schedules/:scheduleId/run` ignored
+  `schedule.action`** and always called `createBackup()`,
+  producing a backup entry whose name was the schedule's own
+  name. User-visible symptom: a schedule configured as
+  *Redémarrer le serveur* would, when tested via the "Run now"
+  button, add a `Redémarrage Hardcore — 2026-07-02 23:07`
+  entry to the Backups list instead of restarting the
+  container.
+- The route now dispatches on `schedule.action` the same way
+  `scheduleWorker.runOnce()` already did for the automatic
+  path:
+  - `action === 'server.restart'` → checks the server is
+    online (409 otherwise), fires `restartContainer()` in a
+    detached async task (mirrors the worker's fire-and-forget
+    pattern), logs a `schedule.run` activity entry with the
+    `(manual restart)` suffix, and calls
+    `recordRunAndReschedule()`. **The `warningMinutes`
+    countdown is skipped for manual runs** — the operator
+    clicked the button on purpose and doesn't want to wait 10
+    minutes. The automatic worker still respects
+    `warningMinutes` when it comes around at the scheduled
+    time.
+  - `action === 'backup.create'` → unchanged behaviour (create
+    backup + log + reschedule).
+
+### Why the automatic path was NOT affected
+
+The scheduleWorker's tick loop (`runOnce` at
+`backend/src/services/scheduleWorker.ts`) has always correctly
+branched on `schedule.action` and only `runBackup()` calls
+`createBackup()`. `runRestart()` never touched
+`createBackup()`, so an auto-fired restart schedule always
+restarted the container without producing a backup entry. The
+bug was scoped to the manual "Run now" HTTP handler.
+
+### Notes
+
+- **One-file backend patch** (`backend/src/routes/schedules.ts`).
+  No new dependency, no database migration, no frontend
+  change.
+- **Docker rebuild required**:
+  `docker compose up -d --build`.
+- After the rebuild, clicking "Exécuter maintenant" on the
+  "Redémarrage Hardcore" schedule should:
+  1. Return HTTP 200 immediately (fire-and-forget).
+  2. Restart the container within ~10 seconds.
+  3. Add a `schedule.run` entry in the Activity tab with
+     `Redémarrage Hardcore (manual restart)`.
+  4. NOT add a new entry in the Backups tab.
+
 ## v0.43.12 — 2026-06-24
 
 ### Fixed (build) — lockfile under npm 11

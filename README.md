@@ -7,19 +7,20 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.43.12** — lockfile hot-fix on top of v0.43.11.
-> `node:24-slim` ships **npm 11**, which enforces a stricter
-> lockfile policy than npm 10: every platform-specific
-> `optionalDependency` of a native binding must be enumerated
-> in the lockfile, even when `--ignore-scripts` is in effect.
-> Our lockfile (regenerated under npm 10 in v0.43.5) only
-> listed 2 of the 12 prebuilt `@node-rs/argon2-*` platform
-> variants + missed 6 WASM runtime helpers, so `npm ci` in
-> the new Node 24 container errored with
-> `Missing: @node-rs/argon2-android-arm-eabi@2.0.2 from lock
-> file` (and 17 more). Regenerated both lockfiles under
-> npm 11; now 20 entries instead of 2. **Docker rebuild
-> required**. See the changelog in
+> **Version 0.43.13** — bug fix on the "Run now" (manual
+> execution) button of the Schedules tab. The route
+> `POST /api/servers/:id/schedules/:scheduleId/run` called
+> `createBackup()` unconditionally, ignoring the schedule's
+> `action`. Clicking "Run now" on a `server.restart`
+> schedule therefore produced a backup entry with the
+> schedule's name (e.g. `"Redémarrage Hardcore — …"`)
+> instead of restarting the container. The route now
+> dispatches on `schedule.action` the same way the automatic
+> worker does — restart schedules kick off a container
+> restart (without the in-game warning countdown, since the
+> operator clicked the button on purpose), backup schedules
+> still create a backup. **Docker rebuild required**:
+> `docker compose up -d --build`. See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features

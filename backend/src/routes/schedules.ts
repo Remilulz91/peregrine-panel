@@ -16,6 +16,7 @@ import {
 import { getServer } from '../lib/servers';
 import { createBackup, DiskFullError } from '../services/backups';
 import { logActivity } from '../lib/activity';
+import { restartContainer } from '../lib/docker';
 
 interface ScheduleBody {
   name: string;
@@ -217,6 +218,13 @@ export async function scheduleRoutes(app: FastifyInstance): Promise<void> {
   // "Run now" — useful for testing the schedule does what you expect
   // without waiting for the next slot. Same disk preflight + reschedule
   // logic as the worker.
+  //
+  // v0.43.13+: fixed a bug where this route unconditionally called
+  // createBackup, ignoring `schedule.action`. As a result, clicking
+  // "Run now" on a `server.restart` schedule would produce a backup
+  // entry with the schedule's name (e.g. "Redémarrage Hardcore — …")
+  // instead of restarting the container. The route now dispatches on
+  // `schedule.action` the same way the worker's `runOnce` does.
   app.post(
     '/servers/:id/schedules/:scheduleId/run',
     async (request, reply) => {
@@ -234,6 +242,47 @@ export async function scheduleRoutes(app: FastifyInstance): Promise<void> {
       const live = getServer(server.id);
       if (!live) return reply.code(404).send({ error: 'Server not found.' });
 
+      // --- server.restart -------------------------------------------------
+      // Manual "Run now" on a restart schedule fires the container restart
+      // immediately, WITHOUT the in-game warning countdown that the auto
+      // worker does — the operator clicked the button on purpose and
+      // wants the restart now, not in 10 minutes. The auto tick still
+      // respects `warningMinutes` when it comes around.
+      if (schedule.action === 'server.restart') {
+        if (!live.containerId) {
+          return reply.code(409).send({
+            error:
+              'Server is offline — a restart schedule only makes sense on a running server.',
+          });
+        }
+        const containerId = live.containerId;
+        // Fire-and-forget: mirror the auto worker's detached task so the
+        // HTTP response returns immediately instead of blocking the client
+        // for the docker restart round-trip.
+        void (async () => {
+          try {
+            await restartContainer(containerId);
+            logActivity({
+              serverId: server.id,
+              actorId: request.user.sub,
+              kind: 'schedule.run',
+              details: `${schedule.name} (manual restart)`,
+            });
+          } catch (err) {
+            request.log.error({ err }, 'manual schedule restart failed');
+            logActivity({
+              serverId: server.id,
+              actorId: request.user.sub,
+              kind: 'schedule.failed',
+              details: `${schedule.name} (manual restart)`,
+            });
+          }
+        })();
+        recordRunAndReschedule(schedule.id);
+        return { ok: true };
+      }
+
+      // --- backup.create (and any legacy row that pre-dates v0.22.0) ------
       const now = new Date();
       const pad = (n: number) => String(n).padStart(2, '0');
       const name = `${schedule.name} — ${now.getFullYear()}-${pad(
