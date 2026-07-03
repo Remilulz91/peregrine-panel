@@ -1083,9 +1083,16 @@ const translations = {
     en: 'Delete this schedule? Existing backups it produced are kept.',
     fr: 'Supprimer cette planification ? Les sauvegardes existantes qu’elle a produites sont conservées.',
   },
-  'schedules.runConfirm': {
-    en: 'Trigger this scheduled task now? It will produce a backup immediately.',
+  // v0.43.14+: split by action so the confirm text actually describes
+  // what "Run now" is about to do. The old single string always said
+  // "will create a backup" which was wrong for restart schedules.
+  'schedules.runConfirm.backup': {
+    en: 'Trigger this scheduled task now? It will create a backup immediately.',
     fr: 'Déclencher cette tâche maintenant ? Elle créera une sauvegarde immédiatement.',
+  },
+  'schedules.runConfirm.restart': {
+    en: 'Trigger this scheduled task now? It will restart the server immediately (no in-game warning countdown for a manual run).',
+    fr: 'Déclencher cette tâche maintenant ? Elle redémarrera le serveur immédiatement (sans compte à rebours en jeu pour un déclenchement manuel).',
   },
   'schedules.loadError': {
     en: 'Unable to load the schedules.',

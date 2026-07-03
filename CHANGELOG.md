@@ -2,6 +2,62 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.43.14 — 2026-07-02
+
+### Fixed — "Run now" confirmation dialog wording
+
+- **`schedules.runConfirm` was a single hardcoded string** that
+  read `"Elle créera une sauvegarde immédiatement"` for every
+  schedule, regardless of the action. Clicking *Exécuter
+  maintenant* on a `server.restart` schedule showed a dialog
+  that promised a backup — misleading even though the fix in
+  v0.43.13 had already made the backend do the right thing.
+- The i18n key is now split:
+  - `schedules.runConfirm.backup` — the original wording,
+    used when `schedule.action === 'backup.create'`.
+  - `schedules.runConfirm.restart` — new. Reads:
+    > *"Trigger this scheduled task now? It will restart the
+    > server immediately (no in-game warning countdown for a
+    > manual run)."*
+- `frontend/src/pages/server/Schedules.tsx` picks the
+  matching key based on `schedule.action` before calling
+  `window.confirm(...)`.
+
+### Fixed — Activity tab: 12 event kinds fell through to the "did something" fallback
+
+- `frontend/src/pages/server/Activity.tsx` had a
+  `KNOWN_KINDS` set that was missing 12 kinds the backend has
+  been emitting since v0.10 – v0.22:
+  - `backup.create`, `backup.restore`, `backup.delete`
+  - `subuser.add`, `subuser.update`, `subuser.remove`
+  - `schedule.create`, `schedule.update`, `schedule.delete`
+  - `schedule.run`, `schedule.skipped`, `schedule.failed`
+- When the frontend received an activity row with one of
+  those kinds, `actionKey(kind)` returned
+  `'activity.kind.unknown'` (`"a fait quelque chose"` /
+  `"did something"`) instead of the proper label — even
+  though the i18n table at `frontend/src/lib/i18n.tsx` lines
+  841 – 852 already had the correct translations for every
+  one of them. The activity feed has been silently rendering
+  every backup / subuser / schedule event as "a fait quelque
+  chose: [details]" for months.
+- Added the 12 missing kinds to `KNOWN_KINDS`. After the
+  rebuild, an activity row for the schedule the operator
+  just tested manually will read:
+
+  > *"[actor] a exécuté une tâche planifiée: Redémarrage
+  > Hardcore (manual restart)"*
+
+  instead of the previous "a fait quelque chose".
+
+### Notes
+
+- **Two-file frontend patch** — no backend code change, no
+  database migration, no dependency change.
+- **Docker rebuild required**: `docker compose up -d --build`.
+  The rebuild is needed because the Vite bundle inside the
+  container is what serves the UI.
+
 ## v0.43.13 — 2026-07-02
 
 ### Fixed — "Run now" on restart schedules creates a backup instead

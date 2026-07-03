@@ -343,7 +343,15 @@ export default function SchedulesPage({ server }: SchedulesPageProps) {
   }
 
   async function handleRunNow(schedule: ApiSchedule): Promise<void> {
-    if (!window.confirm(t('schedules.runConfirm'))) return;
+    // v0.43.14+: pick the confirmation wording that actually
+    // describes what "Run now" will do for THIS schedule's action.
+    // The old single-string version always said "will create a
+    // backup", which was wrong for restart schedules.
+    const confirmKey =
+      schedule.action === 'server.restart'
+        ? 'schedules.runConfirm.restart'
+        : 'schedules.runConfirm.backup';
+    if (!window.confirm(t(confirmKey))) return;
     try {
       await api.runScheduleNow(server.id, schedule.id);
       void load();

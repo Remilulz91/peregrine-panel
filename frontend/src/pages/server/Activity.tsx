@@ -16,6 +16,13 @@ interface ActivityPageProps {
 // Activity event kinds we know about. Any other kind falls back to a
 // generic "did something" sentence so a future backend addition does not
 // break the UI before the i18n table is updated.
+//
+// v0.43.14+: added the 12 kinds that the backend has been emitting
+// since v0.10 – v0.22 (backup / subuser / schedule) but that had
+// never been added to this frontend set. Result: the Activity tab
+// was rendering every backup / subuser / schedule event with the
+// generic "did something" fallback even though the i18n table
+// already had the proper labels for them.
 const KNOWN_KINDS = new Set([
   'server.create',
   'server.start',
@@ -26,6 +33,19 @@ const KNOWN_KINDS = new Set([
   'files.write',
   'files.delete',
   'files.upload',
+  // v0.43.14+
+  'backup.create',
+  'backup.restore',
+  'backup.delete',
+  'subuser.add',
+  'subuser.update',
+  'subuser.remove',
+  'schedule.create',
+  'schedule.update',
+  'schedule.delete',
+  'schedule.run',
+  'schedule.skipped',
+  'schedule.failed',
 ]);
 
 /** Translates an activity kind into the localised action sentence. */

@@ -7,21 +7,20 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.43.13** — bug fix on the "Run now" (manual
-> execution) button of the Schedules tab. The route
-> `POST /api/servers/:id/schedules/:scheduleId/run` called
-> `createBackup()` unconditionally, ignoring the schedule's
-> `action`. Clicking "Run now" on a `server.restart`
-> schedule therefore produced a backup entry with the
-> schedule's name (e.g. `"Redémarrage Hardcore — …"`)
-> instead of restarting the container. The route now
-> dispatches on `schedule.action` the same way the automatic
-> worker does — restart schedules kick off a container
-> restart (without the in-game warning countdown, since the
-> operator clicked the button on purpose), backup schedules
-> still create a backup. **Docker rebuild required**:
-> `docker compose up -d --build`. See the changelog in
-> [`CHANGELOG.md`](CHANGELOG.md).
+> **Version 0.43.14** — two UI polish fixes on top of the
+> v0.43.13 restart-schedule bug fix. **(1)** The "Run now"
+> confirmation dialog now says "will restart the server"
+> when the schedule's action is `server.restart`, instead
+> of always claiming "will create a backup". Split into
+> `schedules.runConfirm.backup` / `schedules.runConfirm.restart`
+> i18n keys. **(2)** The Activity tab's `KNOWN_KINDS` set
+> was missing 12 event kinds the backend has been emitting
+> since v0.10 – v0.22 (backup / subuser / schedule) — every
+> such event was rendered with the generic "a fait quelque
+> chose" fallback even though the proper i18n labels were
+> already defined. Added the missing kinds. **Docker rebuild
+> required**: `docker compose up -d --build`. See the
+> changelog in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features
 
