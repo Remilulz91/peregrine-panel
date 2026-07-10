@@ -11,7 +11,7 @@ import {
   ApiError,
   hasPermission,
   BUILDTOOLS_LOADERS,
-  mcVersionsFor,
+  filterVersionsForLoader,
   PERM,
   type ApiHostResources,
   type ApiServer,
@@ -98,9 +98,26 @@ export default function SettingsPage({
   // 1.16.5 cut-off), we want to keep showing the live value, not
   // silently snap it to LATEST. Instead, the loader <select> handles
   // the version reset inline (see onChange handler in the JSX).
+  // v0.43.17+: fetch the full Mojang release list once on mount and
+  // filter per loader min-version. Falls back to mcVersionsFor if
+  // Mojang is unreachable so the dropdown still populates.
+  const [allReleases, setAllReleases] = useState<string[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .listMinecraftVersions()
+      .then((r) => {
+        if (!cancelled) setAllReleases(r.releases);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const availableVersions = useMemo(
-    () => mcVersionsFor(versionLoader ?? server.loader),
-    [versionLoader, server.loader],
+    () =>
+      filterVersionsForLoader(versionLoader ?? server.loader, allReleases),
+    [versionLoader, server.loader, allReleases],
   );
   const [savingVersion, setSavingVersion] = useState(false);
   const [versionError, setVersionError] = useState<string | null>(null);
@@ -579,7 +596,7 @@ export default function SettingsPage({
                         const resolved = resolveLoader(next, pluginApi);
                         if (
                           resolved !== null &&
-                          !mcVersionsFor(resolved).includes(versionString)
+                          !filterVersionsForLoader(resolved, allReleases).includes(versionString)
                         ) {
                           setVersionString('LATEST');
                         }
@@ -610,7 +627,7 @@ export default function SettingsPage({
                         const resolved = resolveLoader(modLoader, next);
                         if (
                           resolved !== null &&
-                          !mcVersionsFor(resolved).includes(versionString)
+                          !filterVersionsForLoader(resolved, allReleases).includes(versionString)
                         ) {
                           setVersionString('LATEST');
                         }

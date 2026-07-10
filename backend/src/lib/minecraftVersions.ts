@@ -30,6 +30,13 @@ interface Manifest {
 interface CacheValue {
   /** Set of every known Mojang version id (release + snapshot). */
   ids: Set<string>;
+  /**
+   * Just the release ids, in Mojang's original order (newest first).
+   * v0.43.17+: exposed via `listReleaseVersions()` so the frontend can
+   * show the full 200-entry release list in the create-server dialog
+   * instead of the curated hand-picked breakpoints.
+   */
+  releaseIds: string[];
   /** Just the release ids — used in the error message to suggest one. */
   latestRelease: string | null;
 }
@@ -53,14 +60,29 @@ async function fetchManifest(): Promise<CacheValue> {
   }
   const json = (await response.json()) as Manifest;
   const ids = new Set<string>();
+  const releaseIds: string[] = [];
   let latestRelease: string | null = null;
   for (const entry of json.versions) {
     ids.add(entry.id);
-    if (!latestRelease && entry.type === 'release') {
-      latestRelease = entry.id;
+    if (entry.type === 'release') {
+      releaseIds.push(entry.id);
+      if (!latestRelease) latestRelease = entry.id;
     }
   }
-  return { ids, latestRelease };
+  return { ids, releaseIds, latestRelease };
+}
+
+/**
+ * Returns every Minecraft Java release Mojang has ever shipped, in
+ * newest-first order (v0.43.17+). Snapshots are excluded.
+ *
+ * Backed by the same 24 h cache as `validateVersion()`. If the cache
+ * is empty AND Mojang is unreachable, returns `null` so the caller
+ * can fall back to a hardcoded list.
+ */
+export async function listReleaseVersions(): Promise<string[] | null> {
+  const m = await getManifest();
+  return m ? m.releaseIds : null;
 }
 
 /**

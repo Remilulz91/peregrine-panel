@@ -2,6 +2,64 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.43.17 — 2026-07-03
+
+### Changed — Minecraft version dropdown = full Mojang list
+
+- **The `<select>` now lists every Minecraft Java release
+  Mojang has ever shipped** (~200 entries from 1.0 through
+  26.1) instead of the ~15-entry hand-curated shortlist that
+  existed since v0.41.1. Sources: the same Mojang version
+  manifest that already backs `validateVersion()`
+  server-side, cached 24 h.
+- **Loader-aware filtering.** Each loader keeps its
+  compatibility floor — Fabric ≥ 1.14, Quilt ≥ 1.18.2,
+  Forge ≥ 1.7.10, NeoForge ≥ 1.20.1, Purpur ≥ 1.18.2,
+  Folia ≥ 1.19.4, Arclight ≥ 1.16.5, Banner ≥ 1.19.4,
+  Paper / Bukkit / Spigot ≥ 1.8.8, Vanilla ≥ 1.0 — so
+  picking Fabric doesn't expose 1.7.10 in the dropdown.
+  The floors are defined in the new `LOADER_MIN_VERSION`
+  map in `frontend/src/lib/api.ts`.
+- **Native scroll + type-to-search.** Native HTML `<select>`
+  gets its native browser scrollbar automatically when the
+  option list is longer than the viewport. Every desktop
+  browser also supports type-to-search: open the dropdown
+  and type `1.14` — the highlight jumps straight to the
+  first `1.14*` entry. No custom dropdown component needed.
+
+### Added — backend endpoint `GET /api/minecraft-versions`
+
+- New route
+  (`backend/src/routes/minecraftVersions.ts`), authenticated
+  like every other `/api/*` endpoint. Reads
+  `listReleaseVersions()` from `lib/minecraftVersions.ts`,
+  which is a thin wrapper over the existing `getManifest()`
+  cache (24 h TTL, in-flight de-duplication, no-throw
+  behaviour on Mojang hiccup).
+- Response shape: `{ releases: string[] }`. Ordered
+  newest-first, snapshots excluded.
+- **Fallback**: if Mojang is unreachable AND the cache is
+  empty, the endpoint returns `{ releases: [] }` and the
+  frontend's `filterVersionsForLoader()` falls back to the
+  bundled curated shortlist — so the panel keeps working
+  even during a Mojang outage.
+
+### Notes
+
+- **Backward compatibility.** The existing
+  `mcVersionsFor(loader)` helper still exports the same
+  hand-curated shortlist as before, and
+  `VERSIONS_BY_LOADER` is unchanged. `filterVersionsForLoader`
+  is a new function; `mcVersionsFor` is only invoked as the
+  fallback branch inside it, so anything that was importing
+  `mcVersionsFor` still compiles.
+- **`LATEST` remains the default first option** in every
+  dropdown, regardless of the release-count. Explicit
+  version numbers follow, newest-first.
+- **Docker rebuild required**: `docker compose up -d --build`.
+  The Vite bundle inside the container needs to be rebuilt
+  so the new imports resolve.
+
 ## v0.43.16 — 2026-07-03
 
 ### Added — auto-release workflow

@@ -4,7 +4,7 @@ import {
   api,
   ApiError,
   BUILDTOOLS_LOADERS,
-  mcVersionsFor,
+  filterVersionsForLoader,
   type ApiAdminUser,
   type ApiHostResources,
   type ApiTemplate,
@@ -141,9 +141,26 @@ export default function CreateServerDialog({
   // new binary. Falls back to the Vanilla list when the user has
   // picked an unsupported (modLoader, pluginApi) combo — the
   // submit button is disabled in that state anyway.
+  // v0.43.17+: fetch the full Mojang release list once when the dialog
+  // opens and pass it through the loader-aware min-version filter.
+  // Falls back to the bundled curated shortlist (mcVersionsFor) if
+  // Mojang is unreachable — the user still gets a working picker.
+  const [allReleases, setAllReleases] = useState<string[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .listMinecraftVersions()
+      .then((r) => {
+        if (!cancelled) setAllReleases(r.releases);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const availableVersions = useMemo(
-    () => mcVersionsFor(loader ?? 'vanilla'),
-    [loader],
+    () => filterVersionsForLoader(loader ?? 'vanilla', allReleases),
+    [loader, allReleases],
   );
 
   async function handleSubmit(event: FormEvent): Promise<void> {
@@ -349,7 +366,7 @@ export default function CreateServerDialog({
                           const resolved = resolveLoader(next, pluginApi);
                           if (
                             resolved !== null &&
-                            !mcVersionsFor(resolved).includes(version)
+                            !filterVersionsForLoader(resolved, allReleases).includes(version)
                           ) {
                             setVersion('LATEST');
                           }
@@ -379,7 +396,7 @@ export default function CreateServerDialog({
                           const resolved = resolveLoader(modLoader, next);
                           if (
                             resolved !== null &&
-                            !mcVersionsFor(resolved).includes(version)
+                            !filterVersionsForLoader(resolved, allReleases).includes(version)
                           ) {
                             setVersion('LATEST');
                           }

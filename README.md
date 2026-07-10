@@ -7,15 +7,18 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.43.16** — auto-release workflow. New
-> `.github/workflows/release.yml` fires on every
-> `push tag v*` and publishes a GitHub Release from the
-> tag's annotated message. Same run also backfills any
-> older tag that never got a release — safe to re-run,
-> existing releases are skipped, not overwritten.
-> Idempotent semver-sorted loop; manual re-trigger
-> available from the Actions tab. Zero panel code change,
-> no Docker rebuild needed. See the changelog in
+> **Version 0.43.17** — Minecraft version dropdown now
+> shows the **full Mojang release list** (~200 entries),
+> filtered by each loader's supported floor (Fabric ≥ 1.14,
+> NeoForge ≥ 1.20.1, Forge ≥ 1.7.10, etc.), instead of the
+> ~15-entry hand-curated shortlist. The dropdown gets the
+> browser's native scrollbar for navigation and native
+> type-to-search (open the dropdown, type `1.14` to jump
+> straight there). Backed by a new
+> `GET /api/minecraft-versions` endpoint that reuses the
+> existing 24 h Mojang manifest cache. Falls back to the
+> bundled shortlist if Mojang is unreachable. Docker
+> rebuild required. See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features

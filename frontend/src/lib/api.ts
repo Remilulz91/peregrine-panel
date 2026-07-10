@@ -581,6 +581,14 @@ export const api = {
   hostMetrics: () =>
     request<{ metrics: ApiHostMetrics }>('/api/host/metrics'),
   updateInfo: () => request<ApiUpdateInfo>('/api/updates'),
+  /**
+   * v0.43.17+: full Mojang release list, cached 24 h backend-side.
+   * Returns `{ releases: [] }` if Mojang is unreachable and the
+   * cache is empty — the caller should fall back to the bundled
+   * `VERSIONS_BY_LOADER` shortlist in that case.
+   */
+  listMinecraftVersions: () =>
+    request<{ releases: string[] }>('/api/minecraft-versions'),
   serverPlayers: (id: string) =>
     request<ApiPlayerList>(`/api/servers/${id}/players`),
 
@@ -1124,9 +1132,90 @@ export const VERSIONS_BY_LOADER: Record<ServerLoader, string[]> = {
  * Convenience helper. Same as `VERSIONS_BY_LOADER[loader]` but does
  * a safe fallback to Vanilla if a future loader is somehow added on
  * the backend before being declared here.
+ *
+ * v0.43.17+: this returns the hardcoded curated shortlist. Prefer the
+ * new `filterVersionsForLoader(loader, allReleases)` below when you
+ * have the full Mojang release list fetched via
+ * `api.listMinecraftVersions()` — it returns every release Mojang
+ * has shipped, min-version-filtered by loader compatibility.
  */
 export function mcVersionsFor(loader: ServerLoader): string[] {
   return VERSIONS_BY_LOADER[loader] ?? VANILLA_MC_VERSIONS;
+}
+
+/**
+ * v0.43.17+: minimum Minecraft version each loader ships / actively
+ * maintains. Used to filter the full Mojang release list down to
+ * "versions this loader can actually target". Compared as major.minor
+ * .patch tuples; a null entry means "no lower bound, show everything".
+ *
+ * The values match the docstrings on the hardcoded arrays above.
+ */
+const LOADER_MIN_VERSION: Record<ServerLoader, string | null> = {
+  vanilla: null,
+  paper: '1.8.8',
+  fabric: '1.14',
+  forge: '1.7.10',
+  neoforge: '1.20.1',
+  bukkit: '1.8.8',
+  spigot: '1.8.8',
+  purpur: '1.18.2',
+  folia: '1.19.4',
+  quilt: '1.18.2',
+  mohist: '1.7.10',
+  arclight: '1.16.5',
+  banner: '1.19.4',
+};
+
+/**
+ * Parses a Minecraft release string like "1.21.4" or "1.14" into a
+ * comparable tuple. New Mojang year-based tags ("26.1") also parse
+ * cleanly. Everything non-numeric is dropped so we never end up in a
+ * NaN branch on odd pre-release tags.
+ */
+function parseVersion(v: string): number[] {
+  return v.split('.').map((x) => {
+    const n = Number.parseInt(x, 10);
+    return Number.isFinite(n) ? n : 0;
+  });
+}
+
+/** Lexicographic compare of the parsed tuples: a > b → positive. */
+function cmpVersion(a: string, b: string): number {
+  const pa = parseVersion(a);
+  const pb = parseVersion(b);
+  const len = Math.max(pa.length, pb.length);
+  for (let i = 0; i < len; i++) {
+    const av = pa[i] ?? 0;
+    const bv = pb[i] ?? 0;
+    if (av !== bv) return av - bv;
+  }
+  return 0;
+}
+
+/**
+ * v0.43.17+: given the full Mojang release list (fetched via
+ * `api.listMinecraftVersions()`) and a loader, returns:
+ *
+ *   ['LATEST', <every release the loader supports, newest first>]
+ *
+ * The min-version cut-off per loader is defined in `LOADER_MIN_VERSION`
+ * above. Passing an empty array falls back to the curated hardcoded
+ * list from `mcVersionsFor(loader)` so the UI still works if the
+ * backend can't reach Mojang.
+ */
+export function filterVersionsForLoader(
+  loader: ServerLoader,
+  allReleases: string[],
+): string[] {
+  if (allReleases.length === 0) return mcVersionsFor(loader);
+  const min = LOADER_MIN_VERSION[loader] ?? null;
+  const filtered = min
+    ? allReleases.filter((v) => cmpVersion(v, min) >= 0)
+    : allReleases.slice();
+  // Mojang returns newest-first; make sure LATEST sits on top so the
+  // default option is always the same regardless of the release count.
+  return ['LATEST', ...filtered];
 }
 
 /**
