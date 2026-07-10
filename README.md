@@ -7,18 +7,20 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.43.17** — Minecraft version dropdown now
-> shows the **full Mojang release list** (~200 entries),
-> filtered by each loader's supported floor (Fabric ≥ 1.14,
-> NeoForge ≥ 1.20.1, Forge ≥ 1.7.10, etc.), instead of the
-> ~15-entry hand-curated shortlist. The dropdown gets the
-> browser's native scrollbar for navigation and native
-> type-to-search (open the dropdown, type `1.14` to jump
-> straight there). Backed by a new
-> `GET /api/minecraft-versions` endpoint that reuses the
-> existing 24 h Mojang manifest cache. Falls back to the
-> bundled shortlist if Mojang is unreachable. Docker
-> rebuild required. See the changelog in
+> **Version 0.43.18** — Fixes a silent regression where the
+> built-in SFTP server would fail to start on any deployment
+> that didn't explicitly set `SFTP_HOST_KEY_PATH` in `.env`.
+> The v0.34.0 Zero Trust hardening mounts `/app` read-only,
+> but three panel-state config defaults
+> (`sftpHostKeyPath`, `iconsPath`, `databasePath`) still
+> resolved to `/app/data/...` — writeable in older releases,
+> ENOENT-crashing since. Defaults now resolve to `/data`
+> (the persistent named volume) in production. Existing
+> deployments that were relying on the fallback should
+> add `SFTP_HOST_KEY_PATH=/data/sftp_host_key` and
+> `ICONS_PATH=/data/icons` to their `.env` — or upgrade
+> and let the new defaults kick in. Docker rebuild
+> required. See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features

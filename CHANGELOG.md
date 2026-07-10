@@ -2,6 +2,67 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.43.18 — 2026-07-10
+
+### Fixed — SFTP server no longer silently fails to start
+
+- **Root cause.** The v0.34.0 Zero Trust hardening set
+  `read_only: true` on the panel container in
+  `docker-compose.yml`, making `/app` immutable at runtime
+  (state must live under mounted volumes). However, three
+  `backend/src/config.ts` fallbacks still resolved to paths
+  inside `/app`:
+    - `sftpHostKeyPath` → `/app/data/sftp_host_key`
+    - `iconsPath` → `/app/data/icons`
+    - `databasePath` → `/app/data/peregrine.db`
+- Only `DATABASE_PATH=/data/peregrine.db` was declared in
+  `.env.example`, so users who copied it verbatim got a
+  working DB but a broken SFTP: `loadOrCreateHostKey()`
+  called `mkdirSync('/app/data', { recursive: true })`
+  which the read-only FS rejected (Linux returns `ENOENT`
+  from a failed rec-mkdir traversal in that case, not
+  `EROFS` as one would expect). The exception was caught
+  by the top-level `try/catch` around `startSftpServer()`
+  in `index.ts`, so the panel came up healthy but the SFTP
+  daemon never bound port 2022. Symptom for the operator:
+  WinSCP/`sftp` → `Connection refused` externally, while
+  `nc -zv localhost 2022` returned `open` (the userland
+  `docker-proxy` completes the outer handshake before the
+  inner `connect()` to the container fails).
+- **Fix.** `config.ts` now centralises the panel-state
+  location via a new `defaultDataDir` helper. In
+  production (`NODE_ENV=production`) it defaults to `/data`
+  — the persistent named volume already mounted by
+  `docker-compose.yml`. In dev mode it still resolves to
+  `<repo>/data` so `npm run dev` at the source root works
+  unchanged. Individual env-var overrides
+  (`DATABASE_PATH`, `ICONS_PATH`, `SFTP_HOST_KEY_PATH`,
+  new `PEREGRINE_DATA_DIR`) still win over the default.
+- **`.env.example` now declares** `SFTP_HOST_KEY_PATH=`
+  `/data/sftp_host_key` and `ICONS_PATH=/data/icons`
+  explicitly, next to the pre-existing `DATABASE_PATH`,
+  so a fresh `cp .env.example .env` produces a working
+  panel out of the box.
+
+### Upgrade notes
+
+- **Existing deployments where SFTP was already broken.**
+  Either add two lines to `.env`:
+  ```
+  SFTP_HOST_KEY_PATH=/data/sftp_host_key
+  ICONS_PATH=/data/icons
+  ```
+  and `docker compose up -d`, OR pull v0.43.18 and let the
+  new defaults kick in with `docker compose up -d --build`.
+- **Deployments that had explicitly set both env vars to
+  a path under `/data/`.** Nothing to do — your `.env`
+  overrides still win.
+- No database migrations. No breaking config changes. The
+  host key is regenerated on first launch after the fix
+  (so users may see a one-time "host key changed" prompt
+  in their SFTP client if they had SFTP working before via
+  a manually-mounted key path).
+
 ## v0.43.17 — 2026-07-03
 
 ### Changed — Minecraft version dropdown = full Mojang list

@@ -16,6 +16,24 @@ function readNumber(name: string, fallback: number): number {
 const defaultServersPath = path.resolve(__dirname, '../../data/servers');
 const serversPath = process.env.SERVERS_PATH ?? defaultServersPath;
 
+/**
+ * v0.43.18+: base directory for panel state (SQLite DB, SFTP host
+ * key, per-server icon PNGs). In production Docker, /app is mounted
+ * read-only (Zero Trust hardening from v0.34.0), so state files MUST
+ * live under /data (the persistent named volume from docker-compose).
+ * In dev mode we still fall back to <repo>/data so `npm run dev` at
+ * the source root works without touching /data on the host.
+ *
+ * Override with PEREGRINE_DATA_DIR if you run a custom layout (each
+ * individual DATABASE_PATH / ICONS_PATH / SFTP_HOST_KEY_PATH also
+ * still wins if set).
+ */
+const defaultDataDir =
+  process.env.PEREGRINE_DATA_DIR ??
+  (process.env.NODE_ENV === 'production'
+    ? '/data'
+    : path.resolve(__dirname, '../../data'));
+
 /** Central application configuration, read from the environment. */
 export const config = {
   /** Port the HTTP server listens on. */
@@ -33,7 +51,7 @@ export const config = {
   /** Secret key used to sign authentication tokens (JWT). */
   // v0.34.0+: in production we REFUSE to fall back to the hardcoded
   // development secret. If JWT_SECRET is not set when NODE_ENV is
-  // 'production', we throw — the panel will not start. Better to
+  // 'production', we throw - the panel will not start. Better to
   // crash loudly than to run with a publicly-known secret that
   // anyone reading the source code can use to forge admin tokens.
   jwtSecret: (() => {
@@ -55,8 +73,7 @@ export const config = {
 
   /** Path to the SQLite database file. */
   databasePath:
-    process.env.DATABASE_PATH ??
-    path.resolve(__dirname, '../../data/peregrine.db'),
+    process.env.DATABASE_PATH ?? path.join(defaultDataDir, 'peregrine.db'),
 
   /** Docker daemon socket used to manage game-server containers. */
   dockerSocket: process.env.DOCKER_SOCKET ?? '/var/run/docker.sock',
@@ -78,16 +95,14 @@ export const config = {
    * inside the Peregrine data volume so icons survive container
    * rebuilds. Defaults to <data>/icons.
    */
-  iconsPath:
-    process.env.ICONS_PATH ??
-    path.resolve(__dirname, '../../data/icons'),
+  iconsPath: process.env.ICONS_PATH ?? path.join(defaultDataDir, 'icons'),
 
   /**
    * RAM (in MiB) kept untouched on the host as a safety margin for the
    * OS, Docker and Peregrine itself. The create / resize endpoints
    * refuse any allocation that would push usage past `total - reserved`.
    *
-   * Default: 512 MiB — the realistic minimum for Debian + Docker
+   * Default: 512 MiB - the realistic minimum for Debian + Docker
    * daemon + the Peregrine container + Caddy + fail2ban. Bump it on
    * bigger hosts if you want more breathing room (1024 is a common
    * "comfortable" value).
@@ -96,7 +111,7 @@ export const config = {
 
   /**
    * CPU cores (can be fractional, e.g. 0.5) kept untouched on the host
-   * as a safety margin. Default: 0.5 — the host stack is mostly idle
+   * as a safety margin. Default: 0.5 - the host stack is mostly idle
    * so half a core is plenty. Bump it on production-grade hosts that
    * run other workloads alongside Peregrine.
    */
@@ -109,7 +124,7 @@ export const config = {
    * v0.20.0+: itzg's Minecraft images run as UID 1000 / GID 1000 and
    * expect files in /data to be owned the same way. The SFTP server
    * runs in the panel container (as root), so every file/dir it
-   * creates would otherwise end up as root:root with 755/644 — which
+   * creates would otherwise end up as root:root with 755/644 - which
    * means itzg can read but NOT write, breaking world saves. We chown
    * + chmod after every OPEN/MKDIR to keep ownership aligned. These
    * values are configurable for non-standard images that use a
@@ -127,12 +142,12 @@ export const config = {
    */
   sftpHostKeyPath:
     process.env.SFTP_HOST_KEY_PATH ??
-    path.resolve(__dirname, '../../data/sftp_host_key'),
+    path.join(defaultDataDir, 'sftp_host_key'),
 
   /**
    * v0.40.0+: how many days of log rows to keep in `auth_events`,
    * `audit_events`, and `server_activity` before the daily retention
-   * worker deletes them. Default 30 days — balances disk usage on a
+   * worker deletes them. Default 30 days - balances disk usage on a
    * small VPS against having enough recent history for the admin
    * Security dashboard to be useful. Operators who need long-term
    * forensics should ALSO export audit_events to an external system
