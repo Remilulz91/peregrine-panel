@@ -137,8 +137,57 @@ export async function buildServer() {
   return app;
 }
 
+/**
+ * v0.43.19+: fail-fast writability probe. Runs before ANY other startup
+ * step (including buildServer) so a broken mount, a typo in .env or a
+ * future hardening bump that turns a directory read-only surfaces as
+ * a loud, actionable FATAL log line rather than a silent try/catch
+ * swallow. Every path listed here is one Peregrine WILL write to at
+ * runtime; if the process can't write here, the panel is not
+ * functional even if it appears to boot.
+ *
+ * Rationale: v0.34.0 mounted /app read-only for Zero Trust hardening
+ * but three config defaults (sftpHostKeyPath, iconsPath, databasePath)
+ * still resolved under /app/data. The panel came up healthy for 9
+ * months while the SFTP server silently failed to start, because
+ * startSftpServer() was wrapped in try/catch. Fixed in v0.43.18 by
+ * changing the defaults; hardened here in v0.43.19 by refusing to
+ * boot at all if the same class of misconfiguration is ever
+ * reintroduced.
+ */
+function assertWritable(label: string, dir: string): void {
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+    fs.accessSync(dir, fs.constants.W_OK);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    // Fastify's logger isn't up yet, so log to stderr directly.
+    // eslint-disable-next-line no-console
+    console.error(
+      `[FATAL] Peregrine needs to write to ${label} but ${dir} is not writable.\n` +
+        `        Original error: ${msg}\n` +
+        `        Fix: check your docker-compose bind mounts, or override\n` +
+        `        the corresponding env var in .env (see .env.example).\n` +
+        `        Refusing to start.`,
+    );
+    process.exit(1);
+  }
+}
+
+/** Verifies every writable path Peregrine relies on at runtime. */
+function assertStartupPaths(): void {
+  assertWritable('databasePath', path.dirname(config.databasePath));
+  assertWritable('iconsPath', config.iconsPath);
+  assertWritable('sftpHostKeyPath', path.dirname(config.sftpHostKeyPath));
+  assertWritable('serversPath', config.serversPath);
+  assertWritable('backupsPath', config.backupsPath);
+}
+
 /** Entry point: starts the HTTP server and the background workers. */
 async function start(): Promise<void> {
+  // v0.43.19+: fail-fast if any critical path can't be written to.
+  // MUST run before buildServer / startSftpServer / etc.
+  assertStartupPaths();
   const app = await buildServer();
   // The schedule worker runs alongside the HTTP server. It's started
   // unconditionally because it does nothing until a schedule is due.

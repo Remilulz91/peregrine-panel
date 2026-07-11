@@ -2,6 +2,45 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.43.19 — 2026-07-11
+
+### Added — fail-fast writability probe at startup
+
+- **New in `backend/src/index.ts`.** Before Fastify is built,
+  before any background worker starts, before the SFTP
+  server tries to bind, `assertStartupPaths()` runs one
+  `assertWritable(label, dir)` per critical path:
+    - `databasePath` (parent dir)
+    - `iconsPath`
+    - `sftpHostKeyPath` (parent dir)
+    - `serversPath`
+    - `backupsPath`
+  Each probe does `fs.mkdirSync(dir, { recursive: true })`
+  followed by `fs.accessSync(dir, W_OK)`. If either throws,
+  the backend prints a red `[FATAL]` line to stderr with:
+  the label, the offending path, the original error
+  message, and a hint that the fix is either a
+  `docker-compose` mount or an env-var override — then
+  calls `process.exit(1)`.
+- **Why.** The v0.34.0 Zero Trust hardening turned `/app`
+  read-only. Three config defaults still resolved under
+  `/app/data`. The SFTP server crashed at startup for 9
+  months while the panel came up healthy, because
+  `startSftpServer()` was wrapped in `try/catch` and no
+  operator ever noticed — SFTP was silently unreachable
+  from outside. v0.43.18 fixed the defaults; v0.43.19
+  now guarantees that the SAME class of silent regression
+  cannot ship again: any future feature that adds a
+  writable path just adds one line to
+  `assertStartupPaths()`, and any operator misconfig gets
+  a screaming error at first `docker compose up` instead
+  of a broken feature 9 months later.
+- **Migration.** No action required. Correctly-configured
+  deployments (which is now every deployment after
+  v0.43.18) boot exactly as before. Incorrectly-configured
+  deployments now fail loudly at boot instead of quietly
+  at runtime — which is the point.
+
 ## v0.43.18 — 2026-07-10
 
 ### Fixed — SFTP server no longer silently fails to start

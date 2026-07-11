@@ -7,20 +7,18 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.43.18** — Fixes a silent regression where the
-> built-in SFTP server would fail to start on any deployment
-> that didn't explicitly set `SFTP_HOST_KEY_PATH` in `.env`.
-> The v0.34.0 Zero Trust hardening mounts `/app` read-only,
-> but three panel-state config defaults
-> (`sftpHostKeyPath`, `iconsPath`, `databasePath`) still
-> resolved to `/app/data/...` — writeable in older releases,
-> ENOENT-crashing since. Defaults now resolve to `/data`
-> (the persistent named volume) in production. Existing
-> deployments that were relying on the fallback should
-> add `SFTP_HOST_KEY_PATH=/data/sftp_host_key` and
-> `ICONS_PATH=/data/icons` to their `.env` — or upgrade
-> and let the new defaults kick in. Docker rebuild
-> required. See the changelog in
+> **Version 0.43.19** — Fail-fast startup probe. Before
+> Fastify comes up, the backend now `mkdir -p`s and
+> `W_OK`-checks every path it relies on
+> (`databasePath`, `iconsPath`, `sftpHostKeyPath`,
+> `serversPath`, `backupsPath`). If any is unwritable —
+> broken `docker-compose` mount, `.env` typo, future
+> hardening bump that turns a directory read-only — the
+> panel refuses to boot with a clear `[FATAL]` log line
+> pointing at the offending path and the env var to
+> override. Hardens against the class of silent regression
+> that shipped in v0.34.0 and was only surfaced in
+> v0.43.18. Docker rebuild required. See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features
