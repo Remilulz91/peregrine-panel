@@ -2,6 +2,52 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.44.2 — 2026-07-12
+
+### Changed — dependency refresh (Dependabot cherry-pick)
+
+- **Backend** (6 packages, all minor / patch, no API breakage):
+    - `@fastify/cookie` 11.0.2 -> 11.1.1
+    - `@fastify/jwt` 10.1.0 -> 10.2.0
+    - `@fastify/multipart` 10.0.0 -> 10.1.0
+    - `fastify` 5.9.0 -> 5.10.0
+    - `@types/node` 22.20.0 -> 22.20.1
+    - `tsx` 4.22.5 -> 4.23.1
+- **Frontend** (1 package):
+    - `postcss` 8.5.16 -> 8.5.19. Includes two security
+      fixes from 8.5.18: `postcss.fromJSON()` prototype-
+      hijacking hardening + restricted source-map file
+      loading (only under `opts.from`) to close a path-
+      traversal vector. Also includes a fix for a
+      "Maximum call stack size exceeded" crash in 8.5.17.
+
+### NOT changed (deliberately held back)
+
+- **`@fastify/static` 9.1.3 -> 10.1.0**. Dependabot PR
+  #22 grouped this MAJOR bump alongside 6 safe minors;
+  merging as-is would have shipped v10 without review.
+  Since `@fastify/static` serves the entire SPA
+  (`/assets/*` + the React `index.html` fallback), a
+  silent change in serve-static defaults (dotfiles,
+  symlink resolution, MIME) would blank the panel for
+  every user. Kept at 9.1.3; added to
+  `.github/dependabot.yml`'s major-ignore list so the
+  suggestion stops re-appearing. A dedicated v10
+  migration release will be scheduled after reading the
+  official migration guide.
+
+### Meta — Dependabot grouping caveat
+
+- The `backend-deps` group in `.github/dependabot.yml`
+  matches all patterns (`*`), which mixes minors and
+  majors in a single PR. Cherry-picking the minors +
+  ignoring the majors (as done here) is the safe
+  workflow, but a cleaner future setup would split the
+  group into `backend-deps-minor` (allow) +
+  `backend-deps-major` (require dedicated review). Not
+  done in v0.44.2 to keep the diff minimal; noted as a
+  follow-up.
+
 ## v0.44.1 — 2026-07-12
 
 ### Fixed — stale "update available" badge after applying an update

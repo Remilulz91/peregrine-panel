@@ -19,21 +19,30 @@ updates:
       backend-deps:
         patterns:
           - "*"
-    # v0.43.5+: pin two majors that need manual review before bumping.
-    #   - @types/node tracks the runtime; we run Node 22 LTS in
-    #     production, so we stay on @types/node@22.x. A 26.x bump
-    #     would expose Node 26 APIs to TypeScript that don't exist
-    #     at runtime → silent compile-OK / runtime-crash class of
-    #     bugs.
+    # v0.43.5+: pin majors that need manual review before bumping.
+    #   - @types/node tracks the runtime; we run Node 24 LTS in
+    #     production, so we stay on @types/node@22.x for now (the
+    #     types for 24 lag behind). A 26.x bump would expose Node
+    #     26 APIs to TypeScript that don't exist at runtime ->
+    #     silent compile-OK / runtime-crash class of bugs.
     #   - typescript v6 / v7 ship breaking changes (stricter
     #     defaults, removed legacy syntax) that need a full
     #     typecheck pass before we adopt; let the ecosystem settle.
+    #   - v0.44.2+: @fastify/static v10 (from v9.x) is a MAJOR bump
+    #     that changes serve-static defaults (dotfiles, symlinks,
+    #     MIME resolution). Since @fastify/static serves the
+    #     entire SPA (index.html + /assets/*), a silent behaviour
+    #     change would blank the panel. Needs a dedicated release
+    #     that reads the v10 migration guide + tests page load
+    #     end-to-end. Minor / patch bumps within v9.x still flow.
     # Dependabot will keep proposing minor / patch bumps within
-    # those majors — only the cross-major nag is silenced.
+    # those majors - only the cross-major nag is silenced.
     ignore:
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
       - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@fastify/static"
         update-types: ["version-update:semver-major"]
 
   - package-ecosystem: npm

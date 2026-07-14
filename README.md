@@ -7,20 +7,20 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.44.1** — Fixes the stale "update available"
-> badge that lingered after applying an update.
-> `backend/src/lib/version.ts` used to carry a hardcoded
-> `PEREGRINE_VERSION` string that had to be bumped
-> manually alongside `package.json` at every release — and
-> was silently missed on v0.43.18, v0.43.19 and v0.44.0,
-> so the update-check kept comparing GitHub's `v0.44.0`
-> against a hardcoded `0.43.17` and lit up the badge
-> forever. `version.ts` now reads `backend/package.json`
-> at process start; `health.ts` imports the same constant
-> instead of hardcoding its own. One source of truth: a
-> release bump only touches `package.json`. Docker
-> rebuild required. See the changelog in
-> [`CHANGELOG.md`](CHANGELOG.md).
+> **Version 0.44.2** — Routine dependency refresh. Bumps
+> six backend packages (`@fastify/cookie` 11.1.1,
+> `@fastify/jwt` 10.2.0, `@fastify/multipart` 10.1.0,
+> `fastify` 5.10.0, `@types/node` 22.20.1, `tsx` 4.23.1)
+> and one frontend package (`postcss` 8.5.19 — includes
+> a security fix for `postcss.fromJSON()` prototype
+> hijacking + a source-map path-traversal restriction).
+> `@fastify/static` was intentionally NOT bumped past
+> v9.x because Dependabot proposed a MAJOR v10 upgrade
+> that changes serve-static defaults; since this plugin
+> serves the entire SPA, the migration needs a dedicated
+> release. Added to the Dependabot ignore list so the
+> nag stops. Docker rebuild required. See the changelog
+> in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features
 
