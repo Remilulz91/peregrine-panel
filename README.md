@@ -7,19 +7,19 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.44.0** — Per-server Java version pin. A new
-> **Java version** dropdown appears in the "Create server"
-> dialog and in the Settings tab of every Java server:
-> **Auto** (recommended — delegates JVM choice to itzg's
-> `:latest` tag, which picks the right JDK based on the
-> requested Minecraft version), **Java 8** (for legacy
-> Forge mod packs 1.7.10 → 1.12.2), **Java 17** (for
-> 1.17 → 1.20.4 packs the auto-picker misidentifies), or
-> **Java 21** (for 1.20.5+ packs that need modern
-> bytecode). Changing the pin on an existing server
-> triggers a container recreate on the corresponding itzg
-> image variant; the world / mods / config are preserved.
-> Docker rebuild required. See the changelog in
+> **Version 0.44.1** — Fixes the stale "update available"
+> badge that lingered after applying an update.
+> `backend/src/lib/version.ts` used to carry a hardcoded
+> `PEREGRINE_VERSION` string that had to be bumped
+> manually alongside `package.json` at every release — and
+> was silently missed on v0.43.18, v0.43.19 and v0.44.0,
+> so the update-check kept comparing GitHub's `v0.44.0`
+> against a hardcoded `0.43.17` and lit up the badge
+> forever. `version.ts` now reads `backend/package.json`
+> at process start; `health.ts` imports the same constant
+> instead of hardcoding its own. One source of truth: a
+> release bump only touches `package.json`. Docker
+> rebuild required. See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features

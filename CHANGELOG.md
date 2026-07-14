@@ -2,6 +2,43 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.44.1 — 2026-07-12
+
+### Fixed — stale "update available" badge after applying an update
+
+- **Root cause.** `backend/src/lib/version.ts` exported
+  `PEREGRINE_VERSION` as a hardcoded string constant. A
+  release bump had to touch THREE files in lockstep:
+  `backend/package.json`, `frontend/package.json`,
+  `backend/src/lib/version.ts` — plus a fourth,
+  `backend/src/routes/health.ts`, which also hardcoded
+  the version string. Any file left behind silently broke
+  something. In practice, v0.43.18, v0.43.19 and v0.44.0
+  all shipped with `version.ts` still stuck at `0.43.17`,
+  so the update-check service reported `currentVersion:
+  "0.43.17"`, compared it against GitHub's latest tag
+  (`v0.44.0`), decided newer, and kept the "update
+  available: v0.44.0" badge lit forever after operators
+  had already applied v0.44.0.
+- **Fix.** `version.ts` now reads
+  `backend/package.json` at process start
+  (`readFileSync` + `JSON.parse`) instead of hardcoding
+  a duplicate constant. `health.ts` was refactored to
+  import `PEREGRINE_VERSION` from `lib/version` instead
+  of its own hardcoded string. Net result: a release bump
+  only touches `backend/package.json` and
+  `frontend/package.json` from now on. Any file that
+  needs the version string reads it from those two.
+- **Migration.** None. The next `docker compose up -d
+  --build` on any deployment stuck on the old badge will
+  make it disappear as soon as the new backend boots.
+- **Meta.** This is exactly the class of bug the
+  `assertWritable()` probe pattern from v0.43.19 hardens
+  against for filesystem paths. There's no equivalent
+  static check for "release-time version bumps that
+  didn't get applied everywhere", but the deduplication
+  here removes the possibility outright.
+
 ## v0.44.0 — 2026-07-12
 
 ### Added — per-server Java version pin
