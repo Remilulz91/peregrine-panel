@@ -7,18 +7,19 @@ create and manage game servers (Minecraft Java and Bedrock) that each run in
 an isolated Docker container. The project follows the spirit of Pterodactyl
 and Pelican.
 
-> **Version 0.43.19** — Fail-fast startup probe. Before
-> Fastify comes up, the backend now `mkdir -p`s and
-> `W_OK`-checks every path it relies on
-> (`databasePath`, `iconsPath`, `sftpHostKeyPath`,
-> `serversPath`, `backupsPath`). If any is unwritable —
-> broken `docker-compose` mount, `.env` typo, future
-> hardening bump that turns a directory read-only — the
-> panel refuses to boot with a clear `[FATAL]` log line
-> pointing at the offending path and the env var to
-> override. Hardens against the class of silent regression
-> that shipped in v0.34.0 and was only surfaced in
-> v0.43.18. Docker rebuild required. See the changelog in
+> **Version 0.44.0** — Per-server Java version pin. A new
+> **Java version** dropdown appears in the "Create server"
+> dialog and in the Settings tab of every Java server:
+> **Auto** (recommended — delegates JVM choice to itzg's
+> `:latest` tag, which picks the right JDK based on the
+> requested Minecraft version), **Java 8** (for legacy
+> Forge mod packs 1.7.10 → 1.12.2), **Java 17** (for
+> 1.17 → 1.20.4 packs the auto-picker misidentifies), or
+> **Java 21** (for 1.20.5+ packs that need modern
+> bytecode). Changing the pin on an existing server
+> triggers a container recreate on the corresponding itzg
+> image variant; the world / mods / config are preserved.
+> Docker rebuild required. See the changelog in
 > [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features

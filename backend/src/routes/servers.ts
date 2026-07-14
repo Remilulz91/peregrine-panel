@@ -6,15 +6,18 @@ import {
   createServer,
   deleteServer,
   getServer,
+  isJavaVersion,
   isLoader,
   listServersVisibleTo,
   renameServer,
   setServerContainerId,
   updateServerDescription,
   updateServerDiskQuota,
+  updateServerJavaVersion,
   updateServerResources,
   updateServerStatus,
   updateServerVersion,
+  type JavaVersion,
   type ServerLoader,
   type ServerRecord,
 } from '../lib/servers';
@@ -35,7 +38,9 @@ import {
 import {
   createServerContainer,
   getContainerState,
+  pullImage,
   removeContainer,
+  resolveContainerImage,
   restartContainer,
   startContainer,
   stopContainer,
@@ -52,8 +57,15 @@ interface CreateServerBody {
   name: string;
   templateId: string;
   minecraftVersion?: string;
-  /** Optional — server flavour for Java (vanilla / paper / fabric / forge). */
+  /** Optional - server flavour for Java (vanilla / paper / fabric / forge). */
   loader?: string;
+  /**
+   * v0.44.0+: which JVM version to pin the container to. 'auto' by
+   * default (delegates to itzg's :latest which auto-picks JVM from
+   * MC version). Explicit pins for mod packs that need a specific
+   * Java version. Ignored for Bedrock servers.
+   */
+  javaVersion?: string;
   /** Optional free-text description shown under the server name. */
   description?: string;
   /**
@@ -64,7 +76,7 @@ interface CreateServerBody {
   ownerId?: string;
   /**
    * When true, the server is automatically started right after the
-   * install completes. Defaults to true — matches the Pterodactyl UX.
+   * install completes. Defaults to true - matches the Pterodactyl UX.
    */
   autostart?: boolean;
   /** Optional disk quota in MiB. 0 / omitted = no quota (unlimited). */
@@ -84,6 +96,8 @@ interface RenameServerBody {
   minecraftVersion?: string;
   /** v0.31.0+: new loader. Triggers a container recreation. */
   loader?: string;
+  /** v0.44.0+: new Java version pin. Triggers a container recreation. */
+  javaVersion?: string;
 }
 
 async function effectiveStatus(server: ServerRecord): Promise<string> {
@@ -111,6 +125,10 @@ async function publicServer(server: ServerRecord, viewerId: string) {
     templateId: server.templateId,
     minecraftVersion: server.minecraftVersion,
     loader: server.loader,
+    // v0.44.0+: expose the JVM pin so the Settings tab can pre-select
+    // it and the Console tab can display "Java 17" next to the
+    // running MC version.
+    javaVersion: server.javaVersion,
     description: server.description,
     hasIcon: hasIcon(server.id),
     iconUpdatedAt: iconUpdatedAt(server.id),
@@ -174,6 +192,10 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
             loader: {
               type: 'string',
               enum: ['vanilla', 'paper', 'fabric', 'forge', 'neoforge'],
+            },
+            javaVersion: {
+              type: 'string',
+              enum: ['auto', 'java8', 'java17', 'java21'],
             },
             ownerId: { type: 'string', minLength: 1 },
             autostart: { type: 'boolean' },
@@ -294,6 +316,14 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
         loader = body.loader;
       }
 
+      // v0.44.0+: Java version pin. 'auto' by default. Bedrock ignores
+      // this at container-create time (Bedrock has no JVM), but we
+      // still persist 'auto' so the column has a sane value.
+      let javaVersion: JavaVersion = 'auto';
+      if (body.javaVersion && isJavaVersion(body.javaVersion)) {
+        javaVersion = body.javaVersion;
+      }
+
       // Normalise the quota: 0 / undefined => null = no quota.
       const diskQuotaMb =
         typeof body.diskQuotaMb === 'number' && body.diskQuotaMb > 0
@@ -307,6 +337,7 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
         description: (body.description ?? '').trim(),
         minecraftVersion: effectiveVersion,
         loader,
+        javaVersion,
         memoryMb: body.memoryMb,
         cpuLimit: body.cpuLimit,
         diskQuotaMb,
@@ -348,6 +379,10 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
               type: 'string',
               enum: ['vanilla', 'paper', 'fabric', 'forge', 'neoforge'],
             },
+            javaVersion: {
+              type: 'string',
+              enum: ['auto', 'java8', 'java17', 'java21'],
+            },
           },
         },
       },
@@ -388,9 +423,16 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
         typeof body.loader === 'string' && isLoader(body.loader)
           ? (body.loader as ServerLoader)
           : null;
+      // v0.44.0+: Java version change also triggers a full container
+      // recreate because the image TAG changes (not just an env var).
+      const newJavaVersion =
+        typeof body.javaVersion === 'string' && isJavaVersion(body.javaVersion)
+          ? (body.javaVersion as JavaVersion)
+          : null;
       const wantsVersionChange =
         (newVersion !== '' && newVersion !== server.minecraftVersion) ||
-        (newLoader !== null && newLoader !== server.loader);
+        (newLoader !== null && newLoader !== server.loader) ||
+        (newJavaVersion !== null && newJavaVersion !== server.javaVersion);
 
       if (
         !wantsRename &&
@@ -567,6 +609,9 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
         }
         const targetVersion = newVersion || server.minecraftVersion;
         const targetLoader = newLoader ?? server.loader;
+        // v0.44.0+: also read the target Java pin. If the caller
+        // omitted it, keep the server's current value.
+        const targetJavaVersion = newJavaVersion ?? server.javaVersion;
 
         // Validate the new version BEFORE destroying anything.
         const versionResult = await validateVersion({
@@ -617,16 +662,33 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
         // the container so `createServerContainer` reads the new values
         // straight from the persisted record's env-var derivation.
         updateServerVersion(fresh.id, targetVersion, targetLoader);
+        // v0.44.0+: persist the new Java pin so publicServer() and
+        // the next Docker recreate both see it consistently.
+        if (targetJavaVersion !== fresh.javaVersion) {
+          updateServerJavaVersion(fresh.id, targetJavaVersion);
+        }
 
         // Recreate the container with the new env vars. Same image,
-        // same data dir — only VERSION / TYPE change.
+        // same data dir - only VERSION / TYPE change. v0.44.0+: if
+        // the Java pin changed, we ALSO need to pull the newly-
+        // tagged image variant (itzg/minecraft-server:java17 is
+        // physically a different image from :java21).
         try {
+          if (targetJavaVersion !== fresh.javaVersion) {
+            const newResolvedImage = resolveContainerImage(
+              template.dockerImage,
+              template.kind,
+              targetJavaVersion,
+            );
+            await pullImage(newResolvedImage);
+          }
           const newContainerId = await createServerContainer({
             serverId: fresh.id,
             image: template.dockerImage,
             kind: template.kind,
             loader: targetLoader,
             version: targetVersion,
+            javaVersion: targetJavaVersion,
             memoryMb: fresh.memoryMb,
             cpuLimit: fresh.cpuLimit,
             internalPort: template.internalPort,

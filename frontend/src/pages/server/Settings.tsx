@@ -12,10 +12,12 @@ import {
   hasPermission,
   BUILDTOOLS_LOADERS,
   filterVersionsForLoader,
+  JAVA_VERSIONS,
   PERM,
   type ApiHostResources,
   type ApiServer,
   type ApiTemplate,
+  type JavaVersion,
   type ServerLoader,
 } from '../../lib/api';
 import {
@@ -90,6 +92,14 @@ export default function SettingsPage({
     [modLoader, pluginApi],
   );
   const [versionString, setVersionString] = useState(server.minecraftVersion);
+  // v0.44.0+: JVM pin lives next to the version + loader change form
+  // because all three trigger the same container-recreate lifecycle
+  // (backend applies them in one PATCH request). Initialised from
+  // the persisted server value so the current pin is displayed as
+  // selected in the dropdown.
+  const [javaVersionPin, setJavaVersionPin] = useState<JavaVersion>(
+    server.javaVersion ?? 'auto',
+  );
 
   // v0.41.1+: dropdown of versions supported by the current loader.
   // We deliberately do NOT useEffect-reset on (versionLoader,
@@ -279,11 +289,12 @@ export default function SettingsPage({
     }
     if (
       trimmedVersion === server.minecraftVersion &&
-      versionLoader === server.loader
+      versionLoader === server.loader &&
+      javaVersionPin === (server.javaVersion ?? 'auto')
     ) {
       return;
     }
-    // v0.43.0+: belt-and-braces guard — the Save button is also
+    // v0.43.0+: belt-and-braces guard - the Save button is also
     // disabled when versionLoader is null, but make sure no one
     // bypasses by submitting the form via Enter.
     if (versionLoader === null) {
@@ -293,10 +304,17 @@ export default function SettingsPage({
     if (!window.confirm(t('settings.version.confirm'))) return;
     setSavingVersion(true);
     try {
+      // v0.44.0+: send the Java pin only when it actually changed, so
+      // a plain version-only save still triggers exactly the same PATCH
+      // shape it did in v0.43.x (defensive against any middleware or
+      // schema that would react to the extra field).
       const result = await api.updateServerVersion(
         server.id,
         trimmedVersion,
         versionLoader,
+        javaVersionPin !== (server.javaVersion ?? 'auto')
+          ? javaVersionPin
+          : undefined,
       );
       onRenamed(result.server);
       setVersionSavedAt(Date.now());
@@ -702,6 +720,37 @@ export default function SettingsPage({
                 ))}
               </select>
             </div>
+            {/*
+             * v0.44.0+: Java version pin. Same lifecycle as the version
+             * change (container is destroyed + recreated), so it lives
+             * inside the same form and shares the "Save" button. Only
+             * shown for Java servers - Bedrock has no JVM.
+             */}
+            {template?.kind === 'java' && (
+              <div className="min-w-[180px] flex-1">
+                <label
+                  htmlFor="java-version-input"
+                  className="mb-1 block text-xs font-medium text-peregrine-400"
+                >
+                  {t('settings.version.javaVersionLabel')}
+                </label>
+                <select
+                  id="java-version-input"
+                  value={javaVersionPin}
+                  disabled={savingVersion || isRunning}
+                  onChange={(e) =>
+                    setJavaVersionPin(e.target.value as JavaVersion)
+                  }
+                  className="w-full rounded-lg border border-peregrine-700 bg-peregrine-950 px-3 py-2 text-sm text-white outline-none transition-colors focus:border-falcon disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {JAVA_VERSIONS.map((jv) => (
+                    <option key={jv} value={jv}>
+                      {t(`javaVersion.${jv}` as TranslationKey)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <button
               type="submit"
               disabled={
@@ -709,7 +758,8 @@ export default function SettingsPage({
                 isRunning ||
                 versionLoader === null ||
                 (versionString.trim() === server.minecraftVersion &&
-                  versionLoader === server.loader)
+                  versionLoader === server.loader &&
+                  javaVersionPin === (server.javaVersion ?? 'auto'))
               }
               className="rounded-lg bg-falcon px-4 py-2 text-sm font-semibold text-peregrine-950 transition-colors hover:bg-falcon-bright disabled:cursor-not-allowed disabled:opacity-50"
             >

@@ -186,6 +186,15 @@ const MIGRATIONS: string[] = [
   // scan until now. Tiny SQLite write cost, big read win once the
   // panel has more than a handful of servers.
   `CREATE INDEX servers_by_owner ON servers(owner_id);`,
+
+  // v0.44.0 - per-server Java version selection. 'auto' delegates
+  // Java version choice to itzg's :latest tag (which picks the right
+  // JVM based on the requested MC version). 'java8' / 'java17' /
+  // 'java21' force the corresponding itzg image variant, so an
+  // operator whose mod pack breaks on the default JVM can pin it
+  // without editing docker-compose. Bedrock servers ignore this
+  // column (Bedrock has its own Docker image with no Java at all).
+  `ALTER TABLE servers ADD COLUMN java_version TEXT NOT NULL DEFAULT 'auto';`,
 ];
 
 /** Applies any migrations that have not been run on this database yet. */

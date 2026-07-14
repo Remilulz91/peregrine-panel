@@ -21,9 +21,26 @@ export type ServerLoader =
   | 'folia'
   | 'quilt'
   | 'mohist'
-  // v0.43.0+ — modern hybrids (mods + plugins).
+  // v0.43.0+ - modern hybrids (mods + plugins).
   | 'arclight'
   | 'banner';
+
+/**
+ * v0.44.0+: JVM version pin for Java servers. 'auto' lets itzg pick
+ * the right JVM based on the requested Minecraft version (the right
+ * default for 99 % of servers). Explicit pins ('java8', 'java17',
+ * 'java21') are for mod packs where the auto-picker is wrong or the
+ * pack requires a specific JDK version.
+ */
+export type JavaVersion = 'auto' | 'java8' | 'java17' | 'java21';
+
+/** All Java-version options exposed by the create-server dialog. */
+export const JAVA_VERSIONS: JavaVersion[] = [
+  'auto',
+  'java8',
+  'java17',
+  'java21',
+];
 
 /** A user account, as returned by the API. */
 export interface ApiUser {
@@ -52,6 +69,8 @@ export interface ApiServer {
   minecraftVersion: string;
   /** Server flavour: vanilla / paper / fabric / forge. */
   loader: ServerLoader;
+  /** v0.44.0+: JVM pin. Ignored for Bedrock. */
+  javaVersion: JavaVersion;
   /** Free-text description shown under the name. Empty string = none. */
   description: string;
   /** True when a custom PNG icon has been uploaded for this server. */
@@ -376,6 +395,11 @@ interface CreateServerInput {
   /** Optional loader override. Bedrock servers ignore this; Java defaults to vanilla. */
   loader?: ServerLoader;
   /**
+   * v0.44.0+: Java version pin. 'auto' by default. Bedrock servers
+   * ignore this field.
+   */
+  javaVersion?: JavaVersion;
+  /**
    * Optional owner account. Defaults to the calling admin. Only
    * meaningful when the caller is an administrator — the backend
    * rejects the create with 403 otherwise.
@@ -571,10 +595,31 @@ export const api = {
     id: string,
     minecraftVersion: string,
     loader: ServerLoader,
+    // v0.44.0+: optional Java pin. When provided AND different from
+    // the server's current value, the backend uses the same container-
+    // recreate lifecycle to also swap the itzg image tag.
+    javaVersion?: JavaVersion,
   ) =>
     request<{ server: ApiServer }>(`/api/servers/${id}`, {
       method: 'PATCH',
-      body: JSON.stringify({ minecraftVersion, loader }),
+      body: JSON.stringify(
+        javaVersion !== undefined
+          ? { minecraftVersion, loader, javaVersion }
+          : { minecraftVersion, loader },
+      ),
+    }),
+  /**
+   * v0.44.0+: changes the JVM pin of an existing server. Same
+   * lifecycle as updateServerVersion - container is destroyed and
+   * recreated because the image TAG changes (not just an env var).
+   * Data directory (world, mods, config) is preserved. Server is
+   * left stopped so the user can inspect logs on first boot in case
+   * the new JVM breaks a mod.
+   */
+  updateServerJavaVersion: (id: string, javaVersion: JavaVersion) =>
+    request<{ server: ApiServer }>(`/api/servers/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ javaVersion }),
     }),
   hostResources: () =>
     request<{ resources: ApiHostResources }>('/api/host'),

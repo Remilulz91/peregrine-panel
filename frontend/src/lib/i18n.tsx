@@ -409,6 +409,19 @@ const translations = {
     en: 'Type LATEST or a Minecraft version like 1.21.4. Java versions are checked against Mojang\'s official list.',
     fr: 'Tape LATEST ou une version Minecraft comme 1.21.4. Les versions Java sont vérifiées contre la liste officielle Mojang.',
   },
+  // v0.44.0+: Java version pin (per-server JVM selection).
+  'create.javaVersionLabel': { en: 'Java version', fr: 'Version de Java' },
+  'create.javaVersionHint': {
+    en: 'Keep "Auto" unless a mod pack requires a specific JVM. Auto picks the JVM matching the Minecraft version (Java 8 for 1.12.2, Java 17 for 1.18+, Java 21 for 1.20.5+).',
+    fr: 'Garde "Auto" sauf si un mod pack exige une JVM précise. Auto choisit la JVM adaptée à la version Minecraft (Java 8 pour 1.12.2, Java 17 pour 1.18+, Java 21 pour 1.20.5+).',
+  },
+  'javaVersion.auto': {
+    en: 'Auto (recommended)',
+    fr: 'Auto (recommandé)',
+  },
+  'javaVersion.java8': { en: 'Java 8', fr: 'Java 8' },
+  'javaVersion.java17': { en: 'Java 17', fr: 'Java 17' },
+  'javaVersion.java21': { en: 'Java 21', fr: 'Java 21' },
   'create.memoryLabel': { en: 'Memory (MiB)', fr: 'Mémoire (Mio)' },
   'create.cpuLabel': { en: 'CPU cores', fr: 'Cœurs CPU' },
   'create.memoryHint': {
@@ -1006,6 +1019,13 @@ const translations = {
   'settings.version.versionLabel': {
     en: 'Minecraft version',
     fr: 'Version Minecraft',
+  },
+  // v0.44.0+: Java version pin, editable from the same form as
+  // the version / loader change. All three changes go into a single
+  // PATCH request that triggers exactly one container recreate.
+  'settings.version.javaVersionLabel': {
+    en: 'Java version',
+    fr: 'Version de Java',
   },
   'settings.version.emptyVersion': {
     en: 'Please enter a version.',

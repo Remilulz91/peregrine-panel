@@ -5,9 +5,11 @@ import {
   ApiError,
   BUILDTOOLS_LOADERS,
   filterVersionsForLoader,
+  JAVA_VERSIONS,
   type ApiAdminUser,
   type ApiHostResources,
   type ApiTemplate,
+  type JavaVersion,
   type ServerLoader,
 } from '../lib/api';
 import {
@@ -109,6 +111,11 @@ export default function CreateServerDialog({
     };
   }, []);
   const [version, setVersion] = useState('LATEST');
+  // v0.44.0+: JVM pin. 'auto' is the right choice for 99 % of servers
+  // (delegates to itzg's :latest which picks the JVM from the MC
+  // version). Explicit pins are for mod packs that need a specific
+  // JVM version. Only shown when the game is Java.
+  const [javaVersion, setJavaVersion] = useState<JavaVersion>('auto');
   const [memoryMb, setMemoryMb] = useState(2048);
   const [cpuLimit, setCpuLimit] = useState(2);
   // v0.15.0+: optional disk quota. 0 = unlimited (no enforcement).
@@ -188,6 +195,9 @@ export default function CreateServerDialog({
         // explicitly when the game is Java to keep the wire payload
         // predictable.
         loader: isJava ? (loader ?? 'vanilla') : 'vanilla',
+        // v0.44.0+: JVM pin. Only meaningful for Java; Bedrock is
+        // always sent as 'auto' since the backend ignores it anyway.
+        javaVersion: isJava ? javaVersion : 'auto',
         memoryMb,
         cpuLimit,
       });
@@ -486,6 +496,41 @@ export default function CreateServerDialog({
                   </select>
                   <p className="mt-1 text-xs text-peregrine-500">
                     {t('create.versionHint')}
+                  </p>
+                </div>
+              )}
+
+              {/*
+               * v0.44.0+: JVM version pin. Java-only (Bedrock has no
+               * JVM). 'Auto' is the sensible default and delegates the
+               * choice to itzg's :latest tag, which reads the MC
+               * version and picks a compatible JDK. Explicit pins
+               * exist for mod packs where auto guesses wrong (e.g.
+               * some Forge 1.12.2 packs REQUIRE Java 8 even though
+               * Java 8 is otherwise EOL for MC).
+               */}
+              {isJava && (
+                <div>
+                  <label
+                    htmlFor="srv-java-version"
+                    className="mb-1 block text-xs font-medium text-peregrine-400"
+                  >
+                    {t('create.javaVersionLabel')}
+                  </label>
+                  <select
+                    id="srv-java-version"
+                    value={javaVersion}
+                    onChange={(e) => setJavaVersion(e.target.value as JavaVersion)}
+                    className={SELECT_CLASS}
+                  >
+                    {JAVA_VERSIONS.map((jv) => (
+                      <option key={jv} value={jv}>
+                        {t(`javaVersion.${jv}` as TranslationKey)}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-peregrine-500">
+                    {t('create.javaVersionHint')}
                   </p>
                 </div>
               )}

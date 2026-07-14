@@ -5,6 +5,7 @@ import {
   createServerContainer,
   pullImage,
   removeContainer,
+  resolveContainerImage,
   startContainer,
 } from '../lib/docker';
 import { removeIcon } from '../lib/icons';
@@ -90,7 +91,17 @@ export async function provisionServer(
     fs.mkdirSync(dataDir, { recursive: true });
 
     stage = 'pull';
-    await pullImageWithRetry(template.dockerImage);
+    // v0.44.0+: pull the JVM-tagged variant (or :latest for 'auto' /
+    // Bedrock) instead of the untagged base image. Docker Hub treats
+    // "itzg/minecraft-server" and "itzg/minecraft-server:latest"
+    // identically, but "itzg/minecraft-server:java8" is a genuinely
+    // different image that must be pulled explicitly.
+    const resolvedImage = resolveContainerImage(
+      template.dockerImage,
+      template.kind,
+      server.javaVersion,
+    );
+    await pullImageWithRetry(resolvedImage);
 
     stage = 'create';
     containerId = await createServerContainer({
@@ -99,6 +110,7 @@ export async function provisionServer(
       kind: template.kind,
       loader: server.loader,
       version: server.minecraftVersion,
+      javaVersion: server.javaVersion,
       memoryMb: server.memoryMb,
       cpuLimit: server.cpuLimit,
       internalPort: template.internalPort,

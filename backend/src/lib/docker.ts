@@ -1,7 +1,7 @@
 import { PassThrough, type Readable } from 'node:stream';
 import Docker from 'dockerode';
 import { config } from '../config';
-import type { ServerLoader } from './servers';
+import type { JavaVersion, ServerLoader } from './servers';
 
 // Connection to the local Docker daemon, used to manage game-server
 // containers. Talking to this socket is equivalent to root on the host,
@@ -64,11 +64,17 @@ export async function pullImage(image: string): Promise<void> {
 interface CreateContainerInput {
   serverId: string;
   image: string;
-  /** "java" or "bedrock" — drives the environment variables. */
+  /** "java" or "bedrock" - drives the environment variables. */
   kind: string;
-  /** "vanilla", "paper", "fabric", "forge" — passed to itzg as TYPE. */
+  /** "vanilla", "paper", "fabric", "forge" - passed to itzg as TYPE. */
   loader: ServerLoader;
   version: string;
+  /**
+   * v0.44.0+: which JVM to pin the container to. Ignored for
+   * Bedrock (kind !== 'java'). 'auto' means "let itzg's :latest tag
+   * pick". Explicit versions map to the corresponding itzg tag.
+   */
+  javaVersion: JavaVersion;
   /** RAM limit, in MB. */
   memoryMb: number;
   /** CPU limit, in cores (e.g. 1.5). */
@@ -81,6 +87,34 @@ interface CreateContainerInput {
   port: number;
   /** Host directory bind-mounted as the server's /data folder. */
   dataDir: string;
+}
+
+/**
+ * v0.44.0+: resolves the fully-qualified itzg image reference (with
+ * tag) for a given base image + Java version pin. Bedrock servers
+ * ignore javaVersion because Bedrock has no JVM.
+ *
+ * The itzg/minecraft-server image publishes JVM-specific tags
+ * (:java8, :java17, :java21) alongside :latest, which auto-picks a
+ * JVM from the requested Minecraft version. Pinning is only needed
+ * when the auto-pick is wrong for a specific mod pack.
+ */
+export function resolveContainerImage(
+  baseImage: string,
+  kind: string,
+  javaVersion: JavaVersion,
+): string {
+  // Bedrock has its own image (itzg/minecraft-bedrock-server) and no
+  // Java. Never append a JVM tag - just default to :latest.
+  if (kind !== 'java') {
+    return `${baseImage}:latest`;
+  }
+  // Java 'auto' delegates to itzg's own auto-picker (:latest).
+  if (javaVersion === 'auto') {
+    return `${baseImage}:latest`;
+  }
+  // Explicit pin. itzg publishes these tag names verbatim.
+  return `${baseImage}:${javaVersion}`;
 }
 
 /** Maps Peregrine's loader names to the values itzg's image expects. */
@@ -173,9 +207,17 @@ export async function createServerContainer(
     env.push('OVERRIDE_SERVER_PROPERTIES=FALSE');
   }
 
+  // v0.44.0+: resolve the JVM-tagged image (itzg/minecraft-server:java17
+  // etc.) from the base image + user's Java pin.
+  const resolvedImage = resolveContainerImage(
+    input.image,
+    input.kind,
+    input.javaVersion,
+  );
+
   const container = await docker.createContainer({
     name: `peregrine-${input.serverId}`,
-    Image: input.image,
+    Image: resolvedImage,
     Env: env,
     ExposedPorts: { [portKey]: {} },
     HostConfig: {

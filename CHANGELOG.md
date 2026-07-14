@@ -2,6 +2,72 @@
 
 All notable changes to Peregrine are documented in this file.
 
+## v0.44.0 — 2026-07-12
+
+### Added — per-server Java version pin
+
+- **New feature.** Each Java server now carries an explicit
+  Java-version pin (`servers.java_version`, migration 18)
+  with four possible values:
+    - **`auto`** (default) — delegates JVM choice to itzg's
+      `:latest` tag, which reads the requested Minecraft
+      version and picks a compatible JDK automatically.
+      Right choice for 99 % of servers.
+    - **`java8`** — forces `itzg/minecraft-server:java8`.
+      Needed for legacy Forge mod packs (1.7.10 → 1.12.2)
+      that break on any newer JVM.
+    - **`java17`** — forces `itzg/minecraft-server:java17`.
+      Needed when the auto-picker guesses wrong for
+      1.17 → 1.20.4 packs, or for specific Fabric packs.
+    - **`java21`** — forces `itzg/minecraft-server:java21`.
+      Needed for 1.20.5+ packs that require modern
+      bytecode features the auto-pick may skip.
+- **Backend.** New `resolveContainerImage()` helper in
+  `lib/docker.ts` maps `(baseImage, kind, javaVersion)` to
+  the fully-qualified itzg tag. Bedrock ignores the pin
+  (no JVM). Provisioning pulls the tagged variant instead
+  of the untagged base image, so switching `auto -> java8`
+  in the Settings tab triggers a first-time pull of the
+  new variant before the container recreate.
+- **Create dialog.** New "Java version" dropdown appears
+  right under the Minecraft-version selector when the game
+  is Java, populated from `JAVA_VERSIONS` in
+  `frontend/src/lib/api.ts`. Auto is pre-selected and
+  labelled "(recommended)".
+- **Settings tab.** The existing "Change version" form
+  gained a third dropdown (Java version) that shares its
+  Save button. All three fields (MC version, loader, Java
+  pin) go into a single PATCH request and trigger exactly
+  one container recreate — the backend detects any of the
+  three changing and runs the same tear-down + pull +
+  recreate lifecycle that already existed for the MC
+  version + loader change.
+- **API.** `updateServerVersion(id, mcVersion, loader,
+  javaVersion?)` gained an optional fourth parameter.
+  Backwards-compatible: existing callers that pass only
+  three arguments produce exactly the same PATCH payload
+  they did in v0.43.x.
+- **i18n.** Six new translation keys
+  (`create.javaVersionLabel`, `create.javaVersionHint`,
+  `javaVersion.auto`, `javaVersion.java8`,
+  `javaVersion.java17`, `javaVersion.java21`,
+  `settings.version.javaVersionLabel`) in both English
+  and French.
+
+### Migration
+
+- **Auto for existing servers.** Migration 18 adds
+  `servers.java_version TEXT NOT NULL DEFAULT 'auto'`, so
+  every pre-existing server keeps the exact behaviour it
+  had in v0.43.x. Operators only need to touch the pin
+  when a specific mod pack requires it.
+- **No container recreate on upgrade.** Existing running
+  containers keep running on their previously-pulled
+  image tag; the new column takes effect only on the next
+  time the container is recreated (via a Settings tab
+  change, or a version-change flow). Nothing is
+  destructively rebuilt just by upgrading Peregrine.
+
 ## v0.43.19 — 2026-07-11
 
 ### Added — fail-fast writability probe at startup

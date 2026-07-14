@@ -60,6 +60,34 @@ export function isLoader(value: string): value is ServerLoader {
   return LOADER_SET.has(value);
 }
 
+/**
+ * v0.44.0+: which JVM version the panel asks itzg to boot the server
+ * with.
+ *
+ * - 'auto' -> use itzg's default (:latest) which auto-picks a JVM
+ *   from the requested Minecraft version. Right choice for the vast
+ *   majority of new servers.
+ * - 'java8' -> force Java 8. Needed for older Forge mod packs
+ *   (1.7.10 - 1.12.2) that break on newer JVMs.
+ * - 'java17' -> force Java 17. Needed for MC 1.17 - 1.20.4 when
+ *   the auto-picker guesses wrong, or for some Fabric packs.
+ * - 'java21' -> force Java 21. Needed for MC 1.20.5+ mod packs
+ *   that require the newer bytecode features.
+ */
+export type JavaVersion = 'auto' | 'java8' | 'java17' | 'java21';
+
+const JAVA_VERSION_SET: ReadonlySet<string> = new Set([
+  'auto',
+  'java8',
+  'java17',
+  'java21',
+]);
+
+/** True if the given value is one of the supported Java versions. */
+export function isJavaVersion(value: string): value is JavaVersion {
+  return JAVA_VERSION_SET.has(value);
+}
+
 /** A game server, as used inside the backend. */
 export interface ServerRecord {
   id: string;
@@ -71,6 +99,11 @@ export interface ServerRecord {
   minecraftVersion: string;
   /** Loader passed as TYPE to the itzg image (vanilla / paper / fabric / forge). */
   loader: ServerLoader;
+  /**
+   * v0.44.0+: which JVM to boot the container with. See JavaVersion.
+   * Ignored for Bedrock servers (Bedrock has no Java).
+   */
+  javaVersion: JavaVersion;
   /** Free-text description shown under the name. Empty string = none. */
   description: string;
   memoryMb: number;
@@ -95,6 +128,7 @@ interface ServerRow {
   container_id: string | null;
   minecraft_version: string;
   loader: string;
+  java_version: string;
   description: string | null;
   memory_mb: number;
   cpu_limit: number;
@@ -114,6 +148,7 @@ function toRecord(row: ServerRow): ServerRecord {
     containerId: row.container_id,
     minecraftVersion: row.minecraft_version,
     loader: isLoader(row.loader) ? row.loader : 'vanilla',
+    javaVersion: isJavaVersion(row.java_version) ? row.java_version : 'auto',
     description: row.description ?? '',
     memoryMb: row.memory_mb,
     cpuLimit: row.cpu_limit,
@@ -149,6 +184,8 @@ export function createServer(input: {
   description: string;
   minecraftVersion: string;
   loader: ServerLoader;
+  /** v0.44.0+: 'auto' by default. Only meaningful for Java servers. */
+  javaVersion: JavaVersion;
   memoryMb: number;
   cpuLimit: number;
   diskQuotaMb: number | null;
@@ -158,8 +195,8 @@ export function createServer(input: {
   db.prepare(
     `INSERT INTO servers
        (id, owner_id, template_id, name, description, minecraft_version,
-        loader, memory_mb, cpu_limit, disk_quota_mb, port)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        loader, java_version, memory_mb, cpu_limit, disk_quota_mb, port)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     id,
     input.ownerId,
@@ -168,6 +205,7 @@ export function createServer(input: {
     input.description || null,
     input.minecraftVersion,
     input.loader,
+    input.javaVersion,
     input.memoryMb,
     input.cpuLimit,
     input.diskQuotaMb,
@@ -178,6 +216,22 @@ export function createServer(input: {
     throw new Error('Failed to create the server.');
   }
   return created;
+}
+
+/**
+ * v0.44.0+: updates the Java version pin for an existing server. Like
+ * updateServerVersion, the caller is expected to destroy + recreate
+ * the container around this DB update so the new image tag actually
+ * takes effect on the next start.
+ */
+export function updateServerJavaVersion(
+  id: string,
+  javaVersion: JavaVersion,
+): void {
+  db.prepare('UPDATE servers SET java_version = ? WHERE id = ?').run(
+    javaVersion,
+    id,
+  );
 }
 
 /** Lists every server owned by a given user, newest first. */
