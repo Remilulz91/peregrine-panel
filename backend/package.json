@@ -12,14 +12,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@fastify/cookie": "11.1.1",
-    "@fastify/jwt": "10.2.0",
+    "@fastify/cookie": "11.1.2",
+    "@fastify/jwt": "10.2.1",
     "@fastify/multipart": "10.1.0",
     "@fastify/static": "9.3.0",
     "@node-rs/argon2": "2.0.2",
     "dockerode": "5.0.1",
     "dotenv": "17.4.2",
-    "fastify": "5.10.0",
+    "fastify": "5.11.2",
     "socket.io": "4.8.3",
     "ssh2": "1.17.0"
   },
@@ -27,7 +27,7 @@
     "@types/dockerode": "4.0.1",
     "@types/node": "22.20.1",
     "@types/ssh2": "1.15.5",
-    "tsx": "4.23.1",
+    "tsx": "4.23.9",
     "typescript": "5.9.3"
   },
   "engines": {
